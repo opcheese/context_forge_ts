@@ -118,7 +118,8 @@ export const move = mutation({
   },
 })
 
-// Reorder a block within its zone
+// Reorder a block (update its position)
+// Uses fractional positioning - just updates the single block's position
 export const reorder = mutation({
   args: {
     id: v.id("blocks"),
@@ -128,40 +129,9 @@ export const reorder = mutation({
     const block = await ctx.db.get(args.id)
     if (!block) throw new Error("Block not found")
 
-    // Get all blocks in the same zone
-    const blocks = await ctx.db
-      .query("blocks")
-      .withIndex("by_zone", (q) => q.eq("zone", block.zone))
-      .collect()
-
-    const oldPosition = block.position
-    const newPosition = args.newPosition
-
-    // Update positions of affected blocks
-    for (const b of blocks) {
-      if (b._id === args.id) continue
-
-      let updatedPosition = b.position
-      if (oldPosition < newPosition) {
-        // Moving down: shift blocks up
-        if (b.position > oldPosition && b.position <= newPosition) {
-          updatedPosition = b.position - 1
-        }
-      } else {
-        // Moving up: shift blocks down
-        if (b.position >= newPosition && b.position < oldPosition) {
-          updatedPosition = b.position + 1
-        }
-      }
-
-      if (updatedPosition !== b.position) {
-        await ctx.db.patch(b._id, { position: updatedPosition })
-      }
-    }
-
-    // Update the moved block
+    // Simply update the block's position (fractional ordering)
     await ctx.db.patch(args.id, {
-      position: newPosition,
+      position: args.newPosition,
       updatedAt: Date.now(),
     })
 

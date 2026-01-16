@@ -346,6 +346,88 @@ pnpm build          # ✓ Builds successfully
 - Real-time sync across all zones
 - E2E tests with proper isolation
 
-### Next: Slice 3 - Drag and Drop
+---
 
-Adding drag-and-drop to move blocks between zones and reorder within zones.
+## Session 5: Slice 3 - Drag and Drop
+
+### Accomplishments
+
+#### @dnd-kit Integration
+- [x] Installed @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities
+- [x] Created DndProvider with PointerSensor (8px threshold) + KeyboardSensor
+- [x] Created SortableBlock component (useSortable wrapper)
+- [x] Created DroppableZone component (useDroppable + SortableContext)
+- [x] Created BlockDragOverlay for ghost preview during drag
+- [x] Implemented closestCenter collision detection
+
+#### Fractional Positioning
+- [x] Created positioning utilities in `src/lib/positioning.ts`
+- [x] Simplified `reorder` mutation to just update position (O(1))
+- [x] No shifting of other blocks required
+
+#### File Drop Support
+- [x] Created useFileDrop hook for native HTML5 file drops
+- [x] Supports .txt and .md files
+- [x] Visual overlay when dragging files over zones
+- [x] Maps zone to default block type (PERMANENT→SYSTEM, others→NOTE)
+
+#### Architecture
+```
+src/
+├── components/dnd/
+│   ├── DndProvider.tsx      # DndContext + sensors + handlers
+│   ├── SortableBlock.tsx    # useSortable wrapper
+│   ├── DroppableZone.tsx    # useDroppable + SortableContext
+│   ├── BlockDragOverlay.tsx # Ghost preview
+│   ├── types.ts             # DragData types
+│   └── index.ts             # Exports
+├── hooks/
+│   └── useFileDrop.ts       # Native file drop
+└── lib/
+    └── positioning.ts       # Fractional ordering
+```
+
+### Decisions Made
+
+#### 10. Drag and Drop Library Choice
+
+**Decision:** Use @dnd-kit over native HTML5 drag and drop.
+
+**Rationale:**
+- Touch/mobile support built-in
+- Accessibility (keyboard navigation, screen reader announcements)
+- DragOverlay for smooth visual feedback
+- Sensors system for activation constraints
+- Existing ContextForge already uses it (familiarity)
+
+#### 11. Fractional Positioning
+
+**Decision:** Use fractional ordering instead of index-based positioning.
+
+**Rationale:**
+- O(1) position updates (no shifting other blocks)
+- Simpler Convex mutations
+- Natural for real-time (no race conditions)
+- Example: Insert between 1.0 and 2.0 → position 1.5
+
+**Trade-off:** Eventually may need normalization if positions get too fragmented, but this is rare in practice.
+
+### Current State
+
+```bash
+pnpm lint           # ✓ Passes
+pnpm test:run       # ✓ Passes
+pnpm playwright test # ✓ 10 tests pass
+pnpm build          # ✓ Builds successfully
+```
+
+**Working features:**
+- Drag blocks to reorder within zones
+- Drag blocks between zones
+- Drop .txt/.md files to create blocks
+- Visual feedback (ghost overlay, drop zone highlighting)
+- Keyboard accessibility
+
+### Next: Slice 4 - Block Editor
+
+Adding TanStack Router with block editing page.

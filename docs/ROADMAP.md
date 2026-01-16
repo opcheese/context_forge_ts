@@ -90,14 +90,15 @@ blocks: defineTable({
 - Reference: [Trellaux example](https://tanstack.com/start/latest/docs/framework/react/examples/start-convex-trellaux)
 
 ### UI
-- [ ] Make blocks draggable
-- [ ] Make zones drop targets
-- [ ] Visual drag feedback
-- [ ] Call `move` mutation on cross-zone drop
-- [ ] Call `reorder` mutation on same-zone drop
+- [x] Make blocks draggable
+- [x] Make zones drop targets
+- [x] Visual drag feedback (DragOverlay)
+- [x] Call `move` mutation on cross-zone drop
+- [x] Call `reorder` mutation on same-zone drop
+- [x] File drop support (.txt, .md)
 
 ### Tests
-- [ ] E2E drag-drop test
+- [x] E2E drag-drop tests
 
 ---
 
@@ -193,8 +194,8 @@ blocks: defineTable({
 | 0. Project Setup | ✅ Done | Counter demo working |
 | 1. Basic Blocks | ✅ Done | CRUD + E2E test isolation |
 | 2. Zones | ✅ Done | Three-column layout + move |
-| 3. Drag and Drop | 🔜 Next | - |
-| 4. Block Editor | Planned | - |
+| 3. Drag and Drop | ✅ Done | @dnd-kit + file drop |
+| 4. Block Editor | 🔜 Next | - |
 | 5. LLM + Tokens | Planned | Token counting integration test |
 | 6. Polish | Planned | - |
 

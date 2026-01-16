@@ -3,10 +3,8 @@ import { useQuery, useMutation } from "convex/react"
 import { api } from "../convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import type { Id } from "../convex/_generated/dataModel"
-
-// Zone types
-const ZONES = ["PERMANENT", "STABLE", "WORKING"] as const
-type Zone = (typeof ZONES)[number]
+import { DndProvider, DroppableZone, SortableBlock, ZONES, type Zone } from "@/components/dnd"
+import { useFileDrop } from "@/hooks/useFileDrop"
 
 // Zone display info
 const ZONE_INFO: Record<Zone, { label: string; description: string }> = {
@@ -126,7 +124,7 @@ function AddBlockForm({ defaultZone = "WORKING" }: { defaultZone?: Zone }) {
   )
 }
 
-// Single block card
+// Single block card (content only, wrapped by SortableBlock for DnD)
 function BlockCard({
   id,
   content,
@@ -143,11 +141,13 @@ function BlockCard({
   const removeBlock = useMutation(api.blocks.remove)
   const moveBlock = useMutation(api.blocks.move)
 
-  const handleDelete = async () => {
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent drag
     await removeBlock({ id })
   }
 
-  const handleMove = async (targetZone: Zone) => {
+  const handleMove = async (e: React.MouseEvent, targetZone: Zone) => {
+    e.stopPropagation() // Prevent drag
     await moveBlock({ id, zone: targetZone })
   }
 
@@ -155,7 +155,7 @@ function BlockCard({
   const otherZones = ZONES.filter((z) => z !== zone)
 
   return (
-    <div className="rounded-lg border border-border bg-card p-3">
+    <div className="rounded-lg border border-border bg-card p-3 select-none">
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
@@ -181,7 +181,7 @@ function BlockCard({
             key={z}
             variant="outline"
             size="sm"
-            onClick={() => handleMove(z)}
+            onClick={(e) => handleMove(e, z)}
             className="h-6 px-2 text-xs"
           >
             → {ZONE_INFO[z].label}
@@ -202,42 +202,76 @@ function formatTimeAgo(timestamp: number): string {
   return `${Math.floor(seconds / 86400)}d ago`
 }
 
-// Zone column
+// Zone column with droppable area and file drop support
 function ZoneColumn({ zone }: { zone: Zone }) {
   const blocks = useQuery(api.blocks.listByZone, { zone })
   const info = ZONE_INFO[zone]
 
+  // File drop handling
+  const { isDragOver, dropProps } = useFileDrop({
+    zone,
+    onSuccess: (fileName) => console.log(`Added file "${fileName}" to ${zone}`),
+    onError: (error) => console.warn(error),
+  })
+
+  // Sort blocks by position for display
+  const sortedBlocks = blocks
+    ? [...blocks].sort((a, b) => a.position - b.position)
+    : []
+
+  const blockIds = sortedBlocks.map((b) => b._id)
+
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative" {...dropProps}>
       <div className="mb-3">
         <h3 className="text-lg font-semibold">{info.label}</h3>
         <p className="text-xs text-muted-foreground">{info.description}</p>
       </div>
 
-      <div className="flex-1 space-y-2 overflow-auto">
-        {blocks === undefined ? (
-          <div className="text-sm text-muted-foreground">Loading...</div>
-        ) : blocks.length === 0 ? (
-          <div className="text-sm text-muted-foreground text-center py-4 border border-dashed border-border rounded-lg">
-            No blocks
-          </div>
-        ) : (
-          blocks.map((block) => (
-            <BlockCard
-              key={block._id}
-              id={block._id}
-              content={block.content}
-              type={block.type}
-              zone={block.zone}
-              createdAt={block.createdAt}
-            />
-          ))
-        )}
-      </div>
+      <DroppableZone zone={zone} itemIds={blockIds}>
+        <div className="flex-1 space-y-2 min-h-[100px]">
+          {blocks === undefined ? (
+            <div className="text-sm text-muted-foreground">Loading...</div>
+          ) : sortedBlocks.length === 0 ? (
+            <div className="text-sm text-muted-foreground text-center py-8 border border-dashed border-border rounded-lg">
+              Drop blocks or files here
+            </div>
+          ) : (
+            sortedBlocks.map((block) => (
+              <SortableBlock
+                key={block._id}
+                id={block._id}
+                zone={block.zone}
+                position={block.position}
+              >
+                <BlockCard
+                  id={block._id}
+                  content={block.content}
+                  type={block.type}
+                  zone={block.zone}
+                  createdAt={block.createdAt}
+                />
+              </SortableBlock>
+            ))
+          )}
+        </div>
+      </DroppableZone>
 
       <div className="mt-3 text-xs text-muted-foreground text-center">
         {blocks?.length ?? 0} blocks
       </div>
+
+      {/* File drop overlay */}
+      {isDragOver && (
+        <div className="absolute inset-0 flex items-center justify-center bg-primary/10 border-2 border-dashed border-primary rounded-lg z-10">
+          <div className="text-center">
+            <div className="text-3xl mb-2">📄</div>
+            <div className="text-sm font-medium text-primary">
+              Drop .txt or .md file
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -263,26 +297,31 @@ function App() {
   const { isDark, toggle } = useTheme()
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-4xl font-bold text-foreground">ContextForge</h1>
-          <Button variant="outline" onClick={toggle}>
-            {isDark ? "Light" : "Dark"}
-          </Button>
+    <DndProvider>
+      <div className="min-h-screen bg-background p-8">
+        <div className="mx-auto max-w-6xl space-y-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-4xl font-bold text-foreground">ContextForge</h1>
+            <Button variant="outline" onClick={toggle}>
+              {isDark ? "Light" : "Dark"}
+            </Button>
+          </div>
+
+          <section className="rounded-lg border border-border bg-card p-6">
+            <h2 className="text-xl font-semibold mb-4">Add New Block</h2>
+            <AddBlockForm />
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold mb-4">Context Zones</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Drag blocks to reorder or move between zones
+            </p>
+            <ZoneLayout />
+          </section>
         </div>
-
-        <section className="rounded-lg border border-border bg-card p-6">
-          <h2 className="text-xl font-semibold mb-4">Add New Block</h2>
-          <AddBlockForm />
-        </section>
-
-        <section>
-          <h2 className="text-xl font-semibold mb-4">Context Zones</h2>
-          <ZoneLayout />
-        </section>
       </div>
-    </div>
+    </DndProvider>
   )
 }
 

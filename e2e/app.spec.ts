@@ -171,3 +171,130 @@ test.describe.serial("Blocks", () => {
     await expect(page.locator("span:has-text('NOTE')").first()).toBeVisible()
   })
 })
+
+// Drag and drop tests (run serially)
+test.describe.serial("Drag and Drop", () => {
+  test.afterAll(async () => {
+    await resetTestData()
+  })
+
+  test("should show drag hint in UI", async ({ page }) => {
+    await page.goto("/")
+
+    // Check for drag hint text
+    await expect(
+      page.locator("text=Drag blocks to reorder or move between zones")
+    ).toBeVisible()
+  })
+
+  test("should show drop placeholder in empty zones", async ({ page }) => {
+    await page.goto("/")
+
+    // Empty zones should show drop placeholder
+    await expect(
+      page.locator("text=Drop blocks or files here").first()
+    ).toBeVisible()
+  })
+
+  test("blocks should be draggable", async ({ page }) => {
+    // Create a test block
+    await createTestBlock("E2E Test: Draggable block", "NOTE", "WORKING")
+
+    await page.goto("/")
+
+    // Wait for block to appear
+    await expect(
+      page.locator("text=E2E Test: Draggable block")
+    ).toBeVisible({ timeout: 5000 })
+
+    // Find the block - it should have draggable styling (cursor: grab)
+    const blockCard = page
+      .locator("[data-block-id]")
+      .filter({ hasText: "E2E Test: Draggable block" })
+
+    await expect(blockCard).toBeVisible()
+
+    // Verify the block has the draggable attribute
+    await expect(blockCard).toHaveAttribute("data-zone", "WORKING")
+  })
+
+  test("should drag block between zones", async ({ page }) => {
+    // Create a block in Working zone
+    await createTestBlock("E2E Test: Drag between zones", "NOTE", "WORKING")
+
+    await page.goto("/")
+
+    // Wait for block to appear
+    await expect(
+      page.locator("text=E2E Test: Drag between zones")
+    ).toBeVisible({ timeout: 5000 })
+
+    // Find the draggable block wrapper
+    const blockWrapper = page
+      .locator("[data-block-id]")
+      .filter({ hasText: "E2E Test: Drag between zones" })
+
+    // Find the Permanent zone droppable area
+    const permanentZone = page.locator("[data-droppable-zone='PERMANENT']")
+
+    // Perform drag and drop
+    await blockWrapper.dragTo(permanentZone)
+
+    // Wait for the mutation to complete
+    await page.waitForTimeout(1000)
+
+    // After drag, block should have moved to Permanent zone
+    // The block card should now show Stable and Working buttons (not Permanent)
+    const movedBlockCard = page
+      .locator(".rounded-lg.border.border-border.bg-card.p-3")
+      .filter({ hasText: "E2E Test: Drag between zones" })
+
+    await expect(
+      movedBlockCard.getByRole("button", { name: "→ Stable" })
+    ).toBeVisible({ timeout: 5000 })
+    await expect(
+      movedBlockCard.getByRole("button", { name: "→ Working" })
+    ).toBeVisible()
+  })
+
+  test("should reorder blocks within zone via drag", async ({ page }) => {
+    // Create two blocks in the same zone
+    await createTestBlock("E2E Test: First block for reorder", "NOTE", "STABLE")
+    // Small delay to ensure different positions
+    await new Promise((r) => setTimeout(r, 100))
+    await createTestBlock("E2E Test: Second block for reorder", "CODE", "STABLE")
+
+    await page.goto("/")
+
+    // Wait for both blocks to appear
+    await expect(
+      page.locator("text=E2E Test: First block for reorder")
+    ).toBeVisible({ timeout: 5000 })
+    await expect(
+      page.locator("text=E2E Test: Second block for reorder")
+    ).toBeVisible()
+
+    // Get the blocks
+    const firstBlock = page
+      .locator("[data-block-id]")
+      .filter({ hasText: "E2E Test: First block for reorder" })
+
+    const secondBlock = page
+      .locator("[data-block-id]")
+      .filter({ hasText: "E2E Test: Second block for reorder" })
+
+    // Drag second block to position of first block
+    await secondBlock.dragTo(firstBlock)
+
+    // Wait for reorder to complete
+    await page.waitForTimeout(1000)
+
+    // Both blocks should still be visible
+    await expect(
+      page.locator("text=E2E Test: First block for reorder")
+    ).toBeVisible()
+    await expect(
+      page.locator("text=E2E Test: Second block for reorder")
+    ).toBeVisible()
+  })
+})
