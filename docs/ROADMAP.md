@@ -107,70 +107,154 @@ blocks: defineTable({
 **Goal:** Edit block content and metadata.
 
 ### Router
-- [ ] Configure TanStack Router
-- [ ] Route: `/` (zone view)
-- [ ] Route: `/blocks/:id` (editor)
+- [x] Configure TanStack Router (file-based routing)
+- [x] Route: `/` (zone view)
+- [x] Route: `/blocks/:id` (editor)
 
 ### UI
-- [ ] Block editor page
-- [ ] Edit content textarea
-- [ ] Change block type
-- [ ] Save/cancel buttons
-- [ ] Navigate back to zones
+- [x] Block editor page
+- [x] Edit content textarea
+- [x] Change block type
+- [x] Save/cancel buttons
+- [x] Navigate back to zones
 
 ### Convex Functions
-- [ ] `blocks.update` - Update content/type
+- [x] `blocks.update` - Update content/type
 
 ---
 
-## Slice 5: LLM Integration + Token Counting
+## Slice 4.5: Sessions
 
-**Goal:** Connect to LLM providers. Add token counting.
+**Goal:** Isolated workspaces for context management and LLM testing.
 
-### Token Counting (Deferred to Here)
+### Schema
+```typescript
+sessions: defineTable({
+  name: v.optional(v.string()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+})
 
-> **IMPORTANT:** Token counting is intentionally deferred to this slice.
->
-> **Why:** The existing Python implementation uses `tiktoken` and `litellm` which weren't designed for Convex. Integrating token counting will be a test of how well we can adapt existing solutions to the Convex model.
->
-> **Challenges to solve:**
-> - Token libraries may not work in Convex runtime (Node.js subset)
-> - May need WASM-based tokenizer or pure JS implementation
-> - Server-side counting in mutations vs. client-side estimation
-> - Caching token counts vs. recomputing
->
-> **Options to evaluate:**
-> - `gpt-tokenizer` (pure JS, ~50KB)
-> - `js-tiktoken` (lighter tiktoken port)
-> - `tiktoken` (official, WASM, larger)
-> - API-based counting (latency concerns)
->
-> **Decision will be made when we reach this slice.**
+// Update blocks to require session
+blocks: defineTable({
+  sessionId: v.id("sessions"),  // Required
+  // ... existing fields
+}).index("by_session", ["sessionId"])
+  .index("by_session_zone", ["sessionId", "zone", "position"])
+
+// Snapshots for save/restore
+snapshots: defineTable({
+  sessionId: v.id("sessions"),
+  name: v.string(),
+  createdAt: v.number(),
+  blocks: v.array(v.object({...})),  // Serialized blocks
+}).index("by_session", ["sessionId"])
+```
+
+### Convex Functions
+- [x] `sessions.create` - Create new session
+- [x] `sessions.list` - List all sessions
+- [x] `sessions.get` - Get session by ID
+- [x] `sessions.update` - Rename session
+- [x] `sessions.remove` - Delete session (cascade blocks/snapshots)
+- [x] `snapshots.create` - Save current state
+- [x] `snapshots.list` - List session snapshots
+- [x] `snapshots.restore` - Restore from snapshot
+- [x] `snapshots.remove` - Delete snapshot
+- [x] Update all block functions to require sessionId
+
+### UI
+- [x] Session selector in header
+- [x] Create new session button
+- [x] Session context provider
+- [x] All block queries/mutations use current session
+
+### Tests
+- [x] E2E tests updated for sessions
+- [x] Session switching tests
+- [x] HTTP endpoints for test session creation
+
+---
+
+## Slice 5: LLM Integration (Basic Generation)
+
+**Goal:** Connect to LLM providers with streaming generation.
+
+**Status:** ✅ Complete
+
+### LLM Providers
+- [x] Ollama (local) - HTTP streaming via `/api/chat`
+- [x] Claude Code (subscription) - Convex reactive queries with `stream_event` handling
+
+### Architecture
+- [x] Context assembly function (`convex/lib/context.ts`)
+- [x] Zone ordering: PERMANENT → STABLE → WORKING → prompt
+- [x] HTTP action for Ollama streaming
+- [x] Node.js action for Claude Code streaming
+- [x] Convex reactive queries for real-time UI updates
+
+### UI
+- [x] Generate panel with prompt input
+- [x] Provider selection (Ollama/Claude Code)
+- [x] Real-time streaming display
+- [x] Auto-save to WORKING zone
+- [x] Provider health indicators
+
+### Files
+- `convex/lib/ollama.ts` - Ollama streaming client
+- `convex/lib/context.ts` - Context assembly
+- `convex/claudeNode.ts` - Claude Code SDK integration
+- `convex/generations.ts` - Generation tracking
+- `convex/http.ts` - HTTP endpoints
+- `src/hooks/useGenerate.ts` - Ollama streaming hook
+- `src/hooks/useClaudeGenerate.ts` - Claude reactive hook
+- `src/components/GeneratePanel.tsx` - Generation UI
+
+---
+
+## Slice 5.5: Token Counting & Zone Budgets
+
+**Goal:** Add accurate token counting, zone budgets, and usage tracking.
+
+**Status:** 🔜 Planned
+
+**Details:** See [TOKEN_BUDGETS_PLAN.md](./TOKEN_BUDGETS_PLAN.md)
 
 ### Schema Changes
 ```typescript
 blocks: defineTable({
   // ... existing fields
-  tokens: v.number(),  // Add token count
+  tokens: v.optional(v.number()),
+  originalTokens: v.optional(v.number()),
+  tokenModel: v.optional(v.string()),
+})
+
+sessions: defineTable({
+  // ... existing fields
+  budgets: v.optional(v.object({
+    permanent: v.number(),   // Default: 50000
+    stable: v.number(),      // Default: 100000
+    working: v.number(),     // Default: 100000
+    total: v.number(),       // Default: 500000
+  })),
+})
+
+generations: defineTable({
+  // ... existing fields
+  inputTokens: v.optional(v.number()),
+  outputTokens: v.optional(v.number()),
+  costUsd: v.optional(v.number()),
 })
 ```
 
-### Convex Functions
-- [ ] Token counting utility
-- [ ] Update `create` to compute tokens
-- [ ] Update `update` to recompute tokens
-- [ ] `context.assemble` - Build context string from blocks
-
-### LLM Integration
-- [ ] Provider configuration (env vars)
-- [ ] HTTP action for chat/streaming
-- [ ] Vercel AI SDK integration
-
-### UI
-- [ ] Token count per block
-- [ ] Token count per zone
-- [ ] Total token count
-- [ ] Chat/generation panel
+### Implementation Phases
+1. [ ] Schema updates (blocks, sessions, generations)
+2. [ ] Token counting library (`js-tiktoken`)
+3. [ ] Per-block token tracking
+4. [ ] Zone budget metrics
+5. [ ] Generation usage tracking
+6. [ ] UI components (zone headers, metrics panel)
+7. [ ] Budget warnings & validation
 
 ---
 
@@ -195,8 +279,10 @@ blocks: defineTable({
 | 1. Basic Blocks | ✅ Done | CRUD + E2E test isolation |
 | 2. Zones | ✅ Done | Three-column layout + move |
 | 3. Drag and Drop | ✅ Done | @dnd-kit + file drop |
-| 4. Block Editor | 🔜 Next | - |
-| 5. LLM + Tokens | Planned | Token counting integration test |
+| 4. Block Editor | ✅ Done | TanStack Router + edit page |
+| 4.5. Sessions | ✅ Done | Session isolation + snapshots |
+| 5. LLM Integration | ✅ Done | Ollama + Claude Code streaming |
+| 5.5. Token Budgets | 🔜 Next | See [TOKEN_BUDGETS_PLAN.md](./TOKEN_BUDGETS_PLAN.md) |
 | 6. Polish | Planned | - |
 
 ---
@@ -215,7 +301,13 @@ Slice 3: DnD    Slice 4: Editor
         │                │
         └───────┬────────┘
                 ▼
-    Slice 5: LLM + Tokens
+     Slice 4.5: Sessions
+                │
+                ▼
+    Slice 5: LLM Integration ✅
+                │
+                ▼
+   Slice 5.5: Token Budgets 🔜
                 │
                 ▼
        Slice 6: Polish
@@ -230,7 +322,26 @@ Slice 3: DnD    Slice 4: Editor
 - Just blocks: create, list, delete
 - Proves the Convex model works for our domain
 
-### Token Counting Integration
-This will be the first real test of integrating external JS libraries into Convex. The Python version relies on `tiktoken` which has no direct JS equivalent that's guaranteed to work in Convex's runtime.
+### LLM Integration Findings
 
-Document findings when we get there - this could inform future integrations.
+**Claude Code Streaming:**
+- The Claude Agent SDK wraps Anthropic's raw events in `SDKPartialAssistantMessage`
+- Events have `type: 'stream_event'` with actual event in `message.event`
+- Need to check `event.type === 'content_block_delta'` and `event.delta.type === 'text_delta'`
+- `includePartialMessages: true` must be set in options
+- Convex actions cannot stream directly - use reactive queries with database writes
+
+**Convex Streaming Pattern:**
+1. Mutation creates generation record, returns ID, schedules action
+2. Action streams to database via `ctx.runMutation(internal.appendChunk, ...)`
+3. Client subscribes via `useQuery(api.generations.get, { generationId })`
+4. React effect detects text changes and calls `onChunk` callbacks
+
+### Token Counting Integration
+The recommended approach is `js-tiktoken` for accurate counting in Convex runtime:
+- Pure JS implementation (no WASM required)
+- Compatible with Convex actions and mutations
+- Matches Python's `tiktoken` accuracy
+- ~100KB bundle size
+
+See [TOKEN_BUDGETS_PLAN.md](./TOKEN_BUDGETS_PLAN.md) for full implementation plan.

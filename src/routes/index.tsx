@@ -1,10 +1,17 @@
-import { useState, useEffect } from "react"
+/**
+ * Home page - Zone layout with blocks.
+ */
+
+import { useState } from "react"
+import { createFileRoute, Link } from "@tanstack/react-router"
 import { useQuery, useMutation } from "convex/react"
-import { api } from "../convex/_generated/api"
+import { api } from "../../convex/_generated/api"
 import { Button } from "@/components/ui/button"
-import type { Id } from "../convex/_generated/dataModel"
-import { DndProvider, DroppableZone, SortableBlock, ZONES, type Zone } from "@/components/dnd"
+import type { Id } from "../../convex/_generated/dataModel"
+import { DroppableZone, SortableBlock, ZONES, type Zone } from "@/components/dnd"
 import { useFileDrop } from "@/hooks/useFileDrop"
+import { useSession } from "@/contexts/SessionContext"
+import { GeneratePanel } from "@/components/GeneratePanel"
 
 // Zone display info
 const ZONE_INFO: Record<Zone, { label: string; description: string }> = {
@@ -22,28 +29,17 @@ const ZONE_INFO: Record<Zone, { label: string; description: string }> = {
   },
 }
 
-// Simple theme toggle hook
-function useTheme() {
-  const [isDark, setIsDark] = useState(() =>
-    document.documentElement.classList.contains("dark")
-  )
-
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add("dark")
-    } else {
-      document.documentElement.classList.remove("dark")
-    }
-  }, [isDark])
-
-  return { isDark, toggle: () => setIsDark(!isDark) }
-}
-
 // Block type options
 const BLOCK_TYPES = ["NOTE", "CODE", "SYSTEM", "USER", "ASSISTANT"] as const
 
 // Add block form
-function AddBlockForm({ defaultZone = "WORKING" }: { defaultZone?: Zone }) {
+function AddBlockForm({
+  sessionId,
+  defaultZone = "WORKING",
+}: {
+  sessionId: Id<"sessions">
+  defaultZone?: Zone
+}) {
   const [content, setContent] = useState("")
   const [type, setType] = useState<string>("NOTE")
   const [zone, setZone] = useState<Zone>(defaultZone)
@@ -53,7 +49,7 @@ function AddBlockForm({ defaultZone = "WORKING" }: { defaultZone?: Zone }) {
     e.preventDefault()
     if (!content.trim()) return
 
-    await createBlock({ content: content.trim(), type, zone })
+    await createBlock({ sessionId, content: content.trim(), type, zone })
     setContent("")
   }
 
@@ -124,6 +120,16 @@ function AddBlockForm({ defaultZone = "WORKING" }: { defaultZone?: Zone }) {
   )
 }
 
+// Format relative time
+function formatTimeAgo(timestamp: number): string {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000)
+
+  if (seconds < 60) return "just now"
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
+  return `${Math.floor(seconds / 86400)}d ago`
+}
+
 // Single block card (content only, wrapped by SortableBlock for DnD)
 function BlockCard({
   id,
@@ -142,12 +148,14 @@ function BlockCard({
   const moveBlock = useMutation(api.blocks.move)
 
   const handleDelete = async (e: React.MouseEvent) => {
-    e.stopPropagation() // Prevent drag
+    e.stopPropagation()
+    e.preventDefault()
     await removeBlock({ id })
   }
 
   const handleMove = async (e: React.MouseEvent, targetZone: Zone) => {
-    e.stopPropagation() // Prevent drag
+    e.stopPropagation()
+    e.preventDefault()
     await moveBlock({ id, zone: targetZone })
   }
 
@@ -163,16 +171,26 @@ function BlockCard({
           </span>
           <span className="text-xs text-muted-foreground">{timeAgo}</span>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleDelete}
-          className="h-6 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-        >
-          Delete
-        </Button>
+        <div className="flex gap-1">
+          <Link
+            to="/blocks/$blockId"
+            params={{ blockId: id }}
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center justify-center h-6 px-2 text-xs rounded-md border border-input bg-background hover:bg-accent"
+          >
+            Edit
+          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDelete}
+            className="h-6 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            Delete
+          </Button>
+        </div>
       </div>
-      <p className="text-sm text-foreground whitespace-pre-wrap break-words mb-2">
+      <p className="text-sm text-foreground whitespace-pre-wrap break-words mb-2 line-clamp-3">
         {content}
       </p>
       <div className="flex gap-1">
@@ -192,23 +210,20 @@ function BlockCard({
   )
 }
 
-// Format relative time
-function formatTimeAgo(timestamp: number): string {
-  const seconds = Math.floor((Date.now() - timestamp) / 1000)
-
-  if (seconds < 60) return "just now"
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
-  return `${Math.floor(seconds / 86400)}d ago`
-}
-
 // Zone column with droppable area and file drop support
-function ZoneColumn({ zone }: { zone: Zone }) {
-  const blocks = useQuery(api.blocks.listByZone, { zone })
+function ZoneColumn({
+  sessionId,
+  zone,
+}: {
+  sessionId: Id<"sessions">
+  zone: Zone
+}) {
+  const blocks = useQuery(api.blocks.listByZone, { sessionId, zone })
   const info = ZONE_INFO[zone]
 
   // File drop handling
   const { isDragOver, dropProps } = useFileDrop({
+    sessionId,
     zone,
     onSuccess: (fileName) => console.log(`Added file "${fileName}" to ${zone}`),
     onError: (error) => console.warn(error),
@@ -277,7 +292,7 @@ function ZoneColumn({ zone }: { zone: Zone }) {
 }
 
 // Three-zone layout
-function ZoneLayout() {
+function ZoneLayout({ sessionId }: { sessionId: Id<"sessions"> }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[600px]">
       {ZONES.map((zone) => (
@@ -285,44 +300,69 @@ function ZoneLayout() {
           key={zone}
           className="rounded-lg border border-border bg-card p-4 flex flex-col"
         >
-          <ZoneColumn zone={zone} />
+          <ZoneColumn sessionId={sessionId} zone={zone} />
         </div>
       ))}
     </div>
   )
 }
 
-// Main app layout
-function App() {
-  const { isDark, toggle } = useTheme()
+// No session selected message
+function NoSessionSelected() {
+  const { createSession } = useSession()
+
+  const handleCreate = async () => {
+    await createSession("My First Session")
+  }
 
   return (
-    <DndProvider>
-      <div className="min-h-screen bg-background p-8">
-        <div className="mx-auto max-w-6xl space-y-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-4xl font-bold text-foreground">ContextForge</h1>
-            <Button variant="outline" onClick={toggle}>
-              {isDark ? "Light" : "Dark"}
-            </Button>
-          </div>
-
-          <section className="rounded-lg border border-border bg-card p-6">
-            <h2 className="text-xl font-semibold mb-4">Add New Block</h2>
-            <AddBlockForm />
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold mb-4">Context Zones</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Drag blocks to reorder or move between zones
-            </p>
-            <ZoneLayout />
-          </section>
-        </div>
-      </div>
-    </DndProvider>
+    <div className="text-center py-12">
+      <h2 className="text-xl font-semibold mb-2">No Session Selected</h2>
+      <p className="text-muted-foreground mb-4">
+        Create a session to start managing your context blocks.
+      </p>
+      <Button onClick={handleCreate}>Create Session</Button>
+    </div>
   )
 }
 
-export default App
+// Home page component
+function HomePage() {
+  const { sessionId, isLoading } = useSession()
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">Loading...</div>
+    )
+  }
+
+  if (!sessionId) {
+    return <NoSessionSelected />
+  }
+
+  return (
+    <div className="space-y-6">
+      <section className="rounded-lg border border-border bg-card p-6">
+        <h2 className="text-xl font-semibold mb-4">Add New Block</h2>
+        <AddBlockForm sessionId={sessionId} />
+      </section>
+
+      {/* LLM Generation Panel */}
+      <section>
+        <GeneratePanel sessionId={sessionId} />
+      </section>
+
+      <section>
+        <h2 className="text-xl font-semibold mb-4">Context Zones</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Drag blocks to reorder or move between zones
+        </p>
+        <ZoneLayout sessionId={sessionId} />
+      </section>
+    </div>
+  )
+}
+
+export const Route = createFileRoute("/")({
+  component: HomePage,
+})

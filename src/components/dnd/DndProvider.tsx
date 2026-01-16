@@ -21,6 +21,7 @@ import type { Id } from "../../../convex/_generated/dataModel"
 import { BlockDragOverlay } from "./BlockDragOverlay"
 import { getPositionBetween, getPositionAtEnd } from "../../lib/positioning"
 import type { BlockDragData, Zone, ZoneDropData } from "./types"
+import { useSession } from "../../contexts/SessionContext"
 
 interface DndProviderProps {
   children: React.ReactNode
@@ -30,12 +31,18 @@ export function DndProvider({ children }: DndProviderProps) {
   const [activeBlockId, setActiveBlockId] = useState<Id<"blocks"> | null>(null)
   const [activeBlock, setActiveBlock] = useState<{ content: string; type: string } | null>(null)
 
+  // Get session from context
+  const { sessionId } = useSession()
+
   // Convex mutations
   const moveBlock = useMutation(api.blocks.move)
   const reorderBlock = useMutation(api.blocks.reorder)
 
-  // Query all blocks for position calculations
-  const allBlocks = useQuery(api.blocks.list)
+  // Query all blocks for position calculations (skip if no session)
+  const allBlocks = useQuery(
+    api.blocks.list,
+    sessionId ? { sessionId } : "skip"
+  )
 
   // Configure sensors
   const sensors = useSensors(

@@ -6,6 +6,7 @@ import { useState, useCallback } from "react"
 import { useMutation } from "convex/react"
 import { api } from "../../convex/_generated/api"
 import type { Zone } from "@/components/dnd"
+import type { Id } from "../../convex/_generated/dataModel"
 
 // Supported file extensions
 const SUPPORTED_EXTENSIONS = [".txt", ".md"]
@@ -18,12 +19,13 @@ const ZONE_TO_BLOCK_TYPE: Record<Zone, string> = {
 }
 
 interface UseFileDropOptions {
+  sessionId: Id<"sessions">
   zone: Zone
   onSuccess?: (fileName: string) => void
   onError?: (error: string) => void
 }
 
-export function useFileDrop({ zone, onSuccess, onError }: UseFileDropOptions) {
+export function useFileDrop({ sessionId, zone, onSuccess, onError }: UseFileDropOptions) {
   const [isDragOver, setIsDragOver] = useState(false)
   const createBlock = useMutation(api.blocks.create)
 
@@ -69,6 +71,7 @@ export function useFileDrop({ zone, onSuccess, onError }: UseFileDropOptions) {
           const blockType = ZONE_TO_BLOCK_TYPE[zone]
 
           await createBlock({
+            sessionId,
             content,
             type: blockType,
             zone,
@@ -80,7 +83,7 @@ export function useFileDrop({ zone, onSuccess, onError }: UseFileDropOptions) {
         }
       }
     },
-    [zone, createBlock, isValidFile, onSuccess, onError]
+    [sessionId, zone, createBlock, isValidFile, onSuccess, onError]
   )
 
   return {

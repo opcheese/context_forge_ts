@@ -9,8 +9,14 @@
  */
 
 import type * as blocks from "../blocks.js";
+import type * as claudeNode from "../claudeNode.js";
 import type * as counters from "../counters.js";
+import type * as generations from "../generations.js";
 import type * as http from "../http.js";
+import type * as lib_context from "../lib/context.js";
+import type * as lib_ollama from "../lib/ollama.js";
+import type * as sessions from "../sessions.js";
+import type * as snapshots from "../snapshots.js";
 import type * as testing from "../testing.js";
 
 import type {
@@ -21,8 +27,14 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   blocks: typeof blocks;
+  claudeNode: typeof claudeNode;
   counters: typeof counters;
+  generations: typeof generations;
   http: typeof http;
+  "lib/context": typeof lib_context;
+  "lib/ollama": typeof lib_ollama;
+  sessions: typeof sessions;
+  snapshots: typeof snapshots;
   testing: typeof testing;
 }>;
 

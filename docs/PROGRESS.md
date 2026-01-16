@@ -428,6 +428,145 @@ pnpm build          # ✓ Builds successfully
 - Visual feedback (ghost overlay, drop zone highlighting)
 - Keyboard accessibility
 
-### Next: Slice 4 - Block Editor
+---
 
-Adding TanStack Router with block editing page.
+## Session 6: Slice 4 - Block Editor
+
+### Accomplishments
+
+#### TanStack Router Setup
+- [x] Configured file-based routing with TanStack Router
+- [x] Created route tree (`src/routeTree.gen.ts`)
+- [x] Set up routes: `/` (home), `/blocks/$blockId` (editor)
+- [x] Replaced App.tsx with router-based layout
+
+#### Block Editor Page
+- [x] Created BlockEditor component at `/blocks/:id`
+- [x] Edit content with auto-resizing textarea
+- [x] Change block type via dropdown
+- [x] Save/Cancel buttons
+- [x] Navigate back to zones view
+
+#### Convex Functions
+- [x] `blocks.update` - Update content and type
+- [x] Proper index usage for efficient queries
+
+---
+
+## Session 7: Slice 4.5 - Sessions
+
+### Accomplishments
+
+#### Session Management
+- [x] Created sessions schema with name, createdAt, updatedAt
+- [x] Updated blocks schema to require `sessionId`
+- [x] Added indexes: `by_session`, `by_session_zone`
+- [x] Created session CRUD functions
+
+#### Convex Functions
+- [x] `sessions.create` - Create new session
+- [x] `sessions.list` - List all sessions
+- [x] `sessions.get` - Get session by ID
+- [x] `sessions.rename` - Rename session
+- [x] `sessions.remove` - Delete session (cascades blocks/snapshots)
+- [x] Updated all block functions to require sessionId
+
+#### Snapshots
+- [x] Created snapshots schema for state save/restore
+- [x] `snapshots.create` - Serialize current blocks
+- [x] `snapshots.list` - List session snapshots
+- [x] `snapshots.restore` - Restore blocks from snapshot
+- [x] `snapshots.remove` - Delete snapshot
+
+#### UI
+- [x] Session selector in header
+- [x] Create new session button
+- [x] Session context provider
+- [x] All queries/mutations use current session
+
+---
+
+## Session 8: Slice 5 - LLM Integration
+
+### Accomplishments
+
+#### Ollama Integration
+- [x] Created `convex/lib/ollama.ts` - Streaming client for local Ollama
+- [x] HTTP streaming endpoint `/api/chat`
+- [x] Real-time text streaming via Server-Sent Events
+- [x] Auto-save generated content to WORKING zone
+
+#### Claude Code Integration
+- [x] Created `convex/claudeNode.ts` - Node.js action for Claude Agent SDK
+- [x] Discovered SDK wraps events in `SDKPartialAssistantMessage`
+- [x] Fixed streaming by checking `type: 'stream_event'` then `event.type`
+- [x] `includePartialMessages: true` enables token-level streaming
+- [x] Created `convex/generations.ts` for tracking generation state
+
+#### Context Assembly
+- [x] Created `convex/lib/context.ts`
+- [x] Zone ordering: PERMANENT → STABLE → WORKING → prompt
+- [x] System prompt handling
+- [x] Message formatting for LLM APIs
+
+#### Convex Streaming Pattern (Key Finding)
+Convex actions cannot stream HTTP responses directly. Solution:
+1. Mutation creates generation record, returns ID, schedules action
+2. Action streams text to database via `ctx.runMutation(internal.appendChunk, ...)`
+3. Client subscribes via `useQuery(api.generations.get, { generationId })`
+4. React effect detects text changes and triggers `onChunk` callbacks
+
+#### UI
+- [x] GeneratePanel component with prompt input
+- [x] Provider selector (Ollama/Claude Code)
+- [x] Real-time streaming display
+- [x] Stop button for cancellation
+- [x] Provider health indicators
+
+#### Hooks
+- [x] `useGenerate.ts` - Ollama HTTP streaming
+- [x] `useClaudeGenerate.ts` - Convex reactive queries
+
+### Decisions Made
+
+#### 12. Claude Code Streaming Architecture
+
+**Decision:** Use Convex reactive queries instead of HTTP streaming for Claude Code.
+
+**Rationale:**
+- Claude Agent SDK is a Node.js library, requires `"use node"` action
+- Convex actions cannot return streaming HTTP responses
+- Convex's real-time subscription is naturally suited for this
+- Database acts as streaming buffer, client subscribes to updates
+
+**Trade-off:**
+- More database writes (one per chunk batch)
+- Slight latency vs. direct streaming (~50ms throttle)
+- But: Works reliably, leverages Convex strengths
+
+#### 13. Stream Event Handling
+
+**Key Discovery:** The Claude Agent SDK's `query()` function with `includePartialMessages: true` yields `SDKPartialAssistantMessage` objects with:
+- `type: 'stream_event'`
+- `event: BetaRawMessageStreamEvent` (contains actual `content_block_delta`)
+
+The Python SDK's `ClaudeSDKClient.receive_messages()` yields similar `StreamEvent` objects. The TypeScript equivalent is checking for `message.type === 'stream_event'` then accessing `message.event`.
+
+### Current State
+
+```bash
+pnpm lint           # ✓ Passes
+pnpm build          # ✓ Builds successfully
+```
+
+**Working features:**
+- Ollama streaming generation (local LLM)
+- Claude Code streaming generation (subscription)
+- Context assembly from zones
+- Auto-save to WORKING zone
+- Real-time streaming display
+- Provider health checks
+
+### Next: Slice 5.5 - Token Counting & Zone Budgets
+
+See [TOKEN_BUDGETS_PLAN.md](./TOKEN_BUDGETS_PLAN.md) for implementation plan.

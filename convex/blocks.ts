@@ -1,5 +1,6 @@
 import { query, mutation, internalQuery, internalMutation } from "./_generated/server"
 import { v } from "convex/values"
+import type { Id } from "./_generated/dataModel"
 
 // Zone type for validation
 const zoneValidator = v.union(
@@ -26,14 +27,15 @@ export const removeInternal = internalMutation({
   },
 })
 
-// Internal: get next position for a zone
+// Internal: get next position for a zone within a session
 async function getNextPosition(
-  ctx: { db: { query: (table: "blocks") => { withIndex: (index: string, q: (q: { eq: (field: string, value: string) => unknown }) => unknown) => { collect: () => Promise<Array<{ position: number }>> } } } },
+  ctx: { db: { query: (table: "blocks") => { withIndex: (index: string, q: (q: { eq: (field: string, value: unknown) => { eq: (field: string, value: unknown) => unknown } }) => unknown) => { collect: () => Promise<Array<{ position: number }>> } } } },
+  sessionId: Id<"sessions">,
   zone: string
 ): Promise<number> {
   const blocks = await ctx.db
     .query("blocks")
-    .withIndex("by_zone", (q) => q.eq("zone", zone))
+    .withIndex("by_session_zone", (q) => q.eq("sessionId", sessionId).eq("zone", zone))
     .collect()
   if (blocks.length === 0) return 0
   return Math.max(...blocks.map((b) => b.position)) + 1
@@ -41,21 +43,30 @@ async function getNextPosition(
 
 // ============ Public functions ============
 
-// List all blocks, ordered by creation time (newest first)
+// List all blocks for a session, ordered by creation time (newest first)
 export const list = query({
-  args: {},
-  handler: async (ctx) => {
-    return await ctx.db.query("blocks").order("desc").collect()
-  },
-})
-
-// List blocks by zone, ordered by position
-export const listByZone = query({
-  args: { zone: zoneValidator },
+  args: { sessionId: v.id("sessions") },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("blocks")
-      .withIndex("by_zone", (q) => q.eq("zone", args.zone))
+      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .order("desc")
+      .collect()
+  },
+})
+
+// List blocks by session and zone, ordered by position
+export const listByZone = query({
+  args: {
+    sessionId: v.id("sessions"),
+    zone: zoneValidator,
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("blocks")
+      .withIndex("by_session_zone", (q) =>
+        q.eq("sessionId", args.sessionId).eq("zone", args.zone)
+      )
       .collect()
   },
 })
@@ -68,19 +79,29 @@ export const get = query({
   },
 })
 
-// Create a new block
+// Create a new block in a session
 export const create = mutation({
   args: {
+    sessionId: v.id("sessions"),
     content: v.string(),
     type: v.string(),
     zone: v.optional(zoneValidator),
     testData: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    // Verify session exists
+    const session = await ctx.db.get(args.sessionId)
+    if (!session) throw new Error("Session not found")
+
     const zone = args.zone ?? "WORKING" // Default to WORKING zone
-    const position = await getNextPosition(ctx, zone)
+    const position = await getNextPosition(ctx, args.sessionId, zone)
     const now = Date.now()
+
+    // Update session's updatedAt
+    await ctx.db.patch(args.sessionId, { updatedAt: now })
+
     return await ctx.db.insert("blocks", {
+      sessionId: args.sessionId,
       content: args.content,
       type: args.type,
       zone,
@@ -106,13 +127,17 @@ export const move = mutation({
     if (block.zone === args.zone) return block._id
 
     // Get next position in target zone
-    const position = await getNextPosition(ctx, args.zone)
+    const position = await getNextPosition(ctx, block.sessionId, args.zone)
+    const now = Date.now()
 
     await ctx.db.patch(args.id, {
       zone: args.zone,
       position,
-      updatedAt: Date.now(),
+      updatedAt: now,
     })
+
+    // Update session's updatedAt
+    await ctx.db.patch(block.sessionId, { updatedAt: now })
 
     return args.id
   },
@@ -129,11 +154,48 @@ export const reorder = mutation({
     const block = await ctx.db.get(args.id)
     if (!block) throw new Error("Block not found")
 
+    const now = Date.now()
+
     // Simply update the block's position (fractional ordering)
     await ctx.db.patch(args.id, {
       position: args.newPosition,
-      updatedAt: Date.now(),
+      updatedAt: now,
     })
+
+    // Update session's updatedAt
+    await ctx.db.patch(block.sessionId, { updatedAt: now })
+
+    return args.id
+  },
+})
+
+// Update a block's content and/or type
+export const update = mutation({
+  args: {
+    id: v.id("blocks"),
+    content: v.optional(v.string()),
+    type: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const block = await ctx.db.get(args.id)
+    if (!block) throw new Error("Block not found")
+
+    const now = Date.now()
+    const updates: { content?: string; type?: string; updatedAt: number } = {
+      updatedAt: now,
+    }
+
+    if (args.content !== undefined) {
+      updates.content = args.content
+    }
+    if (args.type !== undefined) {
+      updates.type = args.type
+    }
+
+    await ctx.db.patch(args.id, updates)
+
+    // Update session's updatedAt
+    await ctx.db.patch(block.sessionId, { updatedAt: now })
 
     return args.id
   },
@@ -143,6 +205,11 @@ export const reorder = mutation({
 export const remove = mutation({
   args: { id: v.id("blocks") },
   handler: async (ctx, args) => {
+    const block = await ctx.db.get(args.id)
+    if (block) {
+      // Update session's updatedAt before deleting
+      await ctx.db.patch(block.sessionId, { updatedAt: Date.now() })
+    }
     await ctx.db.delete(args.id)
   },
 })
