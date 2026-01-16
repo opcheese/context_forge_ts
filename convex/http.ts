@@ -52,11 +52,16 @@ http.route({
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     const body = await request.json()
-    const { content, type } = body as { content: string; type: string }
+    const { content, type, zone } = body as {
+      content: string
+      type: string
+      zone?: "PERMANENT" | "STABLE" | "WORKING"
+    }
 
     const id = await ctx.runMutation(api.blocks.create, {
       content,
       type,
+      zone,
       testData: true,
     })
 

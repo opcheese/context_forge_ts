@@ -15,11 +15,15 @@ async function resetTestData() {
 }
 
 // Helper to create a test block via API (automatically marked as testData)
-async function createTestBlock(content: string, type: string = "NOTE") {
+async function createTestBlock(
+  content: string,
+  type: string = "NOTE",
+  zone: "PERMANENT" | "STABLE" | "WORKING" = "WORKING"
+) {
   const response = await fetch(`${CONVEX_SITE_URL}/testing/blocks`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content, type }),
+    body: JSON.stringify({ content, type, zone }),
   })
   if (!response.ok) {
     throw new Error(`Failed to create test block: ${await response.text()}`)
@@ -55,11 +59,16 @@ test.describe.serial("Blocks", () => {
     await resetTestData()
   })
 
-  test("should display blocks section", async ({ page }) => {
+  test("should display zone layout", async ({ page }) => {
     await page.goto("/")
 
-    await expect(page.locator("h2")).toContainText("Blocks")
-    await expect(page.locator("text=Add New Block")).toBeVisible()
+    // Check for zone headers
+    await expect(page.locator("h3:has-text('Permanent')")).toBeVisible()
+    await expect(page.locator("h3:has-text('Stable')")).toBeVisible()
+    await expect(page.locator("h3:has-text('Working')")).toBeVisible()
+
+    // Check for Add New Block section
+    await expect(page.locator("h2:has-text('Add New Block')")).toBeVisible()
   })
 
   test("should create a new block via UI", async ({ page }) => {
@@ -67,12 +76,13 @@ test.describe.serial("Blocks", () => {
 
     // Fill in the form (prefix with "E2E Test:" so reset cleans it up)
     await page.selectOption("#block-type", "ASSISTANT")
+    await page.selectOption("#block-zone", "WORKING")
     await page.fill("#block-content", "E2E Test: UI created block")
 
     // Submit
     await page.getByRole("button", { name: "Add Block" }).click()
 
-    // Wait for block to appear
+    // Wait for block to appear in the Working zone
     await expect(
       page.locator("text=E2E Test: UI created block")
     ).toBeVisible({
@@ -83,21 +93,54 @@ test.describe.serial("Blocks", () => {
     await expect(page.locator("span:has-text('ASSISTANT')")).toBeVisible()
   })
 
-  test("should delete a block", async ({ page }) => {
-    // Create a test block via API first
-    await createTestBlock("E2E Test: Block to delete", "NOTE")
+  test("should move a block between zones", async ({ page }) => {
+    // Create a test block in WORKING zone
+    await createTestBlock("E2E Test: Block to move", "NOTE", "WORKING")
 
     await page.goto("/")
 
     // Wait for block to appear
-    await expect(
-      page.locator("text=E2E Test: Block to delete")
-    ).toBeVisible({
+    await expect(page.locator("text=E2E Test: Block to move")).toBeVisible({
       timeout: 5000,
     })
 
-    // Delete it
-    await page.getByRole("button", { name: "Delete" }).first().click()
+    // Find the block card and click move to Permanent
+    const blockCard = page
+      .locator(".rounded-lg.border.border-border.bg-card.p-3")
+      .filter({ hasText: "E2E Test: Block to move" })
+    await blockCard.getByRole("button", { name: "→ Permanent" }).click()
+
+    // Block should now be in Permanent zone - wait for the move
+    await page.waitForTimeout(500)
+
+    // The block should still be visible
+    await expect(page.locator("text=E2E Test: Block to move")).toBeVisible()
+
+    // It should now have buttons for Stable and Working (not Permanent)
+    await expect(
+      blockCard.getByRole("button", { name: "→ Stable" })
+    ).toBeVisible()
+    await expect(
+      blockCard.getByRole("button", { name: "→ Working" })
+    ).toBeVisible()
+  })
+
+  test("should delete a block", async ({ page }) => {
+    // Create a test block via API first
+    await createTestBlock("E2E Test: Block to delete", "NOTE", "WORKING")
+
+    await page.goto("/")
+
+    // Wait for block to appear
+    await expect(page.locator("text=E2E Test: Block to delete")).toBeVisible({
+      timeout: 5000,
+    })
+
+    // Find the block card and delete it
+    const blockCard = page
+      .locator(".rounded-lg.border.border-border.bg-card.p-3")
+      .filter({ hasText: "E2E Test: Block to delete" })
+    await blockCard.getByRole("button", { name: "Delete" }).click()
 
     // Block should be gone
     await expect(
@@ -107,39 +150,24 @@ test.describe.serial("Blocks", () => {
     })
   })
 
-  test("should show empty state when no blocks", async ({ page }) => {
-    // Reset ensures no test blocks exist
-    await page.goto("/")
-
-    // Wait a moment for Convex to sync
-    await page.waitForTimeout(500)
-
-    const emptyState = page.locator("text=No blocks yet")
-    const blockCount = page.locator("text=/\\d+ blocks/")
-
-    // Either empty state or block count should be visible
-    // (there might be non-test blocks from manual testing)
-    await expect(emptyState.or(blockCount)).toBeVisible()
-  })
-
-  test("should display multiple blocks in order", async ({ page }) => {
-    // Create multiple test blocks
-    await createTestBlock("E2E Test: First block", "NOTE")
-    await createTestBlock("E2E Test: Second block", "CODE")
-    await createTestBlock("E2E Test: Third block", "USER")
+  test("should create blocks in different zones", async ({ page }) => {
+    // Create blocks in different zones via API
+    await createTestBlock("E2E Test: Permanent block", "SYSTEM", "PERMANENT")
+    await createTestBlock("E2E Test: Stable block", "CODE", "STABLE")
+    await createTestBlock("E2E Test: Working block", "NOTE", "WORKING")
 
     await page.goto("/")
 
     // All blocks should be visible
-    await expect(page.locator("text=E2E Test: First block")).toBeVisible({
+    await expect(page.locator("text=E2E Test: Permanent block")).toBeVisible({
       timeout: 5000,
     })
-    await expect(page.locator("text=E2E Test: Second block")).toBeVisible()
-    await expect(page.locator("text=E2E Test: Third block")).toBeVisible()
+    await expect(page.locator("text=E2E Test: Stable block")).toBeVisible()
+    await expect(page.locator("text=E2E Test: Working block")).toBeVisible()
 
-    // Check types are displayed
-    await expect(page.locator("span:has-text('NOTE')")).toBeVisible()
-    await expect(page.locator("span:has-text('CODE')")).toBeVisible()
-    await expect(page.locator("span:has-text('USER')")).toBeVisible()
+    // Check types are displayed (use first() since there may be multiple)
+    await expect(page.locator("span:has-text('SYSTEM')").first()).toBeVisible()
+    await expect(page.locator("span:has-text('CODE')").first()).toBeVisible()
+    await expect(page.locator("span:has-text('NOTE')").first()).toBeVisible()
   })
 })

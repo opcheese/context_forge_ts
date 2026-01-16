@@ -4,6 +4,26 @@ import { api } from "../convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import type { Id } from "../convex/_generated/dataModel"
 
+// Zone types
+const ZONES = ["PERMANENT", "STABLE", "WORKING"] as const
+type Zone = (typeof ZONES)[number]
+
+// Zone display info
+const ZONE_INFO: Record<Zone, { label: string; description: string }> = {
+  PERMANENT: {
+    label: "Permanent",
+    description: "Always included in context",
+  },
+  STABLE: {
+    label: "Stable",
+    description: "Included when relevant",
+  },
+  WORKING: {
+    label: "Working",
+    description: "Temporary/draft content",
+  },
+}
+
 // Simple theme toggle hook
 function useTheme() {
   const [isDark, setIsDark] = useState(() =>
@@ -21,44 +41,67 @@ function useTheme() {
   return { isDark, toggle: () => setIsDark(!isDark) }
 }
 
-// Block type options (simple for now)
+// Block type options
 const BLOCK_TYPES = ["NOTE", "CODE", "SYSTEM", "USER", "ASSISTANT"] as const
 
 // Add block form
-function AddBlockForm() {
+function AddBlockForm({ defaultZone = "WORKING" }: { defaultZone?: Zone }) {
   const [content, setContent] = useState("")
   const [type, setType] = useState<string>("NOTE")
+  const [zone, setZone] = useState<Zone>(defaultZone)
   const createBlock = useMutation(api.blocks.create)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!content.trim()) return
 
-    await createBlock({ content: content.trim(), type })
+    await createBlock({ content: content.trim(), type, zone })
     setContent("")
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <div>
-        <label
-          htmlFor="block-type"
-          className="block text-sm font-medium mb-1 text-foreground"
-        >
-          Type
-        </label>
-        <select
-          id="block-type"
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-        >
-          {BLOCK_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label
+            htmlFor="block-type"
+            className="block text-sm font-medium mb-1 text-foreground"
+          >
+            Type
+          </label>
+          <select
+            id="block-type"
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            {BLOCK_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label
+            htmlFor="block-zone"
+            className="block text-sm font-medium mb-1 text-foreground"
+          >
+            Zone
+          </label>
+          <select
+            id="block-zone"
+            value={zone}
+            onChange={(e) => setZone(e.target.value as Zone)}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            {ZONES.map((z) => (
+              <option key={z} value={z}>
+                {ZONE_INFO[z].label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
       <div>
         <label
@@ -88,43 +131,62 @@ function BlockCard({
   id,
   content,
   type,
+  zone,
   createdAt,
 }: {
   id: Id<"blocks">
   content: string
   type: string
+  zone: Zone
   createdAt: number
 }) {
   const removeBlock = useMutation(api.blocks.remove)
+  const moveBlock = useMutation(api.blocks.move)
 
   const handleDelete = async () => {
     await removeBlock({ id })
   }
 
+  const handleMove = async (targetZone: Zone) => {
+    await moveBlock({ id, zone: targetZone })
+  }
+
   const timeAgo = formatTimeAgo(createdAt)
+  const otherZones = ZONES.filter((z) => z !== zone)
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-              {type}
-            </span>
-            <span className="text-xs text-muted-foreground">{timeAgo}</span>
-          </div>
-          <p className="text-sm text-foreground whitespace-pre-wrap break-words">
-            {content}
-          </p>
+    <div className="rounded-lg border border-border bg-card p-3">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
+            {type}
+          </span>
+          <span className="text-xs text-muted-foreground">{timeAgo}</span>
         </div>
         <Button
           variant="ghost"
           size="sm"
           onClick={handleDelete}
-          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          className="h-6 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
         >
           Delete
         </Button>
+      </div>
+      <p className="text-sm text-foreground whitespace-pre-wrap break-words mb-2">
+        {content}
+      </p>
+      <div className="flex gap-1">
+        {otherZones.map((z) => (
+          <Button
+            key={z}
+            variant="outline"
+            size="sm"
+            onClick={() => handleMove(z)}
+            className="h-6 px-2 text-xs"
+          >
+            → {ZONE_INFO[z].label}
+          </Button>
+        ))}
       </div>
     </div>
   )
@@ -140,65 +202,59 @@ function formatTimeAgo(timestamp: number): string {
   return `${Math.floor(seconds / 86400)}d ago`
 }
 
-// Block list
-function BlockList() {
-  const blocks = useQuery(api.blocks.list)
-
-  if (blocks === undefined) {
-    return <div className="text-muted-foreground">Loading...</div>
-  }
-
-  if (blocks.length === 0) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
-        No blocks yet. Add one above!
-      </div>
-    )
-  }
+// Zone column
+function ZoneColumn({ zone }: { zone: Zone }) {
+  const blocks = useQuery(api.blocks.listByZone, { zone })
+  const info = ZONE_INFO[zone]
 
   return (
-    <div className="space-y-3">
-      {blocks.map((block) => (
-        <BlockCard
-          key={block._id}
-          id={block._id}
-          content={block.content}
-          type={block.type}
-          createdAt={block.createdAt}
-        />
-      ))}
+    <div className="flex flex-col h-full">
+      <div className="mb-3">
+        <h3 className="text-lg font-semibold">{info.label}</h3>
+        <p className="text-xs text-muted-foreground">{info.description}</p>
+      </div>
+
+      <div className="flex-1 space-y-2 overflow-auto">
+        {blocks === undefined ? (
+          <div className="text-sm text-muted-foreground">Loading...</div>
+        ) : blocks.length === 0 ? (
+          <div className="text-sm text-muted-foreground text-center py-4 border border-dashed border-border rounded-lg">
+            No blocks
+          </div>
+        ) : (
+          blocks.map((block) => (
+            <BlockCard
+              key={block._id}
+              id={block._id}
+              content={block.content}
+              type={block.type}
+              zone={block.zone}
+              createdAt={block.createdAt}
+            />
+          ))
+        )}
+      </div>
+
+      <div className="mt-3 text-xs text-muted-foreground text-center">
+        {blocks?.length ?? 0} blocks
+      </div>
     </div>
   )
 }
 
-// Main blocks demo
-function BlocksDemo() {
-  const blocks = useQuery(api.blocks.list)
-
+// Three-zone layout
+function ZoneLayout() {
   return (
-    <section className="rounded-lg border border-border bg-card p-6 space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold">Blocks</h2>
-        <p className="text-muted-foreground mt-1">
-          Create and manage content blocks. Real-time sync with Convex.
-        </p>
-      </div>
-
-      <div className="border-t border-border pt-6">
-        <h3 className="text-lg font-medium mb-3">Add New Block</h3>
-        <AddBlockForm />
-      </div>
-
-      <div className="border-t border-border pt-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-medium">All Blocks</h3>
-          <span className="text-sm text-muted-foreground">
-            {blocks?.length ?? 0} blocks
-          </span>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[600px]">
+      {ZONES.map((zone) => (
+        <div
+          key={zone}
+          className="rounded-lg border border-border bg-card p-4 flex flex-col"
+        >
+          <ZoneColumn zone={zone} />
         </div>
-        <BlockList />
-      </div>
-    </section>
+      ))}
+    </div>
   )
 }
 
@@ -208,17 +264,23 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background p-8">
-      <div className="mx-auto max-w-2xl space-y-8">
+      <div className="mx-auto max-w-6xl space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-4xl font-bold text-foreground">
-            ContextForge
-          </h1>
+          <h1 className="text-4xl font-bold text-foreground">ContextForge</h1>
           <Button variant="outline" onClick={toggle}>
             {isDark ? "Light" : "Dark"}
           </Button>
         </div>
 
-        <BlocksDemo />
+        <section className="rounded-lg border border-border bg-card p-6">
+          <h2 className="text-xl font-semibold mb-4">Add New Block</h2>
+          <AddBlockForm />
+        </section>
+
+        <section>
+          <h2 className="text-xl font-semibold mb-4">Context Zones</h2>
+          <ZoneLayout />
+        </section>
       </div>
     </div>
   )

@@ -300,6 +300,52 @@ pnpm build          # ✓ Builds successfully
 - E2E tests with proper isolation
 - Dark/light theme toggle
 
-### Next: Slice 2 - Zones
+---
 
-Adding zones to organize blocks into PERMANENT, STABLE, WORKING categories.
+## Session 4: Slice 2 - Zones
+
+### Accomplishments
+
+#### Schema Updates
+- [x] Added `zone` field with union type (PERMANENT, STABLE, WORKING)
+- [x] Added `position` field for ordering within zones
+- [x] Added `by_zone` index for efficient zone queries
+
+#### Convex Functions
+- [x] `listByZone` - Query blocks by zone, ordered by position
+- [x] `move` - Move block to different zone (auto-assigns position)
+- [x] `reorder` - Change position within zone (shifts other blocks)
+- [x] Updated `create` to accept zone (defaults to WORKING)
+
+#### UI
+- [x] Three-column zone layout (Permanent, Stable, Working)
+- [x] Zone headers with descriptions
+- [x] Move buttons on each block (→ Permanent, → Stable, → Working)
+- [x] Block count per zone
+- [x] Zone selector in Add Block form
+
+#### Tests
+- [x] Updated E2E tests for zone-based layout
+- [x] Test for moving blocks between zones
+- [x] Test for creating blocks in different zones
+- [x] Updated HTTP endpoint to support zone parameter
+
+### Current State
+
+```bash
+pnpm lint           # ✓ Passes
+pnpm test:run       # ✓ Passes
+pnpm playwright test # ✓ 6 tests pass
+pnpm build          # ✓ Builds successfully
+```
+
+**Working features:**
+- Block CRUD with zone assignment
+- Three-column zone layout
+- Move blocks between zones via buttons
+- Real-time sync across all zones
+- E2E tests with proper isolation
+
+### Next: Slice 3 - Drag and Drop
+
+Adding drag-and-drop to move blocks between zones and reorder within zones.

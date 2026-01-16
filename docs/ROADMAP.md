@@ -64,20 +64,20 @@ blocks: defineTable({
 ```
 
 ### Convex Functions
-- [ ] `blocks.listByZone` - Get blocks for a zone
-- [ ] `blocks.move` - Move block to different zone
-- [ ] `blocks.reorder` - Change position within zone
-- [ ] Update `create` to accept zone
+- [x] `blocks.listByZone` - Get blocks for a zone
+- [x] `blocks.move` - Move block to different zone
+- [x] `blocks.reorder` - Change position within zone
+- [x] Update `create` to accept zone
 
 ### UI
-- [ ] Three-column zone layout
-- [ ] Zone headers (name only, no token count yet)
-- [ ] Blocks grouped by zone
-- [ ] Move block dropdown/buttons
+- [x] Three-column zone layout
+- [x] Zone headers (name only, no token count yet)
+- [x] Blocks grouped by zone
+- [x] Move block dropdown/buttons
 
 ### Tests
-- [ ] Zone filtering tests
-- [ ] Move/reorder tests
+- [x] Zone filtering tests
+- [x] Move/reorder tests
 
 ---
 
@@ -192,8 +192,8 @@ blocks: defineTable({
 |-------|--------|-------|
 | 0. Project Setup | ✅ Done | Counter demo working |
 | 1. Basic Blocks | ✅ Done | CRUD + E2E test isolation |
-| 2. Zones | 🔜 Next | - |
-| 3. Drag and Drop | Planned | - |
+| 2. Zones | ✅ Done | Three-column layout + move |
+| 3. Drag and Drop | 🔜 Next | - |
 | 4. Block Editor | Planned | - |
 | 5. LLM + Tokens | Planned | Token counting integration test |
 | 6. Polish | Planned | - |
