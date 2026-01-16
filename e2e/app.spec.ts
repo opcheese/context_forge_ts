@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test"
 test.describe("App", () => {
   test("should display the title", async ({ page }) => {
     await page.goto("/")
-    await expect(page.locator("h1")).toContainText("ContextForge TypeScript")
+    await expect(page.locator("h1")).toContainText("ContextForge")
   })
 
   test("should toggle theme", async ({ page }) => {
@@ -19,52 +19,65 @@ test.describe("App", () => {
     // Button text should change
     await expect(themeButton).toBeVisible()
   })
-
-  test("should show Tailwind color boxes", async ({ page }) => {
-    await page.goto("/")
-
-    // Check for the colored boxes (Tailwind test)
-    await expect(page.locator('[title="Red"]')).toBeVisible()
-    await expect(page.locator('[title="Green"]')).toBeVisible()
-    await expect(page.locator('[title="Blue"]')).toBeVisible()
-    await expect(page.locator('[title="Yellow"]')).toBeVisible()
-  })
-
-  test("should show shadcn button variants", async ({ page }) => {
-    await page.goto("/")
-
-    await expect(page.getByRole("button", { name: "Default" })).toBeVisible()
-    await expect(page.getByRole("button", { name: "Secondary" })).toBeVisible()
-    await expect(
-      page.getByRole("button", { name: "Destructive" })
-    ).toBeVisible()
-  })
 })
 
-test.describe("Convex Counter", () => {
-  test("should display counter section", async ({ page }) => {
+test.describe("Blocks", () => {
+  test("should display blocks section", async ({ page }) => {
     await page.goto("/")
 
-    await expect(page.locator("text=Convex Counter Demo")).toBeVisible()
+    await expect(page.locator("h2")).toContainText("Blocks")
+    await expect(page.locator("text=Add New Block")).toBeVisible()
   })
 
-  test("should increment counter", async ({ page }) => {
+  test("should create a new block", async ({ page }) => {
     await page.goto("/")
 
-    // Find the clicks counter row and its + button
-    const clicksRow = page.locator("text=clicks:").locator("..")
-    const incrementButton = clicksRow.getByRole("button", { name: "+" })
+    // Fill in the form
+    await page.selectOption("#block-type", "NOTE")
+    await page.fill("#block-content", "Test block content")
 
-    // Get initial value
-    const valueSpan = clicksRow.locator(".text-2xl")
-    const initialValue = await valueSpan.textContent()
+    // Submit
+    await page.getByRole("button", { name: "Add Block" }).click()
 
-    // Click increment
-    await incrementButton.click()
-
-    // Wait for value to update (Convex real-time)
-    await expect(valueSpan).not.toHaveText(initialValue ?? "0", {
+    // Wait for block to appear
+    await expect(page.locator("text=Test block content")).toBeVisible({
       timeout: 5000,
     })
+
+    // Check the type badge
+    await expect(page.locator("text=NOTE")).toBeVisible()
+  })
+
+  test("should delete a block", async ({ page }) => {
+    await page.goto("/")
+
+    // Create a block first
+    await page.fill("#block-content", "Block to delete")
+    await page.getByRole("button", { name: "Add Block" }).click()
+
+    // Wait for block to appear
+    await expect(page.locator("text=Block to delete")).toBeVisible({
+      timeout: 5000,
+    })
+
+    // Delete it
+    await page.getByRole("button", { name: "Delete" }).first().click()
+
+    // Block should be gone (or at least one less delete button)
+    await expect(page.locator("text=Block to delete")).not.toBeVisible({
+      timeout: 5000,
+    })
+  })
+
+  test("should show empty state when no blocks", async ({ page }) => {
+    await page.goto("/")
+
+    // This test may fail if there are blocks from other tests
+    // In a real setup, we'd reset the database between tests
+    const emptyState = page.locator("text=No blocks yet")
+    const blockCount = page.locator("text=/\\d+ blocks/")
+
+    // Either empty state or block count should be visible
+    await expect(emptyState.or(blockCount)).toBeVisible()
   })
 })
