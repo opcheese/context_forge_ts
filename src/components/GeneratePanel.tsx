@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { useGenerate, type Provider } from "@/hooks/useGenerate"
+import { useGenerate } from "@/hooks/useGenerate"
 import { useClaudeGenerate } from "@/hooks/useClaudeGenerate"
 import type { Id } from "../../convex/_generated/dataModel"
+
+type Provider = "ollama" | "claude"
 
 interface GeneratePanelProps {
   sessionId: Id<"sessions">
@@ -99,7 +101,6 @@ export function GeneratePanel({ sessionId }: GeneratePanelProps) {
   // Use Ollama hook (HTTP streaming)
   const ollamaHook = useGenerate({
     sessionId,
-    provider: "ollama",
     onComplete: () => {
       setPrompt("") // Clear prompt on success
     },

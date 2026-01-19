@@ -1,13 +1,6 @@
 import { query, mutation } from "./_generated/server"
 import { v } from "convex/values"
 
-// Zone validator (must match schema)
-const zoneValidator = v.union(
-  v.literal("PERMANENT"),
-  v.literal("STABLE"),
-  v.literal("WORKING")
-)
-
 // ============ Queries ============
 
 // List all snapshots for a session

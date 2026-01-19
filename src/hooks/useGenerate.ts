@@ -1,11 +1,8 @@
 import { useState, useCallback, useRef } from "react"
 import type { Id } from "../../convex/_generated/dataModel"
 
-export type Provider = "ollama" | "claude"
-
 interface UseGenerateOptions {
   sessionId: Id<"sessions">
-  provider?: Provider
   onChunk?: (chunk: string) => void
   onComplete?: (fullText: string) => void
   onError?: (error: string) => void
@@ -30,15 +27,17 @@ function getChatApiUrl(): string {
 }
 
 /**
- * Hook for streaming LLM generation.
+ * Hook for Ollama streaming generation.
  *
  * Calls the Convex HTTP action at /api/chat which:
  * 1. Assembles context from session blocks (respecting zone order)
- * 2. Streams response from the selected provider (Ollama or Claude)
+ * 2. Streams response from Ollama via SSE
  * 3. Auto-saves the result to WORKING zone
+ *
+ * For Claude, use useClaudeGenerate instead (Convex reactive streaming).
  */
 export function useGenerate(options: UseGenerateOptions): UseGenerateResult {
-  const { sessionId, provider = "ollama", onChunk, onComplete, onError } = options
+  const { sessionId, onChunk, onComplete, onError } = options
   const [isGenerating, setIsGenerating] = useState(false)
   const [streamedText, setStreamedText] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -62,7 +61,7 @@ export function useGenerate(options: UseGenerateOptions): UseGenerateResult {
         const response = await fetch(getChatApiUrl(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId, prompt, systemPrompt, provider }),
+          body: JSON.stringify({ sessionId, prompt, systemPrompt }),
           signal: abortControllerRef.current.signal,
         })
 
@@ -138,7 +137,7 @@ export function useGenerate(options: UseGenerateOptions): UseGenerateResult {
         abortControllerRef.current = null
       }
     },
-    [sessionId, provider, onChunk, onComplete, onError]
+    [sessionId, onChunk, onComplete, onError]
   )
 
   return { generate, isGenerating, streamedText, error, stop }

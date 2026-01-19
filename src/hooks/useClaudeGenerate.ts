@@ -51,7 +51,9 @@ export function useClaudeGenerate(
     generationId ? { generationId } : "skip"
   )
 
-  // Handle generation updates
+  // Sync Convex reactive data to local state for streaming UI updates.
+  // This is an intentional pattern: we're syncing external state (Convex query)
+  // to local state to provide chunk-by-chunk callbacks and stable text reference.
   useEffect(() => {
     if (!generation) return
 
@@ -63,11 +65,14 @@ export function useClaudeGenerate(
         onChunk?.(chunk)
       }
       prevTextRef.current = newText
+      // Intentional: syncing external Convex data to local state
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStreamedText(newText)
     }
 
     // Handle completion
     if (generation.status === "complete" && isGenerating) {
+       
       setIsGenerating(false)
       onComplete?.(generation.text)
 
@@ -81,8 +86,10 @@ export function useClaudeGenerate(
 
     // Handle error
     if (generation.status === "error" && isGenerating) {
+       
       setIsGenerating(false)
       const errorMsg = generation.error || "Unknown error"
+       
       setError(errorMsg)
       onError?.(errorMsg)
     }

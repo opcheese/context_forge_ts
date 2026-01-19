@@ -12,12 +12,10 @@ import {
   useSensors,
   type DragStartEvent,
   type DragEndEvent,
-  type DragOverEvent,
 } from "@dnd-kit/core"
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable"
 import { useMutation, useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
-import type { Id } from "../../../convex/_generated/dataModel"
 import { BlockDragOverlay } from "./BlockDragOverlay"
 import { getPositionBetween, getPositionAtEnd } from "../../lib/positioning"
 import type { BlockDragData, Zone, ZoneDropData } from "./types"
@@ -28,7 +26,6 @@ interface DndProviderProps {
 }
 
 export function DndProvider({ children }: DndProviderProps) {
-  const [activeBlockId, setActiveBlockId] = useState<Id<"blocks"> | null>(null)
   const [activeBlock, setActiveBlock] = useState<{ content: string; type: string } | null>(null)
 
   // Get session from context
@@ -60,7 +57,6 @@ export function DndProvider({ children }: DndProviderProps) {
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const data = event.active.data.current as BlockDragData | undefined
     if (data?.type === "block") {
-      setActiveBlockId(data.blockId)
       // Find the block content for the overlay
       const block = allBlocks?.find((b) => b._id === data.blockId)
       if (block) {
@@ -72,7 +68,6 @@ export function DndProvider({ children }: DndProviderProps) {
   // Handle drag end
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event
-    setActiveBlockId(null)
     setActiveBlock(null)
 
     if (!over || !allBlocks) return

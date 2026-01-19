@@ -1,5 +1,20 @@
 # LLM Implementation Plan
 
+> **⚠️ HISTORICAL DOCUMENT - IMPLEMENTATION COMPLETE**
+>
+> This was the original step-by-step implementation plan for LLM integration. **This work has been completed.**
+>
+> **For current implementation details, see:**
+> - [ARCHITECTURE.md](./ARCHITECTURE.md#llm-integration) - How it actually works
+> - [PROGRESS.md](./PROGRESS.md) - Session 8: Slice 5 - LLM Integration
+>
+> **What changed during implementation:**
+> - Claude Code uses Convex reactive queries (database-backed streaming), not HTTP
+> - Added `generations` table for streaming state management
+> - Claude Agent SDK requires `stream_event` handling, not `content_block_delta`
+
+---
+
 ## Overview
 
 Step-by-step plan for adding LLM generation to ContextForge TypeScript.

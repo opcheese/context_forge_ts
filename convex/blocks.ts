@@ -1,13 +1,8 @@
 import { query, mutation, internalQuery, internalMutation } from "./_generated/server"
+import type { MutationCtx } from "./_generated/server"
 import { v } from "convex/values"
 import type { Id } from "./_generated/dataModel"
-
-// Zone type for validation
-const zoneValidator = v.union(
-  v.literal("PERMANENT"),
-  v.literal("STABLE"),
-  v.literal("WORKING")
-)
+import { zoneValidator, type Zone } from "./lib/validators"
 
 // ============ Internal functions (for use by other Convex functions) ============
 
@@ -27,11 +22,11 @@ export const removeInternal = internalMutation({
   },
 })
 
-// Internal: get next position for a zone within a session
+// Get next position for a zone within a session
 async function getNextPosition(
-  ctx: { db: { query: (table: "blocks") => { withIndex: (index: string, q: (q: { eq: (field: string, value: unknown) => { eq: (field: string, value: unknown) => unknown } }) => unknown) => { collect: () => Promise<Array<{ position: number }>> } } } },
+  ctx: MutationCtx,
   sessionId: Id<"sessions">,
-  zone: string
+  zone: Zone
 ): Promise<number> {
   const blocks = await ctx.db
     .query("blocks")

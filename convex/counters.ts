@@ -1,3 +1,13 @@
+/**
+ * Demo counter module - for testing Convex setup.
+ *
+ * This is a simple example module that can be removed once the app
+ * is fully functional. It demonstrates basic query/mutation patterns.
+ *
+ * @deprecated This module is for demo purposes only. It can be safely
+ * removed along with the `counters` table in schema.ts.
+ */
+
 import { query, mutation } from "./_generated/server"
 import { v } from "convex/values"
 

@@ -1,5 +1,15 @@
 # Context Optimization and Provider Caching
 
+> **📚 REFERENCE DOCUMENT**
+>
+> This document explains the theory behind context optimization and LLM provider caching. The concepts are still relevant, though specific implementation details may have evolved.
+>
+> **Related implementation:**
+> - [ARCHITECTURE.md](./ARCHITECTURE.md#context-assembly) - How context is assembled
+> - `convex/lib/context.ts` - Context assembly implementation
+
+---
+
 ## Overview
 
 ContextForge deals with large contexts (100K+ tokens). This document covers:

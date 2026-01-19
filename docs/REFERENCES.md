@@ -1,70 +1,124 @@
 # Reference Materials
 
-Links and resources to consult during implementation.
+Links and resources for ContextForge TypeScript development.
 
-## Convex + TanStack Integration
+## Core Technologies
 
-| Resource | URL | Notes |
-|----------|-----|-------|
-| TanStack Start Quickstart | https://docs.convex.dev/quickstart/tanstack-start | Official Convex + TanStack setup guide |
-| Convex TanStack SaaS | https://github.com/get-convex/convex-saas | Reference for project structure (2 years old, don't copy directly) |
-| Netlify TanStack Template | https://github.com/netlify-templates/tanstack-template | TanStack Router + Convex + Claude AI patterns |
-
-## Drag and Drop
-
-| Resource | URL | Notes |
-|----------|-----|-------|
-| **Trellaux Example** | https://tanstack.com/start/latest/docs/framework/react/examples/start-convex-trellaux | TanStack + Convex + drag-drop board - **key reference for DnD** |
-| Trellaux Source Code | https://github.com/TanStack/router/tree/main/examples/react/start-convex-trellaux | Actual implementation code |
-
-## Convex Documentation
+### Convex
 
 | Resource | URL | Notes |
 |----------|-----|-------|
 | Convex Docs | https://docs.convex.dev/ | Main documentation |
 | Schema Definition | https://docs.convex.dev/database/schemas | Database schema syntax |
 | Queries & Mutations | https://docs.convex.dev/functions | Server functions |
+| Actions | https://docs.convex.dev/functions/actions | Side effects, external APIs |
 | HTTP Actions | https://docs.convex.dev/functions/http-actions | For streaming endpoints |
-| Testing with convex-test | https://docs.convex.dev/testing/convex-test | Unit testing Convex functions |
-| File Storage | https://docs.convex.dev/file-storage | If we need file uploads |
+| Node.js Actions | https://docs.convex.dev/functions/actions#nodejs-runtime | `"use node"` for npm packages |
+| Scheduling | https://docs.convex.dev/scheduling | `ctx.scheduler.runAfter()` |
+| Testing | https://docs.convex.dev/testing/convex-test | Unit testing Convex functions |
 
-## AI / LLM Integration
-
-| Resource | URL | Notes |
-|----------|-----|-------|
-| Convex + Vercel AI SDK Streaming | https://www.arhamhumayun.com/blog/streamed-ai-response | Detailed streaming implementation |
-| Vercel AI SDK Docs | https://ai-sdk.dev/ | Main AI SDK documentation |
-| Convex AI Chat Template | https://www.convex.dev/templates (search "AI Chat") | Reference for chat persistence patterns |
-
-## TanStack
+### TanStack Router
 
 | Resource | URL | Notes |
 |----------|-----|-------|
 | TanStack Router Docs | https://tanstack.com/router/latest/docs/framework/react/overview | Router documentation |
-| TanStack Start Docs | https://tanstack.com/start/latest | Full-stack framework (if we want SSR later) |
-| File-Based Routing | https://tanstack.com/router/latest/docs/framework/react/guide/file-based-routing | Route file conventions |
+| File-Based Routing | https://tanstack.com/router/latest/docs/framework/react/guide/file-based-routing | Route conventions |
+| TanStack Start | https://tanstack.com/start/latest | Full-stack framework (SSR) |
 
-## UI Components
+### UI
 
 | Resource | URL | Notes |
 |----------|-----|-------|
-| shadcn/ui | https://ui.shadcn.com/ | Component library (copy-paste, not npm) |
+| shadcn/ui | https://ui.shadcn.com/ | Component library |
 | Tailwind CSS | https://tailwindcss.com/docs | Utility classes |
-| @dnd-kit | https://dndkit.com/ | If Trellaux uses this for DnD |
+| @dnd-kit | https://dndkit.com/ | Drag-and-drop library |
 
-## Token Counting (JS)
+## LLM Integration
+
+### Ollama
 
 | Resource | URL | Notes |
 |----------|-----|-------|
-| gpt-tokenizer | https://www.npmjs.com/package/gpt-tokenizer | Pure JS tokenizer |
-| tiktoken (WASM) | https://www.npmjs.com/package/tiktoken | Official OpenAI tokenizer |
-| js-tiktoken | https://www.npmjs.com/package/js-tiktoken | Lighter alternative |
+| Ollama | https://ollama.ai/ | Local LLM runtime |
+| Ollama API | https://github.com/ollama/ollama/blob/main/docs/api.md | REST API docs |
+| Ollama Models | https://ollama.ai/library | Available models |
+
+### Claude Code / Agent SDK
+
+| Resource | URL | Notes |
+|----------|-----|-------|
+| Claude Code | https://claude.ai/code | CLI tool (requires subscription) |
+| Claude Agent SDK | https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk | NPM package |
+| SDK TypeScript Types | https://platform.claude.com/docs/en/agent-sdk/typescript | Type definitions reference |
+
+**Key SDK Types:**
+- `SDKPartialAssistantMessage` - Streaming events wrapper
+- `BetaRawMessageStreamEvent` - Anthropic's raw event types
+- `includePartialMessages: true` - Option to enable streaming
+
+### Token Counting
+
+| Resource | URL | Notes |
+|----------|-----|-------|
+| js-tiktoken | https://www.npmjs.com/package/js-tiktoken | **Recommended** - Pure JS tiktoken |
+| gpt-tokenizer | https://www.npmjs.com/package/gpt-tokenizer | Alternative tokenizer |
+| tiktoken (WASM) | https://www.npmjs.com/package/tiktoken | Official OpenAI (larger) |
+
+## Example Projects
+
+| Resource | URL | Notes |
+|----------|-----|-------|
+| Trellaux | https://github.com/TanStack/router/tree/main/examples/react/start-convex-trellaux | TanStack + Convex + DnD |
+| Convex AI Chat | https://www.convex.dev/templates | Chat patterns (search templates) |
+| Netlify TanStack | https://github.com/netlify-templates/tanstack-template | TanStack + Convex patterns |
+
+## Historical Research (Superseded)
+
+These were useful during research but our implementation differs:
+
+| Resource | URL | Notes |
+|----------|-----|-------|
+| Vercel AI SDK | https://ai-sdk.dev/ | Not used - Claude Code incompatible |
+| Convex + Vercel AI Streaming | https://www.arhamhumayun.com/blog/streamed-ai-response | Patterns we didn't follow |
 
 ---
 
-## Priority Reading Order
+## Quick Reference
 
-1. **TanStack Start Quickstart** - Get Convex + TanStack working
-2. **Trellaux Example** - Study DnD patterns with Convex
-3. **Convex + Vercel AI SDK Streaming** - LLM integration
-4. **Schema Definition** - Design our data model
+### Convex Local URLs
+
+| Service | URL |
+|---------|-----|
+| WebSocket API | `http://127.0.0.1:3210` |
+| HTTP Actions | `http://127.0.0.1:3211` |
+| Dashboard | Shown when running `convex dev` |
+
+### Ollama Default
+
+| Service | URL |
+|---------|-----|
+| Ollama API | `http://localhost:11434` |
+| Health Check | `GET http://localhost:11434/api/tags` |
+| Chat Endpoint | `POST http://localhost:11434/api/chat` |
+
+### Claude Agent SDK
+
+```typescript
+import { query as claudeQuery } from "@anthropic-ai/claude-agent-sdk"
+
+// Enable streaming
+const options = {
+  includePartialMessages: true,
+  allowedTools: [],
+  maxTurns: 1,
+}
+
+// Handle streaming events
+for await (const message of claudeQuery({ prompt, options })) {
+  if (message.type === "stream_event") {
+    if (message.event.type === "content_block_delta") {
+      // Text chunk: message.event.delta.text
+    }
+  }
+}
+```

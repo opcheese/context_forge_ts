@@ -78,7 +78,7 @@ export function useFileDrop({ sessionId, zone, onSuccess, onError }: UseFileDrop
           })
 
           onSuccess?.(file.name)
-        } catch (error) {
+        } catch {
           onError?.(`Failed to add file: ${file.name}`)
         }
       }

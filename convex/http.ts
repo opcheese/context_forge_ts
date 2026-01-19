@@ -1,7 +1,13 @@
 /**
  * HTTP routes for Convex.
  *
- * These routes are exposed at the Convex deployment URL.
+ * These endpoints are for:
+ * - Testing utilities (/testing/*)
+ * - Ollama streaming (/api/chat) - SSE streaming for Ollama LLM
+ * - Health checks (/api/health/*)
+ *
+ * Note: Claude uses Convex reactive streaming (see generations.ts and claudeNode.ts),
+ * not HTTP endpoints. The frontend calls startClaudeGeneration mutation directly.
  */
 
 import { httpRouter } from "convex/server"
@@ -9,16 +15,13 @@ import { httpAction } from "./_generated/server"
 import { internal } from "./_generated/api"
 import { api } from "./_generated/api"
 import type { Id } from "./_generated/dataModel"
-import { assembleContext, type ContextMessage } from "./lib/context"
+import { assembleContext } from "./lib/context"
 import {
   streamChat as streamOllama,
   checkHealth as checkOllamaHealth,
 } from "./lib/ollama"
 
-// Provider type
-type Provider = "ollama" | "claude"
-
-// Claude health status type
+// Claude health status type (for health check endpoints)
 interface ClaudeHealthStatus {
   ok: boolean
   error?: string
@@ -131,18 +134,23 @@ http.route({
 
 // ============ LLM Generation Endpoints ============
 
-// Chat endpoint - streams LLM response with context from session blocks
-// Supports multiple providers: ollama (default), claude
+/**
+ * Ollama chat endpoint - streams LLM response with SSE.
+ *
+ * For Claude, use the Convex reactive approach instead:
+ * - Call startClaudeGeneration mutation
+ * - Subscribe to generation via useQuery(api.generations.get, { generationId })
+ * See useClaudeGenerate.ts for the frontend hook.
+ */
 http.route({
   path: "/api/chat",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     const body = await request.json()
-    const { sessionId, prompt, systemPrompt, provider = "ollama" } = body as {
+    const { sessionId, prompt, systemPrompt } = body as {
       sessionId: string
       prompt: string
       systemPrompt?: string
-      provider?: Provider
     }
 
     // Validate required fields
@@ -156,40 +164,16 @@ http.route({
       )
     }
 
-    // Check provider availability
-    if (provider === "ollama") {
-      const ollamaStatus = await checkOllamaHealth()
-      if (!ollamaStatus.ok) {
-        return new Response(
-          JSON.stringify({
-            error: `Ollama is not available at ${ollamaStatus.url}`,
-            details: ollamaStatus.error,
-          }),
-          {
-            status: 503,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          }
-        )
-      }
-    } else if (provider === "claude") {
-      const claudeStatus = await ctx.runAction(api.claudeNode.checkHealth, {}) as ClaudeHealthStatus
-      if (!claudeStatus.ok) {
-        return new Response(
-          JSON.stringify({
-            error: "Claude Code is not available",
-            details: claudeStatus.error,
-          }),
-          {
-            status: 503,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          }
-        )
-      }
-    } else {
+    // Check Ollama availability
+    const ollamaStatus = await checkOllamaHealth()
+    if (!ollamaStatus.ok) {
       return new Response(
-        JSON.stringify({ error: `Unknown provider: ${provider}` }),
+        JSON.stringify({
+          error: `Ollama is not available at ${ollamaStatus.url}`,
+          details: ollamaStatus.error,
+        }),
         {
-          status: 400,
+          status: 503,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         }
       )
@@ -213,43 +197,14 @@ http.route({
       try {
         let fullResponse = ""
 
-        if (provider === "claude") {
-          // Claude uses Convex action (non-streaming) - we call it and send result as SSE
-          const result = await ctx.runAction(api.claudeNode.generate, {
-            messages: messages.map((m) => ({
-              role: m.role,
-              content: m.content,
-            })),
-            systemPrompt,
-          }) as { text: string; error?: string }
-
-          if (result.error) {
-            throw new Error(result.error)
-          }
-
-          fullResponse = result.text
-
-          // Send the full response as a single chunk (simulated streaming)
-          // For better UX, we could split into smaller chunks
-          const chunkSize = 50 // characters per chunk for simulated streaming
-          for (let i = 0; i < fullResponse.length; i += chunkSize) {
-            const chunk = fullResponse.slice(i, i + chunkSize)
-            await writer.write(
-              encoder.encode(
-                `data: ${JSON.stringify({ type: "text-delta", delta: chunk })}\n\n`
-              )
+        // Stream from Ollama
+        for await (const chunk of streamOllama(messages)) {
+          fullResponse += chunk
+          await writer.write(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: "text-delta", delta: chunk })}\n\n`
             )
-          }
-        } else {
-          // Ollama supports true streaming
-          for await (const chunk of streamOllama(messages)) {
-            fullResponse += chunk
-            await writer.write(
-              encoder.encode(
-                `data: ${JSON.stringify({ type: "text-delta", delta: chunk })}\n\n`
-              )
-            )
-          }
+          )
         }
 
         // Send finish event

@@ -1,5 +1,21 @@
 # Convex + Vercel AI SDK: Technical Architecture
 
+> **⚠️ HISTORICAL DOCUMENT - RESEARCH NOTES**
+>
+> This document was written during the research phase exploring Convex + Vercel AI SDK integration patterns. **We decided NOT to use Vercel AI SDK.**
+>
+> **For current implementation, see:**
+> - [ARCHITECTURE.md](./ARCHITECTURE.md#llm-integration) - What we actually built
+>
+> **Why we didn't use Vercel AI SDK:**
+> - Claude Code uses subprocess protocol, not HTTP (incompatible with Vercel AI SDK)
+> - We wanted to preserve Convex's reactive model for Claude streaming
+> - Direct HTTP to Ollama is simpler than adding Vercel AI SDK abstraction
+>
+> This document is preserved for historical context and may be useful if we add Anthropic API support in the future.
+
+---
+
 ## Overview
 
 This document explains how Convex and Vercel AI SDK work together, the data flow, protocols used, and potential integration patterns for ContextForge.

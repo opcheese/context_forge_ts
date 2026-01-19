@@ -1,6 +1,7 @@
 import type { Doc } from "../_generated/dataModel"
+import type { Zone } from "./validators"
 
-export type Zone = "PERMANENT" | "STABLE" | "WORKING"
+export type { Zone }
 
 export interface ContextMessage {
   role: "system" | "user" | "assistant"

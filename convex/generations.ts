@@ -7,8 +7,8 @@
  * 3. Clients subscribe via useQuery for real-time updates
  */
 
-import { mutation, query, internalMutation, action } from "./_generated/server"
-import { api, internal } from "./_generated/api"
+import { mutation, query, internalMutation } from "./_generated/server"
+import { api } from "./_generated/api"
 import { v } from "convex/values"
 
 /**

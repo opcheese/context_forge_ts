@@ -1,13 +1,11 @@
-# ContextForge TypeScript Rewrite
+# Architecture
 
-## Overview
-
-This is a greenfield rewrite of ContextForge - a context window management application for LLM interactions. The rewrite moves from a Python backend (FastAPI) + React frontend architecture to a pure TypeScript stack using Convex as the backend platform.
+Technical design and decisions for ContextForge TypeScript.
 
 ## Design Principles
 
 1. **Simple over overengineered** - Fewer moving parts, less abstraction
-2. **Server-side logic** - Core business logic runs on Convex, ensuring consistent state
+2. **Server-side logic** - Core business logic runs on Convex
 3. **Real-time by default** - Convex provides automatic state synchronization
 4. **Type-safe throughout** - End-to-end TypeScript from database to UI
 
@@ -17,315 +15,402 @@ This is a greenfield rewrite of ContextForge - a context window management appli
 
 | Layer | Technology | Purpose |
 |-------|------------|---------|
-| **Backend** | Convex | Database, real-time sync, server functions, auth |
-| **Frontend** | React | UI components |
+| **Backend** | Convex | Database, real-time sync, server functions |
+| **Frontend** | React 19 | UI components |
 | **Routing** | TanStack Router | Type-safe client-side routing |
-| **LLM Integration** | Vercel AI SDK | LLM abstraction, streaming |
-| **Styling** | Tailwind CSS | Utility-first CSS |
-| **Testing** | Vitest + Playwright | Unit/integration + E2E |
+| **Drag-and-Drop** | @dnd-kit | Accessible DnD with keyboard support |
+| **Styling** | Tailwind CSS v4 | Utility-first CSS |
+| **Components** | shadcn/ui | Copy-paste component library |
+| **Testing** | Vitest + Playwright | Unit + E2E |
 | **Package Manager** | pnpm | Fast, disk-efficient |
 
 ### What We're NOT Using
 
-| Removed | Reason |
-|---------|--------|
-| Zustand | Convex handles server state reactively; React useState/useContext sufficient for UI state |
-| React Query | Convex's `useQuery`/`useMutation` provide built-in caching and reactivity |
-| FastAPI | Replaced by Convex functions |
-| JSON file persistence | Replaced by Convex database |
+| Technology | Reason |
+|------------|--------|
+| Zustand | Convex handles server state reactively |
+| React Query | Convex's `useQuery`/`useMutation` provide caching |
+| Vercel AI SDK | Claude Code uses subprocess protocol, not HTTP |
+| Redux | Overkill for our needs |
 
 ---
 
-## Architecture
+## System Architecture
 
 ```
-┌─────────────────────────────────────────────┐
-│           React + TanStack Router           │
-│  ┌───────────────────────────────────────┐  │
-│  │  useState for UI-only state           │  │
-│  │  useQuery(api.*) for server data      │  │
-│  │  useMutation(api.*) for changes       │  │
-│  │  useChat() for AI streaming           │  │
-│  └───────────────────────────────────────┘  │
-└─────────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────┐
-│              Convex Backend                 │
-│  ┌─────────────┐ ┌─────────────┐           │
-│  │  Queries    │ │  Mutations  │           │
-│  │  (reads)    │ │  (writes)   │           │
-│  └─────────────┘ └─────────────┘           │
-│  ┌─────────────┐ ┌─────────────┐           │
-│  │  Actions    │ │ HTTP Actions│           │
-│  │ (side effects)│ (streaming) │           │
-│  └─────────────┘ └─────────────┘           │
-│  ┌─────────────────────────────────────┐   │
-│  │  Zone logic, token counting,        │   │
-│  │  compression - all server-side      │   │
-│  └─────────────────────────────────────┘   │
-└─────────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────┐
-│           Convex Database                   │
-│  blocks, zones, sessions, messages          │
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                              Frontend                                    │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │  React Components                                                  │  │
+│  │  ├── ZoneLayout (drag-and-drop zones)                             │  │
+│  │  ├── BlockCard (content blocks)                                   │  │
+│  │  ├── GeneratePanel (LLM generation)                               │  │
+│  │  └── BlockEditor (edit content)                                   │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │  Hooks                                                             │  │
+│  │  ├── useGenerate (Ollama HTTP streaming)                          │  │
+│  │  ├── useClaudeGenerate (Convex reactive streaming)                │  │
+│  │  └── useFileDrop (file drag-and-drop)                             │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │  State                                                             │  │
+│  │  ├── useQuery(api.*) → Server data (blocks, sessions)             │  │
+│  │  ├── useMutation(api.*) → Server mutations                        │  │
+│  │  └── useState/useContext → UI-only state                          │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                    WebSocket (real-time) + HTTP (streaming)
+                                    │
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           Convex Backend                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────┐  │
+│  │  Queries        │  │  Mutations      │  │  Actions                │  │
+│  │  (reads)        │  │  (writes)       │  │  (side effects)         │  │
+│  │                 │  │                 │  │                         │  │
+│  │  blocks.list    │  │  blocks.create  │  │  claudeNode.stream      │  │
+│  │  sessions.get   │  │  blocks.move    │  │  (Node.js runtime)      │  │
+│  │  generations.get│  │  generations.*  │  │                         │  │
+│  └─────────────────┘  └─────────────────┘  └─────────────────────────┘  │
+│  ┌─────────────────────────────────────────────────────────────────────┐│
+│  │  HTTP Actions (httpAction)                                          ││
+│  │  ├── POST /api/chat → Ollama streaming                              ││
+│  │  ├── GET /api/health/ollama → Provider health check                 ││
+│  │  └── POST /testing/* → E2E test utilities                           ││
+│  └─────────────────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           Convex Database                                │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────────────┐│
+│  │  sessions   │ │  blocks     │ │  snapshots  │ │  generations        ││
+│  │  (workspaces)│ │  (content)  │ │  (backups)  │ │  (LLM streaming)    ││
+│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────────────┘│
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          External Services                               │
+│  ┌─────────────────────────────┐  ┌─────────────────────────────────┐   │
+│  │  Ollama (localhost:11434)   │  │  Claude Code CLI (subprocess)   │   │
+│  │  HTTP API                   │  │  stdin/stdout protocol          │   │
+│  └─────────────────────────────┘  └─────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Why Convex?
-
-### Problems It Solves
-
-1. **Real-time synchronization** - When any client mutates data, all subscribed clients update automatically. No manual cache invalidation.
-
-2. **End-to-end type safety** - Schema defines types that flow through queries, mutations, and into React components.
-
-3. **Server-side logic** - Token counting, zone budget enforcement, and compression run on the server with guaranteed consistency.
-
-4. **Zero infrastructure** - No database setup, no server management, no deployment configuration.
-
-### Convex vs Traditional Backend
-
-| Aspect | FastAPI + JSON | Convex |
-|--------|----------------|--------|
-| Data sync | Manual polling/SSE | Automatic reactivity |
-| Cache invalidation | Manual | Never think about it |
-| Type safety | Pydantic ↔ TypeScript gap | Unified TypeScript |
-| Multi-user | Session isolation code | Built-in |
-| Persistence | JSON files | Document database |
-
----
-
-## Core Domain Model
-
-### Zones
-
-Three-zone architecture for context window management:
-
-| Zone | Purpose | Characteristics |
-|------|---------|-----------------|
-| **PERMANENT** | System prompts, tool definitions | Never evicted, always included |
-| **STABLE** | Task context, compressed history | Rarely changes, cached per session |
-| **WORKING** | Recent messages, active edits | Frequently changes, first to evict |
-
-### Blocks
-
-Content blocks are the fundamental unit:
+## Database Schema
 
 ```typescript
-// Conceptual schema (Convex format TBD)
-{
-  id: Id<"blocks">,
-  content: string,
-  zone: "PERMANENT" | "STABLE" | "WORKING",
-  type: BlockType,
-  tokens: number,        // Computed server-side
-  position: number,      // Order within zone
-  metadata: object,
-  createdAt: number,
-  updatedAt: number,
+// convex/schema.ts
+
+sessions: defineTable({
+  name: v.optional(v.string()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+})
+
+blocks: defineTable({
+  sessionId: v.id("sessions"),
+  content: v.string(),
+  type: v.string(),                    // "NOTE", "SYSTEM_MESSAGE", etc.
+  zone: v.union(
+    v.literal("PERMANENT"),
+    v.literal("STABLE"),
+    v.literal("WORKING")
+  ),
+  position: v.number(),                // Fractional for O(1) reordering
+  createdAt: v.number(),
+  updatedAt: v.number(),
+  testData: v.optional(v.boolean()),   // For E2E test isolation
+})
+  .index("by_session", ["sessionId"])
+  .index("by_session_zone", ["sessionId", "zone", "position"])
+
+snapshots: defineTable({
+  sessionId: v.id("sessions"),
+  name: v.string(),
+  createdAt: v.number(),
+  blocks: v.array(v.object({...})),    // Serialized blocks
+})
+  .index("by_session", ["sessionId"])
+
+generations: defineTable({
+  sessionId: v.id("sessions"),
+  provider: v.string(),                // "ollama" | "claude"
+  status: v.union(
+    v.literal("streaming"),
+    v.literal("complete"),
+    v.literal("error")
+  ),
+  text: v.string(),                    // Accumulated streamed text
+  error: v.optional(v.string()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+})
+  .index("by_session", ["sessionId", "createdAt"])
+```
+
+---
+
+## LLM Integration
+
+### Why Not Vercel AI SDK?
+
+We evaluated Vercel AI SDK but chose not to use it:
+
+| Aspect | Vercel AI SDK | Our Approach |
+|--------|---------------|--------------|
+| Ollama | ✅ Works via OpenAI adapter | Direct HTTP (simpler) |
+| Claude Code | ❌ Not supported | Claude Agent SDK |
+| Streaming | HTTP-based | Ollama: HTTP, Claude: Convex reactive |
+| Dependencies | +3 packages | 0 new packages |
+
+**Key reason:** Claude Code is NOT an HTTP API. It's the Claude Code CLI that communicates via subprocess stdin/stdout. Vercel AI SDK doesn't support this protocol.
+
+### Two Providers, Two Patterns
+
+#### Ollama: HTTP Streaming
+
+```
+┌──────────┐     HTTP POST      ┌──────────────┐     HTTP      ┌────────┐
+│ Frontend │ ──────────────────►│ Convex HTTP  │ ─────────────►│ Ollama │
+│          │                    │ Action       │               │        │
+│          │◄─── SSE stream ────│              │◄── stream ────│        │
+└──────────┘                    └──────────────┘               └────────┘
+```
+
+```typescript
+// Frontend: useGenerate hook
+const response = await fetch("/api/chat", {
+  method: "POST",
+  body: JSON.stringify({ sessionId, prompt }),
+})
+const reader = response.body.getReader()
+// Read SSE chunks...
+```
+
+```typescript
+// Backend: convex/http.ts
+http.route({
+  path: "/api/chat",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    // Stream from Ollama, pipe to response
+    return new Response(stream, {
+      headers: { "Content-Type": "text/event-stream" }
+    })
+  }),
+})
+```
+
+#### Claude Code: Convex Reactive Streaming
+
+Claude Code requires a Node.js runtime (subprocess spawning), and Convex Node actions cannot return streaming HTTP responses. Solution: **database-backed streaming**.
+
+```
+┌──────────┐  1. mutation   ┌────────────┐
+│ Frontend │ ──────────────►│ Convex     │
+│          │                │ Mutation   │
+│          │                │            │──► Creates generation record
+│          │                │            │──► Schedules Node action
+│          │                └────────────┘
+│          │                      │
+│          │                      ▼
+│          │               ┌────────────┐      ┌─────────────┐
+│          │               │ Node       │      │ Claude Code │
+│          │               │ Action     │◄────►│ CLI         │
+│          │               │            │      │ (subprocess)│
+│          │               └────────────┘      └─────────────┘
+│          │                      │
+│          │                      │ writes chunks via mutation
+│          │                      ▼
+│          │               ┌────────────┐
+│          │  2. subscribe │ generations│
+│          │◄──────────────│ table      │
+│          │  useQuery()   │            │
+└──────────┘               └────────────┘
+```
+
+```typescript
+// Frontend: useClaudeGenerate hook
+const generation = useQuery(api.generations.get, { generationId })
+
+useEffect(() => {
+  if (generation?.text !== prevText) {
+    const chunk = generation.text.slice(prevText.length)
+    onChunk(chunk) // Real-time updates via Convex reactivity
+  }
+}, [generation])
+```
+
+```typescript
+// Backend: convex/claudeNode.ts
+export const streamGenerateWithContext = action({
+  "use node",
+  handler: async (ctx, args) => {
+    for await (const message of claudeQuery({ prompt, options })) {
+      if (message.type === "stream_event") {
+        const event = message.event
+        if (event.type === "content_block_delta") {
+          buffer += event.delta.text
+          await ctx.runMutation(internal.generations.appendChunk, {
+            generationId: args.generationId,
+            chunk: buffer,
+          })
+        }
+      }
+    }
+  },
+})
+```
+
+### Claude Agent SDK Details
+
+The Claude Agent SDK (`@anthropic-ai/claude-agent-sdk`) is different from the Anthropic API:
+
+| Aspect | Anthropic API | Claude Agent SDK |
+|--------|---------------|------------------|
+| Protocol | HTTP REST | Subprocess stdin/stdout |
+| Auth | API key | CLI session token |
+| Package | `@anthropic-ai/sdk` | `@anthropic-ai/claude-agent-sdk` |
+| Streaming | HTTP SSE | `SDKPartialAssistantMessage` |
+
+**Key streaming detail:** The SDK's `query()` function with `includePartialMessages: true` yields messages with:
+- `type: 'stream_event'`
+- `event: BetaRawMessageStreamEvent` (contains `content_block_delta`)
+
+```typescript
+// Correct pattern for streaming
+for await (const message of claudeQuery({ prompt, options: { includePartialMessages: true } })) {
+  if (message.type === "stream_event") {
+    const event = message.event
+    if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
+      // This is the actual text chunk
+      buffer += event.delta.text
+    }
+  }
 }
 ```
 
-### Block Types
+---
 
-Semantic content types (from original implementation):
+## Context Assembly
 
-- `SYSTEM_MESSAGE`, `USER_MESSAGE`, `ASSISTANT_MESSAGE`
-- `CODE`, `ERROR`, `TEST`, `DOCUMENTATION`
-- `TASK`, `DECISION`, `SCHEMA`, `QUERY`, `RESULT`
-- `PERSONA`, `MECHANIC`, `PARADIGM` (game design)
-- And others as needed
+Blocks are assembled into LLM messages with specific zone ordering for optimal cache utilization:
+
+```typescript
+// convex/lib/context.ts
+
+export function assembleContext(
+  blocks: Doc<"blocks">[],
+  userPrompt: string,
+  systemPrompt?: string
+): ContextMessage[] {
+  // 1. PERMANENT zone → system message (best cache hits)
+  // 2. Optional system prompt override
+  // 3. STABLE zone → user context
+  // 4. WORKING zone → recent context
+  // 5. User prompt (always last)
+}
+```
+
+Zone order matters for LLM prefix caching:
+- Content that appears first and doesn't change gets cached
+- PERMANENT zone is ideal for system prompts, tool definitions
+- STABLE zone for reference material that rarely changes
+- WORKING zone for active content that changes frequently
 
 ---
 
-## Key Implementation Details
+## Drag-and-Drop
 
-### Token Counting
+Using @dnd-kit for accessible drag-and-drop:
 
-Server-side using JavaScript tokenizer library:
-
-```typescript
-// In Convex mutation
-import { encode } from "gpt-tokenizer"; // or tiktoken WASM
-
-export const createBlock = mutation({
-  handler: async (ctx, args) => {
-    const tokens = encode(args.content).length;
-    // ... store with token count
-  },
-});
+```
+src/components/dnd/
+├── DndProvider.tsx       # Context + sensors + handlers
+├── SortableBlock.tsx     # useSortable wrapper for blocks
+├── DroppableZone.tsx     # useDroppable + SortableContext
+├── BlockDragOverlay.tsx  # Visual ghost during drag
+└── types.ts              # DragData types
 ```
 
-### LLM Streaming
-
-Using Vercel AI SDK in Convex HTTP actions:
+**Fractional positioning:** Instead of shifting all positions on reorder (O(n)), we use fractional positions (O(1)):
 
 ```typescript
-// convex/http.ts
-import { httpAction } from "./_generated/server";
-import { streamText } from "ai";
-import { openai } from "@ai-sdk/openai";
-
-export const chat = httpAction(async (ctx, request) => {
-  const { messages, context } = await request.json();
-
-  const result = await streamText({
-    model: openai("gpt-4o"),
-    system: context, // Assembled from blocks
-    messages,
-  });
-
-  return result.toDataStreamResponse();
-});
+// Insert between position 1.0 and 2.0 → new position 1.5
+export function getPositionBetween(before: number | null, after: number | null): number
 ```
 
-Convex added `TextDecoderStream` support (April 2025) specifically for this use case.
+---
 
-### State Management
+## State Management
 
-| State Type | Solution |
-|------------|----------|
-| Server data (blocks, zones) | `useQuery(api.blocks.list)` |
-| Mutations | `useMutation(api.blocks.create)` |
-| UI-only (dialogs, selections) | React `useState` |
-| Shared UI state | React `useContext` if needed |
+| State Type | Solution | Example |
+|------------|----------|---------|
+| Server data | `useQuery(api.*)` | Blocks, sessions |
+| Server mutations | `useMutation(api.*)` | Create, update, delete |
+| UI-only | `useState` | Dialog open state |
+| Shared UI | `useContext` | Current session |
 
-No Zustand, no Redux, no React Query wrapper.
+No external state management libraries needed.
 
 ---
 
 ## Testing Strategy
 
-### Unit/Integration Tests
+### Unit Tests (Vitest)
 
-Using `convex-test` with Vitest:
+```bash
+pnpm test:run
+```
+
+Component tests in `src/test/`. Uses jsdom environment.
+
+### E2E Tests (Playwright)
+
+```bash
+pnpm test:e2e
+```
+
+Tests in `e2e/`. Test data isolation via:
+- `testData: true` flag on records
+- HTTP endpoints for reset: `POST /testing/reset`
+- Content prefix matching: `"E2E Test:"`
+
+---
+
+## File Conventions
+
+| Type | Convention | Example |
+|------|------------|---------|
+| Components | PascalCase | `BlockCard.tsx` |
+| Hooks | camelCase, `use` prefix | `useGenerate.ts` |
+| Convex functions | camelCase | `blocks.ts` |
+| Routes | kebab-case or `$param` | `blocks/$blockId.tsx` |
+| Tests | `.test.tsx` or `.spec.ts` | `app.spec.ts` |
+
+Import alias: `@/` → `src/`
 
 ```typescript
-import { convexTest } from "convex-test";
-import { api } from "./_generated/api";
-
-test("create block computes tokens", async () => {
-  const t = convexTest();
-  const id = await t.mutation(api.blocks.create, {
-    content: "Hello world",
-    zone: "WORKING",
-    type: "NOTE",
-  });
-  const block = await t.query(api.blocks.get, { id });
-  expect(block.tokens).toBe(2);
-});
-```
-
-### E2E Tests
-
-Using Playwright against local Convex backend:
-
-```bash
-npx convex dev --once    # Start local backend
-npx playwright test      # Run E2E tests
+import { Button } from "@/components/ui/button"
 ```
 
 ---
 
-## Migration from Original ContextForge
+## Key Decisions Log
 
-### What Carries Over
+| # | Decision | Rationale |
+|---|----------|-----------|
+| 1 | Convex over FastAPI | Pure TypeScript, real-time built-in |
+| 2 | No Zustand | Convex handles server state |
+| 3 | TanStack Router | Type-safe, file-based routing |
+| 4 | @dnd-kit | Accessibility, touch support |
+| 5 | Fractional positions | O(1) reorder operations |
+| 6 | No Vercel AI SDK | Claude Code uses subprocess protocol |
+| 7 | Database-backed streaming | Convex Node actions can't stream HTTP |
+| 8 | Two streaming patterns | HTTP for Ollama, reactive for Claude |
 
-- Core concepts: zones, blocks, token budgets
-- Block types and their semantics
-- UI patterns: three-zone layout, drag-drop, block editing
-- LLM integration patterns
-
-### What Changes
-
-- Python → TypeScript (complete rewrite)
-- FastAPI → Convex functions
-- JSON persistence → Convex database
-- Zustand + React Query → Convex hooks
-- Manual session management → Convex built-in
-
-### What's Deferred
-
-- Compression engine (evaluate if needed with Convex)
-- Design by Contract middleware (evaluate TypeScript alternatives)
-- Policy system (may simplify given server-side logic)
-
----
-
-## Project Structure (Planned)
-
-```
-ContextForgeTS/
-├── convex/
-│   ├── schema.ts          # Database schema
-│   ├── blocks.ts          # Block CRUD operations
-│   ├── zones.ts           # Zone management
-│   ├── chat.ts            # LLM integration
-│   └── http.ts            # HTTP actions (streaming)
-├── src/
-│   ├── components/
-│   │   ├── zones/         # Zone panels
-│   │   ├── blocks/        # Block cards
-│   │   ├── editor/        # Block editor
-│   │   └── chat/          # Chat/brainstorm UI
-│   ├── routes/            # TanStack Router routes
-│   ├── lib/               # Utilities
-│   └── main.tsx           # Entry point
-├── tests/
-│   ├── convex/            # Convex function tests
-│   └── e2e/               # Playwright tests
-├── docs/
-│   └── ARCHITECTURE.md    # This document
-└── package.json
-```
-
----
-
-## Setup (From Scratch)
-
-```bash
-# 1. Initialize Vite + React + TypeScript
-pnpm create vite@latest . -- --template react-ts
-
-# 2. Install Convex
-pnpm add convex
-
-# 3. Install TanStack Router
-pnpm add @tanstack/react-router
-
-# 4. Install Tailwind + utilities
-pnpm add -D tailwindcss postcss autoprefixer
-pnpm add class-variance-authority clsx tailwind-merge
-
-# 5. Initialize Tailwind
-pnpx tailwindcss init -p
-
-# 6. Initialize Convex (creates convex/ folder)
-pnpx convex dev
-```
-
----
-
-## Open Questions
-
-1. **Token counting library** - `gpt-tokenizer` vs `tiktoken` WASM. Need to evaluate bundle size and accuracy.
-
-2. **Auth requirements** - Do we need multi-user auth or is single-user sufficient for MVP?
-
-3. **Compression** - Is LLM-based compression still needed, or does Convex's storage make it less critical?
-
-4. **Offline support** - Convex has limited offline. Is this a requirement?
-
----
-
-## References
-
-- [Convex Documentation](https://docs.convex.dev/)
-- [Convex Testing](https://docs.convex.dev/testing)
-- [TanStack Router](https://tanstack.com/router/latest)
-- [Vercel AI SDK](https://ai-sdk.dev/)
-- [Convex + Vercel AI SDK Integration](https://www.arhamhumayun.com/blog/streamed-ai-response)
+See [Progress](./PROGRESS.md) for detailed decision rationales.

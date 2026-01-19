@@ -17,7 +17,6 @@ import { query as claudeQuery } from "@anthropic-ai/claude-agent-sdk"
 import { spawn, execSync } from "child_process"
 import * as fs from "fs"
 import * as os from "os"
-import type { Id } from "./_generated/dataModel"
 import { assembleContext } from "./lib/context"
 
 // Get Claude Code executable path by trying to locate it

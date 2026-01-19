@@ -1,5 +1,20 @@
 # LLM Integration Research & Implementation Plan
 
+> **⚠️ HISTORICAL DOCUMENT**
+>
+> This document was written during the early research phase. The LLM integration has since been implemented with different patterns than originally planned.
+>
+> **For current implementation details, see:**
+> - [ARCHITECTURE.md](./ARCHITECTURE.md#llm-integration) - How LLM streaming works
+> - [ROADMAP.md](./ROADMAP.md) - Current feature status
+>
+> **Key differences from this plan:**
+> - We use Claude Code (subprocess protocol), not Anthropic API
+> - We don't use Vercel AI SDK (incompatible with Claude Code)
+> - Claude uses Convex reactive queries, not HTTP streaming
+
+---
+
 ## Overview
 
 This document analyzes the requirements for LLM integration in ContextForge TypeScript, based on:

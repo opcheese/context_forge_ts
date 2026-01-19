@@ -1,15 +1,10 @@
 import { defineSchema, defineTable } from "convex/server"
 import { v } from "convex/values"
-
-// Shared zone validator
-const zoneValidator = v.union(
-  v.literal("PERMANENT"),
-  v.literal("STABLE"),
-  v.literal("WORKING")
-)
+import { zoneValidator } from "./lib/validators"
 
 export default defineSchema({
-  // Demo table (can remove later)
+  // Demo table - can be removed along with convex/counters.ts
+  // @deprecated For demo/testing only
   counters: defineTable({
     name: v.string(),
     value: v.number(),
