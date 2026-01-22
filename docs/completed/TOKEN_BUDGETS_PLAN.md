@@ -1,10 +1,15 @@
 # Token Counting & Zone Budgets Implementation Plan
 
+> **✅ COMPLETED**
+>
+> This feature has been fully implemented. All core phases are complete.
+> See [ROADMAP.md](../ROADMAP.md) for current status.
+
 ## Overview
 
 This document outlines the implementation plan for token counting, zone budgets, and usage tracking in ContextForgeTS. These features bring parity with the Python ContextForge implementation.
 
-**Status:** Planning
+**Status:** ✅ Complete
 **Priority:** High - Required for production context management
 **Dependencies:** Basic LLM generation (completed)
 
@@ -22,16 +27,17 @@ This document outlines the implementation plan for token counting, zone budgets,
 | Auto-save to WORKING | ✅ Done | Generated content saved as ASSISTANT block |
 | Rough token estimation | ✅ Done | 4 chars/token approximation in `convex/lib/context.ts` |
 
-### What's Missing
+### Implementation Status
 
-| Feature | Priority | Python Reference |
-|---------|----------|------------------|
-| Per-block token counting | High | `block.current_tokens`, `block.original_tokens` |
-| Zone token budgets | High | `ZoneConfig` with per-zone limits |
-| Generation usage tracking | High | `inputTokens`, `outputTokens`, `costUsd` |
-| Budget enforcement/warnings | Medium | Auto-eviction, budget warnings |
-| Accurate tokenizer | Medium | `litellm.token_counter()` |
-| Compression support | Low | `is_compressed` flag |
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Per-block token counting | ✅ Done | `block.tokens`, `block.originalTokens` in schema |
+| Zone token budgets | ✅ Done | `session.budgets` with per-zone limits |
+| Generation usage tracking | ✅ Done | `inputTokens`, `outputTokens`, `costUsd` on generations |
+| Budget enforcement/warnings | ✅ Done | `checkBudget` query, warning/danger status |
+| Accurate tokenizer | ✅ Done | `js-tiktoken` in `convex/lib/tokenizer.ts` |
+| UI Components | ✅ Done | ZoneHeader, BlockTokenBadge, SessionMetrics |
+| Compression support | ⏳ Not implemented | `is_compressed` flag (future enhancement) |
 
 ---
 

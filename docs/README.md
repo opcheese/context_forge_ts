@@ -22,7 +22,6 @@
 | Document | Description |
 |----------|-------------|
 | [ROADMAP.md](./ROADMAP.md) | Feature slices and development status |
-| [TOKEN_BUDGETS_PLAN.md](./TOKEN_BUDGETS_PLAN.md) | Upcoming token counting feature |
 | [CONTEXT_OPTIMIZATION_AND_CACHING.md](./CONTEXT_OPTIMIZATION_AND_CACHING.md) | LLM caching strategies |
 | [PROGRESS.md](./PROGRESS.md) | Development log and decisions |
 
@@ -34,6 +33,7 @@ Documents for features that have been fully implemented. Kept for historical ref
 
 | Document | Description |
 |----------|-------------|
+| [TOKEN_BUDGETS_PLAN.md](./completed/TOKEN_BUDGETS_PLAN.md) | Token counting and zone budgets (implemented) |
 | [WORKFLOW_SYSTEM_PLAN.md](./completed/WORKFLOW_SYSTEM_PLAN.md) | Templates, projects, workflows (implemented) |
 | [LLM_IMPLEMENTATION_PLAN.md](./completed/LLM_IMPLEMENTATION_PLAN.md) | Original LLM integration plan (implemented) |
 | [PROMPT_ASSEMBLY_REFACTOR.md](./completed/PROMPT_ASSEMBLY_REFACTOR.md) | System prompt extraction (implemented) |

@@ -9,27 +9,30 @@ This document explains the ContextForgeTS database schema, relationships, and de
 ContextForgeTS uses Convex as its database. The schema is defined in `convex/schema.ts`.
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Data Model                                │
-│                                                                  │
-│  ┌─────────────┐      ┌─────────────┐      ┌─────────────┐     │
-│  │  sessions   │──1:N─│   blocks    │      │ generations │     │
-│  │             │      │             │      │             │     │
-│  │  (workspace)│──1:N─│  (content)  │      │ (streaming) │     │
-│  │             │      │             │      │             │     │
-│  │             │──1:N─│             │      │             │     │
-│  └─────────────┘      └─────────────┘      └─────────────┘     │
-│        │                                          │             │
-│        └──────────────1:N─────────────────────────┘             │
-│        │                                                        │
-│        └──────────────1:N─────────────────────────┐             │
-│                                                   │             │
-│                                           ┌─────────────┐       │
-│                                           │  snapshots  │       │
-│                                           │             │       │
-│                                           │  (backup)   │       │
-│                                           └─────────────┘       │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                              Data Model                                       │
+│                                                                               │
+│  ┌─────────────┐      ┌─────────────┐      ┌─────────────┐                   │
+│  │  workflows  │──1:N─│  templates  │      │ generations │                   │
+│  │             │      │             │      │             │                   │
+│  │  (pipeline) │      │  (config)   │      │ (streaming) │                   │
+│  └──────┬──────┘      └─────────────┘      └─────────────┘                   │
+│         │                   │                     │                           │
+│         │                   │ apply               │                           │
+│         ▼                   ▼                     │                           │
+│  ┌─────────────┐      ┌─────────────┐            │                           │
+│  │  projects   │──1:N─│  sessions   │◄───────────┘                           │
+│  │             │      │             │                                         │
+│  │  (grouping) │      │  (workspace)│──1:N─┬─────────────┐                   │
+│  └─────────────┘      └─────────────┘      │             │                   │
+│                              │             │             │                    │
+│                              │             ▼             ▼                    │
+│                              │      ┌─────────────┐ ┌─────────────┐          │
+│                              └──1:N─│   blocks    │ │  snapshots  │          │
+│                                     │             │ │             │          │
+│                                     │  (content)  │ │  (backup)   │          │
+│                                     └─────────────┘ └─────────────┘          │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -46,6 +49,19 @@ ContextForgeTS uses Convex as its database. The schema is defined in `convex/sch
   name?: string              // Display name (e.g., "Project Alpha Docs")
   createdAt: number          // Unix timestamp (ms)
   updatedAt: number          // Unix timestamp (ms)
+  // Token budget configuration
+  budgets?: {
+    permanent: number        // Default: 50000
+    stable: number           // Default: 100000
+    working: number          // Default: 100000
+    total: number            // Default: 500000
+  }
+  // System prompt for LLM interactions
+  systemPrompt?: string
+  // Project/workflow linkage
+  projectId?: Id<"projects">
+  templateId?: Id<"templates">
+  stepNumber?: number
 }
 ```
 
@@ -53,8 +69,10 @@ ContextForgeTS uses Convex as its database. The schema is defined in `convex/sch
 - Users may work on multiple projects simultaneously
 - Testing requires isolated environments
 - Context can be saved/restored per session via snapshots
+- Sessions can be organized into projects for workflow pipelines
 
-**Indexes:** None (small table, queries by `_id` are fast)
+**Indexes:**
+- `by_project` - Query sessions by project ID
 
 ---
 
@@ -73,6 +91,10 @@ ContextForgeTS uses Convex as its database. The schema is defined in `convex/sch
   createdAt: number          // Unix timestamp (ms)
   updatedAt: number          // Unix timestamp (ms)
   testData?: boolean         // Flag for test cleanup
+  // Token tracking
+  tokens?: number            // Current token count
+  originalTokens?: number    // Original token count (before compression)
+  tokenModel?: string        // Model used for counting (e.g., "cl100k_base")
 }
 ```
 
@@ -142,12 +164,18 @@ Benefits:
 {
   _id: Id<"generations">     // Auto-generated Convex ID
   sessionId: Id<"sessions">  // Parent session
-  provider: string           // "ollama" | "claude"
+  provider: string           // "ollama" | "claude" | "openrouter"
   status: Status             // streaming | complete | error
   text: string               // Accumulated text (grows during streaming)
   error?: string             // Error message if status is "error"
   createdAt: number          // Unix timestamp (ms)
   updatedAt: number          // Unix timestamp (ms)
+  // Usage tracking
+  inputTokens?: number       // Prompt tokens used
+  outputTokens?: number      // Completion tokens generated
+  totalTokens?: number       // Total tokens (input + output)
+  costUsd?: number           // Estimated cost in USD
+  durationMs?: number        // Generation duration in milliseconds
 }
 ```
 
@@ -195,6 +223,10 @@ Benefits:
     type: string
     zone: Zone
     position: number
+    // Token tracking (optional for backwards compatibility)
+    tokens?: number
+    originalTokens?: number
+    tokenModel?: string
   }>
 }
 ```
@@ -211,6 +243,106 @@ Benefits:
 - Save state before LLM experiment
 - A/B test different context configurations
 - Undo destructive changes
+
+---
+
+### templates
+
+**Purpose:** Reusable session configurations that can be applied to create consistent starting points.
+
+```typescript
+{
+  _id: Id<"templates">       // Auto-generated Convex ID
+  name: string               // Template name
+  description?: string       // Optional description
+  systemPrompt?: string      // Default system prompt
+  blocks: Array<{            // Block configurations
+    content: string
+    type: string
+    zone: Zone
+    position: number
+  }>
+  // Workflow linkage
+  workflowId?: Id<"workflows">
+  stepOrder?: number
+  createdAt: number          // Unix timestamp (ms)
+  updatedAt: number          // Unix timestamp (ms)
+}
+```
+
+**Indexes:**
+- `by_workflow` - Query templates for a workflow
+
+**Use cases:**
+- Create reusable project setups
+- Define workflow step templates
+- Share configurations between sessions
+
+---
+
+### projects
+
+**Purpose:** Group related sessions together for organized work.
+
+```typescript
+{
+  _id: Id<"projects">        // Auto-generated Convex ID
+  name: string               // Project name
+  description?: string       // Optional description
+  workflowId?: Id<"workflows">  // Link to workflow for step-by-step process
+  currentStep?: number       // Current workflow step (0-indexed)
+  createdAt: number          // Unix timestamp (ms)
+  updatedAt: number          // Unix timestamp (ms)
+}
+```
+
+**Indexes:** None (small table)
+
+**Use cases:**
+- Group sessions for a game design project
+- Track progress through a workflow
+- Organize related documents
+
+---
+
+### workflows
+
+**Purpose:** Multi-step document creation pipelines with templates and context carry-forward.
+
+```typescript
+{
+  _id: Id<"workflows">       // Auto-generated Convex ID
+  name: string               // Workflow name
+  description?: string       // Optional description
+  steps: Array<{             // Ordered steps
+    templateId?: Id<"templates">  // Template to apply for this step
+    name: string                  // Step name
+    description?: string          // Step description
+    carryForwardZones?: Zone[]    // Which zones to copy from previous step
+  }>
+  createdAt: number          // Unix timestamp (ms)
+  updatedAt: number          // Unix timestamp (ms)
+}
+```
+
+**Indexes:** None (small table)
+
+**Step Carry-Forward:**
+When advancing to the next step, blocks from specified zones are copied:
+```
+Step 1 Session                    Step 2 Session
+┌──────────────────┐             ┌──────────────────┐
+│ PERMANENT blocks │ ─copy─────► │ PERMANENT blocks │ (if in carryForwardZones)
+│ STABLE blocks    │ ─copy─────► │ STABLE blocks    │ (if in carryForwardZones)
+│ WORKING blocks   │ ─────×───── │                  │ (typically not carried)
+└──────────────────┘             │ + Template blocks│
+                                 └──────────────────┘
+```
+
+**Use cases:**
+- IRD documentation workflow: Brief → Personas → Scenarios → Stories
+- Game design workflow: Concept → Mechanics → Content → Polish
+- Any multi-step document creation process
 
 ---
 
@@ -265,6 +397,45 @@ const snapshots = await ctx.db
   .withIndex("by_session", q => q.eq("sessionId", sessionId))
   .order("desc")
   .collect()
+```
+
+### Project → Sessions (1:N)
+
+```typescript
+// Get sessions for a project
+const sessions = await ctx.db
+  .query("sessions")
+  .withIndex("by_project", q => q.eq("projectId", projectId))
+  .collect()
+```
+
+### Workflow → Templates (1:N)
+
+```typescript
+// Get templates linked to a workflow
+const templates = await ctx.db
+  .query("templates")
+  .withIndex("by_workflow", q => q.eq("workflowId", workflowId))
+  .collect()
+```
+
+### Project → Workflow (N:1)
+
+```typescript
+// Get workflow for a project
+if (project.workflowId) {
+  const workflow = await ctx.db.get(project.workflowId)
+}
+```
+
+### Template → Session (apply relationship)
+
+When a template is applied to a session, blocks are copied and the session is linked:
+```typescript
+await ctx.db.patch(sessionId, {
+  templateId: args.templateId,
+  updatedAt: Date.now(),
+})
 ```
 
 ---

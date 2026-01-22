@@ -269,45 +269,25 @@ snapshots: defineTable({
 
 **Goal:** Add accurate token counting, zone budgets, and usage tracking.
 
-**Status:** 🔜 Planned
+**Status:** ✅ Complete
 
-**Details:** See [TOKEN_BUDGETS_PLAN.md](./TOKEN_BUDGETS_PLAN.md)
+**Details:** See [completed/TOKEN_BUDGETS_PLAN.md](./completed/TOKEN_BUDGETS_PLAN.md)
 
-### Schema Changes
-```typescript
-blocks: defineTable({
-  // ... existing fields
-  tokens: v.optional(v.number()),
-  originalTokens: v.optional(v.number()),
-  tokenModel: v.optional(v.string()),
-})
+### Features
+- [x] Per-block token counting with `js-tiktoken`
+- [x] Zone budgets (PERMANENT: 50K, STABLE: 100K, WORKING: 100K, Total: 500K)
+- [x] Generation usage tracking (input/output tokens, cost)
+- [x] Budget validation queries (`checkBudget`, `getBudgetStatus`)
+- [x] UI components (ZoneHeader, BlockTokenBadge, SessionMetrics)
+- [x] Warning/danger status at 80%/95% thresholds
 
-sessions: defineTable({
-  // ... existing fields
-  budgets: v.optional(v.object({
-    permanent: v.number(),   // Default: 50000
-    stable: v.number(),      // Default: 100000
-    working: v.number(),     // Default: 100000
-    total: v.number(),       // Default: 500000
-  })),
-})
-
-generations: defineTable({
-  // ... existing fields
-  inputTokens: v.optional(v.number()),
-  outputTokens: v.optional(v.number()),
-  costUsd: v.optional(v.number()),
-})
-```
-
-### Implementation Phases
-1. [ ] Schema updates (blocks, sessions, generations)
-2. [ ] Token counting library (`js-tiktoken`)
-3. [ ] Per-block token tracking
-4. [ ] Zone budget metrics
-5. [ ] Generation usage tracking
-6. [ ] UI components (zone headers, metrics panel)
-7. [ ] Budget warnings & validation
+### Files
+- `convex/lib/tokenizer.ts` - Token counting with js-tiktoken
+- `convex/metrics.ts` - Budget queries (getZoneMetrics, checkBudget, getBudgetStatus)
+- `src/components/metrics/ZoneHeader.tsx` - Zone header with token display
+- `src/components/metrics/BlockTokenBadge.tsx` - Per-block token badge
+- `src/components/metrics/SessionMetrics.tsx` - Session metrics panel
+- `src/hooks/useBudgetCheck.ts` - Budget checking hook
 
 ---
 
@@ -337,8 +317,8 @@ generations: defineTable({
 | 5. LLM Integration | ✅ Done | Ollama + Claude Code streaming |
 | 5.5. Brainstorming | ✅ Done | Multi-turn, OpenRouter, LangFuse |
 | 5.6. Workflows | ✅ Done | Templates, projects, workflows |
-| 5.7. Token Budgets | 🔜 Next | See [TOKEN_BUDGETS_PLAN.md](./TOKEN_BUDGETS_PLAN.md) |
-| 6. Polish | Planned | - |
+| 5.7. Token Budgets | ✅ Done | js-tiktoken, zone budgets, UI |
+| 6. Polish | 🔜 Next | Theme system, search, import/export |
 
 ---
 
@@ -368,10 +348,10 @@ Slice 3: DnD    Slice 4: Editor
         │               │
         └───────┬───────┘
                 ▼
-   Slice 5.7: Token Budgets 🔜
+   Slice 5.7: Token Budgets ✅
                 │
                 ▼
-       Slice 6: Polish
+       Slice 6: Polish 🔜
 ```
 
 ---
@@ -398,11 +378,12 @@ Slice 3: DnD    Slice 4: Editor
 3. Client subscribes via `useQuery(api.generations.get, { generationId })`
 4. React effect detects text changes and calls `onChunk` callbacks
 
-### Token Counting Integration
-The recommended approach is `js-tiktoken` for accurate counting in Convex runtime:
+### Token Counting Implementation
+Token counting is implemented with `js-tiktoken`:
 - Pure JS implementation (no WASM required)
 - Compatible with Convex actions and mutations
 - Matches Python's `tiktoken` accuracy
 - ~100KB bundle size
+- Cached encoding instances for performance
 
-See [TOKEN_BUDGETS_PLAN.md](./TOKEN_BUDGETS_PLAN.md) for full implementation plan.
+See [completed/TOKEN_BUDGETS_PLAN.md](./completed/TOKEN_BUDGETS_PLAN.md) for implementation details.
