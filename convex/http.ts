@@ -15,7 +15,11 @@ import { httpAction } from "./_generated/server"
 import { internal } from "./_generated/api"
 import { api } from "./_generated/api"
 import type { Id } from "./_generated/dataModel"
-import { assembleContext, assembleContextWithConversation } from "./lib/context"
+import {
+  assembleContext,
+  assembleContextWithConversation,
+  extractSystemPromptFromBlocks,
+} from "./lib/context"
 import {
   streamChat as streamOllama,
   checkHealth as checkOllamaHealth,
@@ -147,10 +151,9 @@ http.route({
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     const body = await request.json()
-    const { sessionId, prompt, systemPrompt } = body as {
+    const { sessionId, prompt } = body as {
       sessionId: string
       prompt: string
-      systemPrompt?: string
     }
 
     // Validate required fields
@@ -184,8 +187,16 @@ http.route({
       sessionId: sessionId as Id<"sessions">,
     })
 
-    // Assemble context with correct zone ordering (PERMANENT → STABLE → WORKING)
-    const messages = assembleContext(blocks, prompt, systemPrompt)
+    // Extract system prompt from blocks (first system_prompt block in PERMANENT zone)
+    const systemPrompt = extractSystemPromptFromBlocks(blocks)
+
+    // Assemble context (PERMANENT → STABLE → WORKING), excludes system_prompt blocks
+    const contextMessages = assembleContext(blocks, prompt)
+
+    // Prepend system prompt as first message for Ollama
+    const messages = systemPrompt
+      ? [{ role: "system" as const, content: systemPrompt }, ...contextMessages]
+      : contextMessages
 
     // Create streaming response using TransformStream
     const { readable, writable } = new TransformStream()
@@ -274,11 +285,10 @@ http.route({
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     const body = await request.json()
-    const { sessionId, conversationHistory, newMessage, systemPrompt } = body as {
+    const { sessionId, conversationHistory, newMessage } = body as {
       sessionId: string
       conversationHistory: Array<{ role: "user" | "assistant"; content: string }>
       newMessage: string
-      systemPrompt?: string
     }
 
     // Validate required fields
@@ -312,13 +322,20 @@ http.route({
       sessionId: sessionId as Id<"sessions">,
     })
 
-    // Assemble context with conversation history
-    const messages = assembleContextWithConversation(
+    // Extract system prompt from blocks (first system_prompt block in PERMANENT zone)
+    const systemPrompt = extractSystemPromptFromBlocks(blocks)
+
+    // Assemble context with conversation history (excludes system_prompt blocks)
+    const contextMessages = assembleContextWithConversation(
       blocks,
       conversationHistory || [],
-      newMessage,
-      systemPrompt
+      newMessage
     )
+
+    // Prepend system prompt as first message for Ollama
+    const messages = systemPrompt
+      ? [{ role: "system" as const, content: systemPrompt }, ...contextMessages]
+      : contextMessages
 
     // Create streaming response using TransformStream
     const { readable, writable } = new TransformStream()

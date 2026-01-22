@@ -310,12 +310,7 @@ export const startProject = mutation({
     if (firstStep.templateId) {
       const template = await ctx.db.get(firstStep.templateId)
       if (template) {
-        // Set system prompt
-        if (template.systemPrompt) {
-          await ctx.db.patch(sessionId, { systemPrompt: template.systemPrompt })
-        }
-
-        // Create blocks from template
+        // Create blocks from template (including system_prompt blocks)
         for (const blockData of template.blocks) {
           await ctx.db.insert("blocks", {
             sessionId,
@@ -405,11 +400,6 @@ export const advanceStep = mutation({
     if (nextStep.templateId) {
       const template = await ctx.db.get(nextStep.templateId)
       if (template) {
-        // Set system prompt
-        if (template.systemPrompt) {
-          await ctx.db.patch(sessionId, { systemPrompt: template.systemPrompt })
-        }
-
         // Get current max positions per zone (from carried blocks)
         const existingBlocks = await ctx.db
           .query("blocks")
@@ -423,7 +413,7 @@ export const advanceStep = mutation({
           }
         }
 
-        // Create blocks from template (after carried blocks)
+        // Create blocks from template (including system_prompt blocks, after carried blocks)
         for (const blockData of template.blocks) {
           const position = maxPositions[blockData.zone] + 1 + blockData.position
 

@@ -11,7 +11,7 @@ interface UseClaudeGenerateOptions {
 }
 
 interface UseClaudeGenerateResult {
-  generate: (prompt: string, systemPrompt?: string) => Promise<void>
+  generate: (prompt: string) => Promise<void>
   isGenerating: boolean
   streamedText: string
   error: string | null
@@ -103,17 +103,17 @@ export function useClaudeGenerate(
   ])
 
   const generate = useCallback(
-    async (prompt: string, systemPrompt?: string) => {
+    async (prompt: string) => {
       setIsGenerating(true)
       setStreamedText("")
       setError(null)
       prevTextRef.current = ""
 
       try {
+        // System prompt is extracted from blocks by the backend
         const result = await startGeneration({
           sessionId,
           prompt,
-          systemPrompt,
         })
         setGenerationId(result.generationId)
       } catch (err) {

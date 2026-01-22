@@ -28,7 +28,7 @@ interface UseBrainstormResult {
   // Actions
   open: (provider?: Provider) => void
   close: () => void
-  sendMessage: (content: string, systemPrompt?: string) => Promise<void>
+  sendMessage: (content: string) => Promise<void>
   clearConversation: () => void
   setProvider: (provider: Provider) => void
 
@@ -163,8 +163,9 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
   }, [])
 
   // Send message via Ollama (HTTP streaming)
+  // System prompt is now extracted from blocks by the backend
   const sendMessageOllama = useCallback(
-    async (content: string, systemPrompt?: string) => {
+    async (content: string) => {
       abortControllerRef.current = new AbortController()
 
       try {
@@ -180,7 +181,6 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
             sessionId,
             conversationHistory,
             newMessage: content,
-            systemPrompt,
           }),
           signal: abortControllerRef.current.signal,
         })
@@ -266,8 +266,9 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
   )
 
   // Send message via Claude (Convex mutations)
+  // System prompt is now extracted from blocks by the backend
   const sendMessageClaude = useCallback(
-    async (content: string, systemPrompt?: string) => {
+    async (content: string) => {
       const conversationHistory = messages.map((msg) => ({
         role: msg.role as "user" | "assistant",
         content: msg.content,
@@ -277,7 +278,6 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
         sessionId,
         conversationHistory,
         newMessage: content,
-        systemPrompt,
       })
       setGenerationId(result.generationId)
     },
@@ -285,8 +285,9 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
   )
 
   // Send a new message (dispatches to correct provider)
+  // System prompt is now extracted from blocks by the backend
   const sendMessage = useCallback(
-    async (content: string, systemPrompt?: string) => {
+    async (content: string) => {
       if (!content.trim() || isStreaming) return
 
       setError(null)
@@ -307,9 +308,9 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
 
       try {
         if (provider === "ollama") {
-          await sendMessageOllama(content.trim(), systemPrompt)
+          await sendMessageOllama(content.trim())
         } else {
-          await sendMessageClaude(content.trim(), systemPrompt)
+          await sendMessageClaude(content.trim())
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error"

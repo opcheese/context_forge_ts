@@ -17,7 +17,11 @@ import { query as claudeQuery } from "@anthropic-ai/claude-agent-sdk"
 import { spawn, execSync } from "child_process"
 import * as fs from "fs"
 import * as os from "os"
-import { assembleContext, assembleContextWithConversation } from "./lib/context"
+import {
+  assembleContext,
+  assembleContextWithConversation,
+  extractSystemPromptFromBlocks,
+} from "./lib/context"
 
 // Get Claude Code executable path by trying to locate it
 const getClaudeCodePath = (): string | undefined => {
@@ -298,14 +302,14 @@ export const streamGenerate = action({
  * Stream generate with context assembly.
  *
  * This action is called by the scheduler from startClaudeGeneration mutation.
- * It assembles context from blocks and then streams the generation.
+ * It extracts the system prompt from blocks and passes it to the provider,
+ * then assembles remaining context and streams the generation.
  */
 export const streamGenerateWithContext = action({
   args: {
     generationId: v.id("generations"),
     sessionId: v.id("sessions"),
     prompt: v.string(),
-    systemPrompt: v.optional(v.string()),
     throttleMs: v.optional(v.number()),
   },
   handler: async (ctx, args): Promise<void> => {
@@ -317,8 +321,11 @@ export const streamGenerateWithContext = action({
       sessionId: args.sessionId,
     })
 
-    // Assemble context
-    const messages = assembleContext(blocks, args.prompt, args.systemPrompt)
+    // Extract system prompt from blocks to pass to provider
+    const systemPrompt = extractSystemPromptFromBlocks(blocks)
+
+    // Assemble context (excludes system_prompt blocks - passed to provider separately)
+    const messages = assembleContext(blocks, args.prompt)
     const prompt = formatMessagesAsPrompt(messages)
 
     let buffer = ""
@@ -349,7 +356,7 @@ export const streamGenerateWithContext = action({
         options: {
           allowedTools: [], // Text-only mode
           maxTurns: 1,
-          systemPrompt: args.systemPrompt,
+          systemPrompt, // Pass system prompt from blocks to provider
           pathToClaudeCodeExecutable: getClaudeCodePath(),
           includePartialMessages: true, // Enable streaming deltas
         },
@@ -434,7 +441,8 @@ export const streamGenerateWithContext = action({
  * Stream brainstorm message with context and conversation history.
  *
  * This action is called by the scheduler from startBrainstormGeneration mutation.
- * It assembles context from blocks, includes conversation history, and streams the response.
+ * It extracts the system prompt from blocks, passes it to the provider,
+ * assembles remaining context with conversation history, and streams the response.
  * Unlike streamGenerateWithContext, this does NOT auto-save to blocks.
  */
 export const streamBrainstormMessage = action({
@@ -448,7 +456,6 @@ export const streamBrainstormMessage = action({
       })
     ),
     newMessage: v.string(),
-    systemPrompt: v.optional(v.string()),
     throttleMs: v.optional(v.number()),
   },
   handler: async (ctx, args): Promise<void> => {
@@ -460,12 +467,14 @@ export const streamBrainstormMessage = action({
       sessionId: args.sessionId,
     })
 
-    // Assemble context with conversation history
+    // Extract system prompt from blocks to pass to provider
+    const systemPrompt = extractSystemPromptFromBlocks(blocks)
+
+    // Assemble context with conversation history (excludes system_prompt blocks)
     const messages = assembleContextWithConversation(
       blocks,
       args.conversationHistory,
-      args.newMessage,
-      args.systemPrompt
+      args.newMessage
     )
     const prompt = formatMessagesAsPrompt(messages)
 
@@ -497,7 +506,7 @@ export const streamBrainstormMessage = action({
         options: {
           allowedTools: [], // Text-only mode
           maxTurns: 1,
-          systemPrompt: args.systemPrompt,
+          systemPrompt, // Pass system prompt from blocks to provider
           pathToClaudeCodeExecutable: getClaudeCodePath(),
           includePartialMessages: true, // Enable streaming deltas
         },

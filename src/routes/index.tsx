@@ -16,6 +16,14 @@ import { BrainstormPanel } from "@/components/BrainstormPanel"
 import { SessionMetrics, BlockTokenBadge, ZoneHeader } from "@/components/metrics"
 import { ContextExport } from "@/components/ContextExport"
 import { cn } from "@/lib/utils"
+import {
+  BLOCK_TYPES,
+  BLOCK_TYPE_METADATA,
+  getBlockTypesByCategory,
+  getBlockTypeMetadata,
+  CATEGORY_LABELS,
+  type BlockType,
+} from "@/lib/blockTypes"
 
 // Zone display info
 const ZONE_INFO: Record<Zone, { label: string; description: string }> = {
@@ -33,9 +41,6 @@ const ZONE_INFO: Record<Zone, { label: string; description: string }> = {
   },
 }
 
-// Block type options
-const BLOCK_TYPES = ["NOTE", "CODE", "SYSTEM", "USER", "ASSISTANT"] as const
-
 // Simple client-side token estimation (4 chars/token)
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4)
@@ -50,8 +55,9 @@ function AddBlockForm({
   defaultZone?: Zone
 }) {
   const [content, setContent] = useState("")
-  const [type, setType] = useState<string>("NOTE")
+  const [type, setType] = useState<BlockType>("note")
   const [zone, setZone] = useState<Zone>(defaultZone)
+  const blockTypesByCategory = useMemo(() => getBlockTypesByCategory(), [])
   const [budgetWarning, setBudgetWarning] = useState<string | null>(null)
   const createBlock = useMutation(api.blocks.create)
 
@@ -117,13 +123,25 @@ function AddBlockForm({
           <select
             id="block-type"
             value={type}
-            onChange={(e) => setType(e.target.value)}
+            onChange={(e) => {
+              const newType = e.target.value as BlockType
+              setType(newType)
+              // Update zone to match type's default zone
+              const meta = BLOCK_TYPE_METADATA[newType]
+              if (meta) {
+                setZone(meta.defaultZone)
+              }
+            }}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
-            {BLOCK_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
+            {Object.entries(blockTypesByCategory).map(([category, types]) => (
+              <optgroup key={category} label={CATEGORY_LABELS[category]}>
+                {types.map((t) => (
+                  <option key={t} value={t}>
+                    {BLOCK_TYPE_METADATA[t].displayName}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </div>
@@ -272,13 +290,17 @@ function BlockCard({
 
   const timeAgo = formatTimeAgo(createdAt)
   const otherZones = ZONES.filter((z) => z !== zone)
+  const typeMeta = getBlockTypeMetadata(type)
 
   return (
     <div className="rounded-lg border border-border bg-card p-3 select-none">
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-            {type}
+          <span className={cn(
+            "inline-flex items-center rounded-md px-2 py-1 text-xs font-medium",
+            typeMeta.color
+          )}>
+            {typeMeta.displayName}
           </span>
           <span className="text-xs text-muted-foreground">{timeAgo}</span>
           <BlockTokenBadge tokens={tokens} />

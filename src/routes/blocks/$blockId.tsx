@@ -2,15 +2,18 @@
  * Block editor page - Edit a single block's content and type.
  */
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import type { Id } from "../../../convex/_generated/dataModel"
-
-// Block type options
-const BLOCK_TYPES = ["NOTE", "CODE", "SYSTEM", "USER", "ASSISTANT"] as const
+import {
+  BLOCK_TYPE_METADATA,
+  getBlockTypesByCategory,
+  CATEGORY_LABELS,
+  type BlockType,
+} from "@/lib/blockTypes"
 
 // Format date for display
 function formatDate(timestamp: number): string {
@@ -25,9 +28,10 @@ function BlockEditor({ blockId }: { blockId: Id<"blocks"> }) {
   const removeBlock = useMutation(api.blocks.remove)
 
   const [content, setContent] = useState("")
-  const [type, setType] = useState<string>("NOTE")
+  const [type, setType] = useState<string>("note")
   const [isDirty, setIsDirty] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const blockTypesByCategory = useMemo(() => getBlockTypesByCategory(), [])
 
   // Initialize form when block loads
   useEffect(() => {
@@ -138,10 +142,14 @@ function BlockEditor({ blockId }: { blockId: Id<"blocks"> }) {
             onChange={(e) => handleTypeChange(e.target.value)}
             className="w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
-            {BLOCK_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
+            {Object.entries(blockTypesByCategory).map(([category, types]) => (
+              <optgroup key={category} label={CATEGORY_LABELS[category]}>
+                {types.map((t) => (
+                  <option key={t} value={t}>
+                    {BLOCK_TYPE_METADATA[t].displayName}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </div>

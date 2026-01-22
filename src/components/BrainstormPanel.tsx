@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../convex/_generated/api"
 import { Button } from "@/components/ui/button"
@@ -54,19 +54,28 @@ interface BrainstormPanelProps {
 export function BrainstormPanel({ sessionId }: BrainstormPanelProps) {
   const health = useProviderHealth()
   const [showSystemPrompt, setShowSystemPrompt] = useState(false)
-  const [editedSystemPrompt, setEditedSystemPrompt] = useState("")
-  const [isSavingPrompt, setIsSavingPrompt] = useState(false)
+  const [newSystemPrompt, setNewSystemPrompt] = useState("")
+  const [isCreatingBlock, setIsCreatingBlock] = useState(false)
 
-  // Get session to access system prompt
-  const session = useQuery(api.sessions.get, { id: sessionId })
-  const updateSession = useMutation(api.sessions.update)
+  const createBlock = useMutation(api.blocks.create)
 
-  // Sync edited prompt with session data
-  useEffect(() => {
-    if (session?.systemPrompt !== undefined) {
-      setEditedSystemPrompt(session.systemPrompt ?? "")
-    }
-  }, [session?.systemPrompt])
+  // Get blocks in PERMANENT zone to find system_prompt blocks
+  const permanentBlocks = useQuery(api.blocks.listByZone, {
+    sessionId,
+    zone: "PERMANENT",
+  })
+
+  // Find the active system_prompt block (first by position in PERMANENT zone)
+  const systemPromptBlock = useMemo(() => {
+    if (!permanentBlocks) return null
+    const systemPromptBlocks = permanentBlocks
+      .filter((b) => b.type === "system_prompt")
+      .sort((a, b) => a.position - b.position)
+    return systemPromptBlocks[0] ?? null
+  }, [permanentBlocks])
+
+  // Get the active system prompt content
+  const activeSystemPrompt = systemPromptBlock?.content ?? ""
 
   const brainstorm = useBrainstorm({
     sessionId,
@@ -81,20 +90,23 @@ export function BrainstormPanel({ sessionId }: BrainstormPanelProps) {
     }
   }
 
-  const handleSaveSystemPrompt = async () => {
-    setIsSavingPrompt(true)
+  // Create a new system_prompt block in PERMANENT zone
+  const handleCreateSystemPromptBlock = async () => {
+    if (!newSystemPrompt.trim()) return
+
+    setIsCreatingBlock(true)
     try {
-      await updateSession({
-        id: sessionId,
-        systemPrompt: editedSystemPrompt.trim() || undefined,
+      await createBlock({
+        sessionId,
+        content: newSystemPrompt.trim(),
+        type: "system_prompt",
+        zone: "PERMANENT",
       })
+      setNewSystemPrompt("")
     } finally {
-      setIsSavingPrompt(false)
+      setIsCreatingBlock(false)
     }
   }
-
-  // Get the current system prompt (either from session or edited)
-  const currentSystemPrompt = session?.systemPrompt ?? ""
 
   // Provider status indicator
   const getProviderStatus = (name: string, status: { ok: boolean } | null) => {
@@ -159,37 +171,55 @@ export function BrainstormPanel({ sessionId }: BrainstormPanelProps) {
         Have a multi-turn conversation with your context. Save valuable messages as blocks.
       </p>
 
-      {/* System prompt editor */}
+      {/* System prompt section */}
       {showSystemPrompt && (
         <div className="mt-4 p-4 rounded-md bg-muted/50 border border-border">
           <div className="flex items-center justify-between mb-2">
             <label htmlFor="system-prompt" className="text-sm font-medium">
               System Prompt (LLM Role)
             </label>
-            {currentSystemPrompt && (
-              <span className="text-xs text-green-600">Active</span>
+            {systemPromptBlock && (
+              <span className="inline-flex items-center gap-1 text-xs bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300 px-2 py-0.5 rounded">
+                Active Block
+              </span>
             )}
           </div>
-          <textarea
-            id="system-prompt"
-            value={editedSystemPrompt}
-            onChange={(e) => setEditedSystemPrompt(e.target.value)}
-            placeholder="Define the LLM's role and behavior. E.g., 'You are a game design expert specializing in narrative systems...'"
-            rows={3}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none font-mono"
-          />
-          <div className="flex items-center justify-between mt-2">
-            <span className="text-xs text-muted-foreground">
-              This prompt will be sent with every brainstorm message.
-            </span>
-            <Button
-              size="sm"
-              onClick={handleSaveSystemPrompt}
-              disabled={isSavingPrompt || editedSystemPrompt === (session?.systemPrompt ?? "")}
-            >
-              {isSavingPrompt ? "Saving..." : "Save Prompt"}
-            </Button>
-          </div>
+
+          {systemPromptBlock ? (
+            // Show existing system prompt block (read-only)
+            <div className="space-y-2">
+              <div className="p-3 rounded-md bg-background border border-input text-sm font-mono whitespace-pre-wrap">
+                {systemPromptBlock.content}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Edit this block in the PERMANENT zone above.
+              </p>
+            </div>
+          ) : (
+            // Show form to create new system prompt block
+            <div className="space-y-2">
+              <textarea
+                id="system-prompt"
+                value={newSystemPrompt}
+                onChange={(e) => setNewSystemPrompt(e.target.value)}
+                placeholder="Define the LLM's role and behavior. E.g., 'You are a game design expert specializing in narrative systems...'"
+                rows={3}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none font-mono"
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  This prompt will be sent with every brainstorm message.
+                </span>
+                <Button
+                  size="sm"
+                  onClick={handleCreateSystemPromptBlock}
+                  disabled={isCreatingBlock || !newSystemPrompt.trim()}
+                >
+                  {isCreatingBlock ? "Creating..." : "Create System Prompt Block"}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -223,12 +253,12 @@ export function BrainstormPanel({ sessionId }: BrainstormPanelProps) {
         streamingText={brainstorm.streamingText}
         provider={brainstorm.provider}
         onProviderChange={brainstorm.setProvider}
-        onSendMessage={(content) => brainstorm.sendMessage(content, currentSystemPrompt || undefined)}
+        onSendMessage={(content) => brainstorm.sendMessage(content)}
         onClearConversation={brainstorm.clearConversation}
         onSaveMessage={handleSaveMessage}
         error={brainstorm.error}
         providerHealth={health}
-        systemPrompt={currentSystemPrompt}
+        systemPrompt={activeSystemPrompt}
       />
     </div>
   )

@@ -36,7 +36,6 @@ export const create = mutation({
   args: {
     name: v.string(),
     description: v.optional(v.string()),
-    systemPrompt: v.optional(v.string()),
     blocks: v.array(
       v.object({
         content: v.string(),
@@ -51,7 +50,6 @@ export const create = mutation({
     return await ctx.db.insert("templates", {
       name: args.name,
       description: args.description,
-      systemPrompt: args.systemPrompt,
       blocks: args.blocks,
       createdAt: now,
       updatedAt: now,
@@ -61,7 +59,7 @@ export const create = mutation({
 
 /**
  * Create a template from an existing session.
- * Snapshots all blocks and the system prompt.
+ * Snapshots all blocks (including system_prompt blocks).
  */
 export const createFromSession = mutation({
   args: {
@@ -103,7 +101,6 @@ export const createFromSession = mutation({
     return await ctx.db.insert("templates", {
       name: args.name,
       description: args.description,
-      systemPrompt: session.systemPrompt,
       blocks: blockSnapshots,
       createdAt: now,
       updatedAt: now,
@@ -179,9 +176,8 @@ export const applyToSession = mutation({
       })
     }
 
-    // Update session with template's system prompt and link to template
+    // Update session link to template
     await ctx.db.patch(args.sessionId, {
-      systemPrompt: template.systemPrompt,
       templateId: args.templateId,
       updatedAt: now,
     })
@@ -198,7 +194,6 @@ export const update = mutation({
     id: v.id("templates"),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
-    systemPrompt: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const template = await ctx.db.get(args.id)
@@ -209,7 +204,6 @@ export const update = mutation({
     const updates: Record<string, unknown> = { updatedAt: Date.now() }
     if (args.name !== undefined) updates.name = args.name
     if (args.description !== undefined) updates.description = args.description
-    if (args.systemPrompt !== undefined) updates.systemPrompt = args.systemPrompt
 
     await ctx.db.patch(args.id, updates)
     return args.id

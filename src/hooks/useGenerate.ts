@@ -9,7 +9,7 @@ interface UseGenerateOptions {
 }
 
 interface UseGenerateResult {
-  generate: (prompt: string, systemPrompt?: string) => Promise<void>
+  generate: (prompt: string) => Promise<void>
   isGenerating: boolean
   streamedText: string
   error: string | null
@@ -50,7 +50,7 @@ export function useGenerate(options: UseGenerateOptions): UseGenerateResult {
   }, [])
 
   const generate = useCallback(
-    async (prompt: string, systemPrompt?: string) => {
+    async (prompt: string) => {
       setIsGenerating(true)
       setStreamedText("")
       setError(null)
@@ -58,10 +58,11 @@ export function useGenerate(options: UseGenerateOptions): UseGenerateResult {
       abortControllerRef.current = new AbortController()
 
       try {
+        // System prompt is extracted from blocks by the backend
         const response = await fetch(getChatApiUrl(), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId, prompt, systemPrompt }),
+          body: JSON.stringify({ sessionId, prompt }),
           signal: abortControllerRef.current.signal,
         })
 

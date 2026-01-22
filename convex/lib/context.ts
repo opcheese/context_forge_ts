@@ -14,23 +14,45 @@ export interface ConversationMessage {
 }
 
 /**
- * Assemble blocks into messages for LLM.
- * Order: PERMANENT → STABLE → WORKING (critical for provider caching)
+ * Extract the active system prompt from blocks.
+ * The first system_prompt block in the PERMANENT zone (by position) is active.
+ *
+ * @returns The active system prompt content, or undefined if none exists
+ */
+export function extractSystemPromptFromBlocks(
+  blocks: Doc<"blocks">[]
+): string | undefined {
+  const systemPromptBlocks = blocks
+    .filter((b) => b.type === "system_prompt" && b.zone === "PERMANENT")
+    .sort((a, b) => a.position - b.position)
+
+  return systemPromptBlocks[0]?.content
+}
+
+/**
+ * Assemble blocks into user context messages for LLM.
+ * Order: PERMANENT → STABLE → WORKING → User prompt
+ *
+ * IMPORTANT: This function does NOT include system_prompt blocks in output.
+ * Callers should use extractSystemPromptFromBlocks() separately and pass
+ * the system prompt to the provider via provider-specific options.
  *
  * Cache-friendly structure:
- * - PERMANENT zone becomes system message (highest cache priority)
+ * - PERMANENT zone as system message (cached)
  * - STABLE zone as reference material
  * - WORKING zone as current context (dynamic, not cached)
  * - User prompt always last
+ *
+ * @param blocks - All blocks for the session
+ * @param userPrompt - The current user message
  */
 export function assembleContext(
   blocks: Doc<"blocks">[],
-  userPrompt: string,
-  systemPrompt?: string
+  userPrompt: string
 ): ContextMessage[] {
   const messages: ContextMessage[] = []
 
-  // Group blocks by zone
+  // Group blocks by zone, excluding system_prompt blocks (handled separately by caller)
   const byZone: Record<Zone, Doc<"blocks">[]> = {
     PERMANENT: [],
     STABLE: [],
@@ -38,6 +60,10 @@ export function assembleContext(
   }
 
   for (const block of blocks) {
+    // Skip system_prompt blocks - caller extracts them via extractSystemPromptFromBlocks()
+    if (block.type === "system_prompt") {
+      continue
+    }
     const zone = block.zone as Zone
     if (byZone[zone]) {
       byZone[zone].push(block)
@@ -49,7 +75,7 @@ export function assembleContext(
     byZone[zone].sort((a, b) => a.position - b.position)
   }
 
-  // 1. PERMANENT zone as system message (most stable, cached first)
+  // 1. PERMANENT zone as system message (most stable, cached)
   const permanentContent = byZone.PERMANENT.map((b) => b.content).join("\n\n")
   if (permanentContent) {
     messages.push({
@@ -58,15 +84,7 @@ export function assembleContext(
     })
   }
 
-  // 2. Optional system prompt from user (added after permanent context)
-  if (systemPrompt) {
-    messages.push({
-      role: "system",
-      content: systemPrompt,
-    })
-  }
-
-  // 3. STABLE zone as reference material
+  // 2. STABLE zone as reference material
   const stableContent = byZone.STABLE.map((b) => b.content).join("\n\n")
   if (stableContent) {
     messages.push({
@@ -75,7 +93,7 @@ export function assembleContext(
     })
   }
 
-  // 4. WORKING zone as current context (dynamic, changes frequently)
+  // 3. WORKING zone as current context (dynamic, changes frequently)
   const workingContent = byZone.WORKING.map((b) => b.content).join("\n\n")
   if (workingContent) {
     messages.push({
@@ -84,7 +102,7 @@ export function assembleContext(
     })
   }
 
-  // 5. Current user prompt (always last)
+  // 4. Current user prompt (always last)
   messages.push({
     role: "user",
     content: userPrompt,
@@ -132,19 +150,26 @@ export function getContextStats(blocks: Doc<"blocks">[]): {
 
 /**
  * Assemble blocks and conversation history into messages for brainstorming.
- * Order: PERMANENT → System prompt → STABLE → WORKING → Conversation history → New message
+ * Order: PERMANENT → STABLE → WORKING → Conversation history → New message
+ *
+ * IMPORTANT: This function does NOT include system_prompt blocks in output.
+ * Callers should use extractSystemPromptFromBlocks() separately and pass
+ * the system prompt to the provider via provider-specific options.
  *
  * This preserves context blocks as prefix and appends the ongoing conversation.
+ *
+ * @param blocks - All blocks for the session
+ * @param conversationHistory - Previous messages in the conversation
+ * @param newMessage - The new user message
  */
 export function assembleContextWithConversation(
   blocks: Doc<"blocks">[],
   conversationHistory: ConversationMessage[],
-  newMessage: string,
-  systemPrompt?: string
+  newMessage: string
 ): ContextMessage[] {
   const messages: ContextMessage[] = []
 
-  // Group blocks by zone
+  // Group blocks by zone, excluding system_prompt blocks (handled separately by caller)
   const byZone: Record<Zone, Doc<"blocks">[]> = {
     PERMANENT: [],
     STABLE: [],
@@ -152,6 +177,10 @@ export function assembleContextWithConversation(
   }
 
   for (const block of blocks) {
+    // Skip system_prompt blocks - caller extracts them via extractSystemPromptFromBlocks()
+    if (block.type === "system_prompt") {
+      continue
+    }
     const zone = block.zone as Zone
     if (byZone[zone]) {
       byZone[zone].push(block)
@@ -163,7 +192,7 @@ export function assembleContextWithConversation(
     byZone[zone].sort((a, b) => a.position - b.position)
   }
 
-  // 1. PERMANENT zone as system message (most stable, cached first)
+  // 1. PERMANENT zone as system message (most stable, cached)
   const permanentContent = byZone.PERMANENT.map((b) => b.content).join("\n\n")
   if (permanentContent) {
     messages.push({
@@ -172,15 +201,7 @@ export function assembleContextWithConversation(
     })
   }
 
-  // 2. Optional system prompt from user (added after permanent context)
-  if (systemPrompt) {
-    messages.push({
-      role: "system",
-      content: systemPrompt,
-    })
-  }
-
-  // 3. STABLE zone as reference material
+  // 2. STABLE zone as reference material
   const stableContent = byZone.STABLE.map((b) => b.content).join("\n\n")
   if (stableContent) {
     messages.push({
@@ -189,7 +210,7 @@ export function assembleContextWithConversation(
     })
   }
 
-  // 4. WORKING zone as current context (dynamic, changes frequently)
+  // 3. WORKING zone as current context (dynamic, changes frequently)
   const workingContent = byZone.WORKING.map((b) => b.content).join("\n\n")
   if (workingContent) {
     messages.push({
@@ -198,7 +219,7 @@ export function assembleContextWithConversation(
     })
   }
 
-  // 5. Conversation history (alternating user/assistant messages)
+  // 4. Conversation history (alternating user/assistant messages)
   for (const msg of conversationHistory) {
     messages.push({
       role: msg.role,
@@ -206,7 +227,7 @@ export function assembleContextWithConversation(
     })
   }
 
-  // 6. New user message (always last)
+  // 5. New user message (always last)
   messages.push({
     role: "user",
     content: newMessage,

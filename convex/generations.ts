@@ -182,12 +182,12 @@ export const getLatest = query({
  * 3. Returns the generation ID immediately for client subscription
  *
  * The streaming action runs asynchronously via scheduler.
+ * System prompt is extracted from blocks by the action.
  */
 export const startClaudeGeneration = mutation({
   args: {
     sessionId: v.id("sessions"),
     prompt: v.string(),
-    systemPrompt: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Create generation record
@@ -202,12 +202,11 @@ export const startClaudeGeneration = mutation({
     })
 
     // Schedule the streaming action to run immediately
-    // This allows us to return the generationId right away
+    // System prompt is extracted from blocks by the action
     await ctx.scheduler.runAfter(0, api.claudeNode.streamGenerateWithContext, {
       generationId,
       sessionId: args.sessionId,
       prompt: args.prompt,
-      systemPrompt: args.systemPrompt,
     })
 
     return { generationId }
@@ -235,7 +234,6 @@ export const startBrainstormGeneration = mutation({
       })
     ),
     newMessage: v.string(),
-    systemPrompt: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Create generation record
@@ -250,12 +248,12 @@ export const startBrainstormGeneration = mutation({
     })
 
     // Schedule the streaming action to run immediately
+    // System prompt is now extracted from blocks by the action
     await ctx.scheduler.runAfter(0, api.claudeNode.streamBrainstormMessage, {
       generationId,
       sessionId: args.sessionId,
       conversationHistory: args.conversationHistory,
       newMessage: args.newMessage,
-      systemPrompt: args.systemPrompt,
     })
 
     return { generationId }
@@ -347,10 +345,10 @@ export const saveBrainstormMessage = mutation({
     )
 
     // Create block with message content
-    // Use BRAINSTORM_USER or BRAINSTORM_ASSISTANT type based on role
+    // Use user_message or assistant_message type based on role
     const now = Date.now()
     const tokens = countTokens(args.content)
-    const blockType = args.role === "user" ? "BRAINSTORM_USER" : "BRAINSTORM_ASSISTANT"
+    const blockType = args.role === "user" ? "user_message" : "assistant_message"
 
     return await ctx.db.insert("blocks", {
       sessionId: args.sessionId,

@@ -4,7 +4,7 @@
 
 import { query } from "./_generated/server"
 import { v } from "convex/values"
-import { assembleContext, type ContextMessage } from "./lib/context"
+import { assembleContext, extractSystemPromptFromBlocks, type ContextMessage } from "./lib/context"
 import { countTokens } from "./lib/tokenizer"
 
 /**
@@ -65,9 +65,17 @@ export const getAssembled = query({
       .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
       .collect()
 
-    // Assemble context with placeholder prompt
+    // Extract system prompt from blocks (for export, we want to show it)
+    const systemPrompt = extractSystemPromptFromBlocks(blocks)
+
+    // Assemble context with placeholder prompt (excludes system_prompt blocks)
     const promptPlaceholder = includePlaceholder ? "[Your prompt here]" : ""
-    const messages = assembleContext(blocks, promptPlaceholder)
+    const contextMessages = assembleContext(blocks, promptPlaceholder)
+
+    // Prepend system prompt for export so users see their full context
+    const messages: ContextMessage[] = systemPrompt
+      ? [{ role: "system", content: systemPrompt }, ...contextMessages]
+      : contextMessages
 
     // Remove the placeholder message if not wanted
     const messagesToFormat = includePlaceholder

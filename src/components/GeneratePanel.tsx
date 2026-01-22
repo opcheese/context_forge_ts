@@ -96,8 +96,6 @@ function ProviderStatus({
 
 export function GeneratePanel({ sessionId }: GeneratePanelProps) {
   const [prompt, setPrompt] = useState("")
-  const [systemPrompt, setSystemPrompt] = useState("")
-  const [showSystem, setShowSystem] = useState(false)
   const [provider, setProvider] = useState<Provider>("ollama")
   const health = useProviderHealth()
 
@@ -127,7 +125,7 @@ export function GeneratePanel({ sessionId }: GeneratePanelProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!prompt.trim() || isGenerating) return
-    await generate(prompt.trim(), systemPrompt.trim() || undefined)
+    await generate(prompt.trim())
   }
 
   // Handle Ctrl+Enter to submit
@@ -135,7 +133,7 @@ export function GeneratePanel({ sessionId }: GeneratePanelProps) {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault()
       if (prompt.trim() && !isGenerating && isProviderAvailable) {
-        generate(prompt.trim(), systemPrompt.trim() || undefined)
+        generate(prompt.trim())
       }
     }
   }
@@ -155,13 +153,9 @@ export function GeneratePanel({ sessionId }: GeneratePanelProps) {
             <ProviderStatus name="Claude" status={health.claude} />
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowSystem(!showSystem)}
-        >
-          {showSystem ? "Hide" : "Show"} System Prompt
-        </Button>
+        <p className="text-xs text-muted-foreground">
+          System prompt from blocks
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -188,26 +182,6 @@ export function GeneratePanel({ sessionId }: GeneratePanelProps) {
             </option>
           </select>
         </div>
-
-        {showSystem && (
-          <div>
-            <label
-              htmlFor="system-prompt"
-              className="block text-sm font-medium mb-1 text-foreground"
-            >
-              System Prompt (optional)
-            </label>
-            <textarea
-              id="system-prompt"
-              value={systemPrompt}
-              onChange={(e) => setSystemPrompt(e.target.value)}
-              placeholder="Override or add to system instructions..."
-              rows={2}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none"
-              disabled={isGenerating}
-            />
-          </div>
-        )}
 
         <div>
           <label
