@@ -80,6 +80,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   // Switch to a different session
   const switchSession = useCallback((id: Id<"sessions">) => {
+    // Update localStorage synchronously to avoid race conditions with navigation
+    localStorage.setItem(SESSION_STORAGE_KEY, id)
     setSessionId(id)
   }, [])
 
