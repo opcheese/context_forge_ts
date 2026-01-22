@@ -12,6 +12,7 @@ import {
   BLOCK_TYPE_METADATA,
   getBlockTypesByCategory,
   CATEGORY_LABELS,
+  isValidBlockType,
   type BlockType,
 } from "@/lib/blockTypes"
 
@@ -37,7 +38,9 @@ function BlockEditor({ blockId }: { blockId: Id<"blocks"> }) {
   useEffect(() => {
     if (block) {
       setContent(block.content)
-      setType(block.type)
+      // Normalize type to lowercase for matching with BLOCK_TYPE_METADATA
+      const normalizedType = block.type.toLowerCase()
+      setType(isValidBlockType(normalizedType) ? normalizedType : "note")
       setIsDirty(false)
     }
   }, [block])
