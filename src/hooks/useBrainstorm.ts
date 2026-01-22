@@ -31,6 +31,7 @@ interface UseBrainstormResult {
   sendMessage: (content: string) => Promise<void>
   clearConversation: () => void
   setProvider: (provider: Provider) => void
+  retryMessage: (messageId: string) => Promise<void>
 
   // Streaming state
   isStreaming: boolean
@@ -467,6 +468,70 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
     [sessionId, messages, saveBrainstormMessage]
   )
 
+  // Retry from a specific message (regenerate assistant response)
+  const retryMessage = useCallback(
+    async (messageId: string) => {
+      if (isStreaming) return
+
+      // Find the message index
+      const messageIndex = messages.findIndex((m) => m.id === messageId)
+      if (messageIndex === -1) return
+
+      const message = messages[messageIndex]
+
+      // Find the user message to retry from
+      let userMessage: Message | undefined
+      let truncateIndex: number
+
+      if (message.role === "assistant") {
+        // Retry an assistant message: find the preceding user message
+        for (let i = messageIndex - 1; i >= 0; i--) {
+          if (messages[i].role === "user") {
+            userMessage = messages[i]
+            truncateIndex = i + 1 // Keep up to and including the user message
+            break
+          }
+        }
+      } else {
+        // Retry a user message: use this message
+        userMessage = message
+        truncateIndex = messageIndex + 1 // Keep up to and including this user message
+      }
+
+      if (!userMessage) return
+
+      // Remove this message and all subsequent messages
+      setMessages((prev) => prev.slice(0, truncateIndex))
+
+      // Reset error state
+      setError(null)
+
+      // Start streaming
+      setIsStreaming(true)
+      setStreamingText("")
+      prevTextRef.current = ""
+
+      try {
+        if (provider === "ollama") {
+          await sendMessageOllama(userMessage.content)
+        } else if (provider === "openrouter") {
+          await sendMessageOpenRouter(userMessage.content)
+        } else {
+          await sendMessageClaude(userMessage.content)
+        }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : "Unknown error"
+        setError(errorMsg)
+        onError?.(errorMsg)
+      } finally {
+        if (provider === "ollama" || provider === "openrouter") {
+          setIsStreaming(false)
+        }
+      }
+    },
+    [messages, isStreaming, provider, sendMessageOllama, sendMessageOpenRouter, sendMessageClaude, onError]
+  )
+
   return {
     // State
     messages,
@@ -479,6 +544,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
     sendMessage,
     clearConversation,
     setProvider,
+    retryMessage,
 
     // Streaming
     isStreaming,

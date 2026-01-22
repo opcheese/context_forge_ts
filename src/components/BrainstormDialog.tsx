@@ -14,6 +14,7 @@ interface BrainstormDialogProps {
   onSendMessage: (content: string) => Promise<void>
   onClearConversation: () => void
   onSaveMessage: (messageId: string, zone: Zone) => Promise<void>
+  onRetryMessage: (messageId: string) => Promise<void>
   error: string | null
   providerHealth?: {
     ollama: { ok: boolean } | null
@@ -88,10 +89,14 @@ function MessageBubble({
   message,
   onCopy,
   onSave,
+  onRetry,
+  isStreaming,
 }: {
   message: Message
   onCopy: () => void
   onSave: (zone: Zone) => void
+  onRetry: () => void
+  isStreaming: boolean
 }) {
   const [copied, setCopied] = useState(false)
   const [showZoneSelector, setShowZoneSelector] = useState(false)
@@ -162,6 +167,16 @@ function MessageBubble({
             />
           )}
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onRetry}
+          disabled={isStreaming}
+          className="h-6 px-2 text-xs"
+          title={isUser ? "Resend this message" : "Regenerate response"}
+        >
+          Retry
+        </Button>
       </div>
     </div>
   )
@@ -202,6 +217,7 @@ export function BrainstormDialog({
   onSendMessage,
   onClearConversation,
   onSaveMessage,
+  onRetryMessage,
   error,
   providerHealth,
   systemPrompt,
@@ -328,6 +344,8 @@ export function BrainstormDialog({
               message={message}
               onCopy={() => {}}
               onSave={(zone) => onSaveMessage(message.id, zone)}
+              onRetry={() => onRetryMessage(message.id)}
+              isStreaming={isStreaming}
             />
           ))}
 

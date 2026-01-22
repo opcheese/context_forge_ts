@@ -167,6 +167,7 @@ export function BrainstormPanel({ sessionId, compact = false }: BrainstormPanelP
           onSendMessage={(content) => brainstorm.sendMessage(content)}
           onClearConversation={brainstorm.clearConversation}
           onSaveMessage={handleSaveMessage}
+          onRetryMessage={(messageId) => brainstorm.retryMessage(messageId)}
           error={brainstorm.error}
           providerHealth={health}
           systemPrompt={activeSystemPrompt}
@@ -296,6 +297,7 @@ export function BrainstormPanel({ sessionId, compact = false }: BrainstormPanelP
         onSendMessage={(content) => brainstorm.sendMessage(content)}
         onClearConversation={brainstorm.clearConversation}
         onSaveMessage={handleSaveMessage}
+        onRetryMessage={(messageId) => brainstorm.retryMessage(messageId)}
         error={brainstorm.error}
         providerHealth={health}
         systemPrompt={activeSystemPrompt}
