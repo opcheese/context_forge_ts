@@ -22,23 +22,14 @@ export function DebouncedButton({
 
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
-      console.log('[DebouncedButton] Click:', {
-        type: (e.currentTarget as HTMLButtonElement).type,
-        isDebouncing,
-        disabled,
-        hasOnClick: !!onClick,
-      })
-
       // Prevent action if already debouncing
       if (isDebouncing) {
-        console.log('[DebouncedButton] Prevented - already debouncing')
         e.preventDefault()
         e.stopPropagation()
         return
       }
 
       // Call the original onClick handler
-      console.log('[DebouncedButton] Calling onClick handler')
       onClick(e)
 
       // Start debounce period
@@ -51,7 +42,6 @@ export function DebouncedButton({
 
       // Set new timeout
       timeoutRef.current = setTimeout(() => {
-        console.log('[DebouncedButton] Debounce period ended')
         setIsDebouncing(false)
       }, debounceMs)
     },
