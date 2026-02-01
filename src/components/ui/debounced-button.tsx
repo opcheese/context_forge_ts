@@ -22,13 +22,11 @@ export function DebouncedButton({
 
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
-      const buttonType = (e.currentTarget as HTMLButtonElement).type
       console.log('[DebouncedButton] Click:', {
-        type: buttonType,
+        type: (e.currentTarget as HTMLButtonElement).type,
         isDebouncing,
         disabled,
         hasOnClick: !!onClick,
-        target: e.currentTarget
       })
 
       // Prevent action if already debouncing
@@ -39,15 +37,9 @@ export function DebouncedButton({
         return
       }
 
-      // Call the original onClick handler if provided
-      // For type="submit" buttons without onClick, this does nothing
-      // and allows the default form submission to proceed
-      if (onClick) {
-        console.log('[DebouncedButton] Calling onClick handler')
-        onClick(e)
-      } else {
-        console.log('[DebouncedButton] No onClick handler, allowing default behavior')
-      }
+      // Call the original onClick handler
+      console.log('[DebouncedButton] Calling onClick handler')
+      onClick(e)
 
       // Start debounce period
       setIsDebouncing(true)
@@ -63,8 +55,21 @@ export function DebouncedButton({
         setIsDebouncing(false)
       }, debounceMs)
     },
-    [onClick, disabled, isDebouncing, debounceMs]
+    [onClick, isDebouncing, debounceMs]
   )
+
+  // If there's no onClick handler, don't wrap it - just use the disabled state
+  // This is crucial for type="submit" buttons to work correctly
+  if (!onClick) {
+    return (
+      <Button
+        {...props}
+        disabled={disabled || isDebouncing}
+      >
+        {children}
+      </Button>
+    )
+  }
 
   return (
     <Button
