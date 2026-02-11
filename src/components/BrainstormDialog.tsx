@@ -2,6 +2,14 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { DebouncedButton } from "@/components/ui/debounced-button"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import type { Message, Provider, Zone } from "@/hooks/useBrainstorm"
 import ReactMarkdown from 'react-markdown'
@@ -36,44 +44,6 @@ interface BrainstormDialogProps {
   onDisableAgentBehaviorChange?: (value: boolean) => void
 }
 
-// Zone selector popover
-function ZoneSelector({
-  onSelect,
-  onCancel,
-}: {
-  onSelect: (zone: Zone) => void
-  onCancel: () => void
-}) {
-  const zones: { value: Zone; label: string }[] = [
-    { value: "WORKING", label: "Working" },
-    { value: "STABLE", label: "Stable" },
-    { value: "PERMANENT", label: "Permanent" },
-  ]
-
-  return (
-    <div className="absolute right-0 top-full mt-1 z-10 bg-card border border-border rounded-md shadow-lg p-2 min-w-[120px]">
-      <div className="text-xs text-muted-foreground mb-2 px-2">Save to zone:</div>
-      {zones.map((zone) => (
-        <button
-          key={zone.value}
-          onClick={() => onSelect(zone.value)}
-          className="w-full text-left px-2 py-1 text-sm rounded hover:bg-accent"
-        >
-          {zone.label}
-        </button>
-      ))}
-      <div className="border-t border-border mt-1 pt-1">
-        <button
-          onClick={onCancel}
-          className="w-full text-left px-2 py-1 text-sm text-muted-foreground rounded hover:bg-accent"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  )
-}
-
 // Message bubble component
 function MessageBubble({
   message,
@@ -91,7 +61,6 @@ function MessageBubble({
   isStreaming: boolean
 }) {
   const [copied, setCopied] = useState(false)
-  const [showZoneSelector, setShowZoneSelector] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(message.content)
 
@@ -100,11 +69,6 @@ function MessageBubble({
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
     onCopy()
-  }
-
-  const handleSave = (zone: Zone) => {
-    setShowZoneSelector(false)
-    onSave(zone)
   }
 
   const handleEdit = () => {
@@ -204,25 +168,27 @@ function MessageBubble({
               Edit
             </Button>
           )}
-          <div className="relative">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowZoneSelector(!showZoneSelector)}
-              className={cn(
-                "h-6 px-2 text-xs",
-                message.savedAsBlockId && "text-green-600"
-              )}
-            >
-              {message.savedAsBlockId ? "Saved" : "Save"}
-            </Button>
-            {showZoneSelector && (
-              <ZoneSelector
-                onSelect={handleSave}
-                onCancel={() => setShowZoneSelector(false)}
-              />
-            )}
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "h-6 px-2 text-xs",
+                  message.savedAsBlockId && "text-green-600"
+                )}
+              >
+                {message.savedAsBlockId ? "Saved" : "Save"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" collisionPadding={8}>
+              <DropdownMenuLabel className="text-xs">Save to zone:</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => onSave("WORKING")}>Working</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => onSave("STABLE")}>Stable</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => onSave("PERMANENT")}>Permanent</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             variant="ghost"
             size="sm"
@@ -367,6 +333,15 @@ export function BrainstormDialog({
     }
   }
 
+  // Auto-expand textarea as user types
+  useEffect(() => {
+    const textarea = inputRef.current
+    if (!textarea) return
+    textarea.style.height = "auto"
+    const maxHeight = 200
+    textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`
+  }, [inputValue])
+
   // Auto-switch away from disabled/unavailable provider
   useEffect(() => {
     if (!providerHealth) return
@@ -509,16 +484,16 @@ export function BrainstormDialog({
 
         {/* Input */}
         <div className="p-4 border-t border-border">
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-end">
             <textarea
               ref={inputRef}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Type your message... (Ctrl+Enter to send)"
-              rows={2}
+              rows={3}
               disabled={isStreaming || !isProviderAvailable}
-              className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm resize-none disabled:opacity-50"
+              className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm resize-none disabled:opacity-50 min-h-[80px] max-h-[200px] overflow-y-auto"
             />
             <DebouncedButton
               onClick={handleSend}
