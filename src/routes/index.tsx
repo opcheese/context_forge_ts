@@ -475,14 +475,35 @@ function ZoneColumn({
   const sortedBlocks = blocks ? [...blocks].sort((a, b) => a.position - b.position) : []
 
   // Use optimistic order if available (prevents flash-of-old-order after drop)
-  const optimistic = useDndOptimistic()
+  const { optimisticOrder: optimistic, activeBlock: activeBlockInfo } = useDndOptimistic()
   const optimisticIds = optimistic[zone]
   const blockMap = useMemo(() => new Map(sortedBlocks.map((b) => [b._id, b])), [sortedBlocks])
 
   const displayBlocks = useMemo(() => {
     if (!optimisticIds) return sortedBlocks
-    return optimisticIds.map((id) => blockMap.get(id)).filter(Boolean) as typeof sortedBlocks
-  }, [optimisticIds, sortedBlocks, blockMap])
+    return optimisticIds.map((id) => {
+      const local = blockMap.get(id)
+      if (local) return local
+      // Foreign block being dragged into this zone — build synthetic entry
+      if (activeBlockInfo && activeBlockInfo._id === id) {
+        return {
+          _id: activeBlockInfo._id,
+          content: activeBlockInfo.content,
+          type: activeBlockInfo.type,
+          zone,
+          position: activeBlockInfo.position,
+          createdAt: activeBlockInfo.createdAt,
+          tokens: activeBlockInfo.tokens ?? null,
+          isCompressed: activeBlockInfo.isCompressed ?? false,
+          compressionRatio: activeBlockInfo.compressionRatio ?? null,
+          metadata: (activeBlockInfo.metadata as typeof sortedBlocks[number]["metadata"]) ?? null,
+          sessionId,
+          _creationTime: activeBlockInfo.createdAt,
+        }
+      }
+      return null
+    }).filter(Boolean) as typeof sortedBlocks
+  }, [optimisticIds, sortedBlocks, blockMap, activeBlockInfo, sessionId, zone])
 
   const displayIds = useMemo(() => displayBlocks.map((b) => b._id), [displayBlocks])
 
