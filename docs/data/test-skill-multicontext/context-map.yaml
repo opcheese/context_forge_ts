@@ -1,0 +1,28 @@
+contexts:
+  research:
+    label: "Research & Planning"
+    permanent:
+      - references/permanent/coding-standards.md
+    stable:
+      - references/stable/requirements.md
+    working:
+      - references/working/research-notes.md
+  implementation:
+    label: "Implementation"
+    depends_on:
+      - research
+    permanent:
+      - references/permanent/coding-standards.md
+    stable:
+      - references/stable/api-design.md
+    working:
+      - references/working/implementation-plan.md
+  testing:
+    label: "Testing & Review"
+    depends_on:
+      - implementation
+    permanent:
+      - references/permanent/coding-standards.md
+    stable:
+      - references/stable/requirements.md
+      - references/stable/api-design.md
