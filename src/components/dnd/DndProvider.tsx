@@ -14,7 +14,7 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from "@dnd-kit/core"
-import { sortableKeyboardCoordinates } from "@dnd-kit/sortable"
+import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable"
 import { useMutation, useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { BlockDragOverlay } from "./BlockDragOverlay"
@@ -40,7 +40,7 @@ export function DndProvider({ children }: DndProviderProps) {
   const { sessionId } = useSession()
 
   // Convex mutations
-  const moveBlock = useMutation(api.blocks.move)
+  const moveAndReorder = useMutation(api.blocks.moveAndReorder)
   const reorderBlock = useMutation(api.blocks.reorder)
 
   // Query all blocks for position calculations (skip if no session)
@@ -98,88 +98,98 @@ export function DndProvider({ children }: DndProviderProps) {
     const blockId = activeData.blockId
     const sourceZone = activeData.zone
 
-    // Determine target zone and position
+    // Determine target zone
     const overData = over.data.current as BlockDragData | ZoneDropData | undefined
 
     let targetZone: Zone
-    let newPosition: number
 
     if (overData?.type === "zone") {
-      // Dropped on empty zone area
       targetZone = overData.zone
-      const zoneBlocks = blocks.filter((b) => b.zone === targetZone)
-      newPosition = getPositionAtEnd(zoneBlocks)
     } else if (overData?.type === "block") {
-      // Dropped on another block
       targetZone = overData.zone
-      const zoneBlocks = blocks.filter((b) => b.zone === targetZone)
-      const sortedBlocks = [...zoneBlocks].sort((a, b) => a.position - b.position)
-
-      const overIndex = sortedBlocks.findIndex((b) => b._id === over.id)
-      if (overIndex === -1) {
-        newPosition = getPositionAtEnd(sortedBlocks)
-      } else {
-        // Insert before the target block
-        const before = overIndex > 0 ? sortedBlocks[overIndex - 1].position : null
-        const after = sortedBlocks[overIndex].position
-        newPosition = getPositionBetween(before, after)
-      }
     } else {
-      // Unknown drop target
       return
     }
 
-    // Skip if dropped on itself in same position
+    // Skip if dropped on itself in same zone
     if (blockId === over.id && sourceZone === targetZone) {
       return
     }
 
-    // Compute optimistic order for immediate visual feedback before mutation round-trip.
-    // Must mirror position calculation logic: remove block, insert before target.
     if (sourceZone === targetZone) {
-      // Same-zone reorder: remove then insert-before-target (matches fractional position calc)
+      // ── Same-zone reorder ──
+      // Use arrayMove to compute the new order — this matches @dnd-kit's
+      // verticalListSortingStrategy visual feedback exactly.
       const zoneBlocks = blocks.filter((b) => b.zone === sourceZone).sort((a, b) => a.position - b.position)
       const ids = zoneBlocks.map((b) => b._id)
-      const idsWithout = ids.filter((id) => id !== blockId)
-      const targetIdx = idsWithout.indexOf(over.id as Id<"blocks">)
-      if (targetIdx !== -1) {
-        idsWithout.splice(targetIdx, 0, blockId)
+
+      if (overData?.type === "zone") {
+        // Dropped on empty zone area — move to end
+        const idsWithout = ids.filter((id) => id !== blockId)
+        idsWithout.push(blockId)
         setOptimisticOrder({ [sourceZone]: idsWithout })
+
+        const newPosition = getPositionAtEnd(zoneBlocks.filter((b) => b._id !== blockId))
+        await reorderBlock({ id: blockId, newPosition })
+      } else {
+        const oldIndex = ids.indexOf(blockId)
+        const newIndex = ids.indexOf(over.id as Id<"blocks">)
+
+        if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return
+
+        // arrayMove: matches the visual sort preview
+        const reordered = arrayMove(ids, oldIndex, newIndex)
+        setOptimisticOrder({ [sourceZone]: reordered })
+
+        // Derive position from the new neighbors in the reordered list
+        const newPos = reordered.indexOf(blockId)
+        const beforeId = newPos > 0 ? reordered[newPos - 1] : null
+        const afterId = newPos < reordered.length - 1 ? reordered[newPos + 1] : null
+        const beforePosition = beforeId ? zoneBlocks.find((b) => b._id === beforeId)?.position ?? null : null
+        const afterPosition = afterId ? zoneBlocks.find((b) => b._id === afterId)?.position ?? null : null
+        const newPosition = getPositionBetween(beforePosition, afterPosition)
+
+        await reorderBlock({ id: blockId, newPosition })
       }
     } else {
-      // Cross-zone: remove from source, add to target end
+      // ── Cross-zone move ──
+      // Remove from source
       const sourceIds = blocks
         .filter((b) => b.zone === sourceZone)
         .sort((a, b) => a.position - b.position)
         .map((b) => b._id)
         .filter((id) => id !== blockId)
+
+      // Insert into target
       const targetBlocks = blocks.filter((b) => b.zone === targetZone).sort((a, b) => a.position - b.position)
       const targetIds = targetBlocks.map((b) => b._id)
-      // Insert at the drop position
+
+      let newPosition: number
+
       if (overData?.type === "block") {
+        // Dropped on a block in target zone — insert before it
         const overIdx = targetIds.indexOf(over.id as Id<"blocks">)
         if (overIdx !== -1) {
           targetIds.splice(overIdx, 0, blockId)
+          const before = overIdx > 0 ? targetBlocks[overIdx - 1].position : null
+          const after = targetBlocks[overIdx].position
+          newPosition = getPositionBetween(before, after)
         } else {
           targetIds.push(blockId)
+          newPosition = getPositionAtEnd(targetBlocks)
         }
       } else {
+        // Dropped on zone area — append to end
         targetIds.push(blockId)
+        newPosition = getPositionAtEnd(targetBlocks)
       }
-      setOptimisticOrder({ [sourceZone]: sourceIds, [targetZone]: targetIds })
-    }
 
-    // Perform the move/reorder
-    if (sourceZone !== targetZone) {
-      // Cross-zone move
-      await moveBlock({ id: blockId, zone: targetZone })
-      // Update position after move
-      await reorderBlock({ id: blockId, newPosition })
-    } else {
-      // Same-zone reorder
-      await reorderBlock({ id: blockId, newPosition })
+      setOptimisticOrder({ [sourceZone]: sourceIds, [targetZone]: targetIds })
+
+      // Single mutation — no intermediate render between move and reorder
+      await moveAndReorder({ id: blockId, zone: targetZone, newPosition })
     }
-  }, [moveBlock, reorderBlock])
+  }, [moveAndReorder, reorderBlock])
 
   return (
     <DndOptimisticContext.Provider value={optimisticOrder}>

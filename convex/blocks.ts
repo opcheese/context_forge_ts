@@ -188,6 +188,34 @@ export const move = mutation({
   },
 })
 
+// Move a block to a different zone AND set its position in one mutation.
+// Avoids two-step move+reorder which causes intermediate renders.
+export const moveAndReorder = mutation({
+  args: {
+    id: v.id("blocks"),
+    zone: zoneValidator,
+    newPosition: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const block = await ctx.db.get(args.id)
+    if (!block) throw new Error("Block not found")
+
+    await requireSessionAccess(ctx, block.sessionId)
+
+    const now = Date.now()
+
+    await ctx.db.patch(args.id, {
+      zone: args.zone,
+      position: args.newPosition,
+      updatedAt: now,
+    })
+
+    await ctx.db.patch(block.sessionId, { updatedAt: now })
+
+    return args.id
+  },
+})
+
 // Reorder a block (update its position)
 // Uses fractional positioning - just updates the single block's position
 export const reorder = mutation({
