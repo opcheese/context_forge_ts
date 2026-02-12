@@ -3,7 +3,7 @@
  * Compact UI optimized for vertical space.
  */
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../convex/_generated/api"
@@ -33,7 +33,9 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { DebouncedButton } from "@/components/ui/debounced-button"
 import { useToast } from "@/components/ui/toast"
 import { ImportSkillDialog } from "@/components/skills/ImportSkillDialog"
+import { ImportProjectConfirmDialog } from "@/components/skills/ImportProjectConfirmDialog"
 import { ExportSkillDialog } from "@/components/skills/ExportSkillDialog"
+import { useSkillImport } from "@/hooks/useSkillImport"
 
 // Zone display info
 const ZONE_INFO: Record<Zone, { label: string; description: string }> = {
@@ -408,12 +410,14 @@ function ZoneColumn({
   zoneMetrics,
   selectedBlockIds,
   onBlockSelect,
+  onSkillFile,
 }: {
   sessionId: Id<"sessions">
   zone: Zone
   zoneMetrics?: { blocks: number; tokens: number; budget: number; percentUsed: number }
   selectedBlockIds: Set<Id<"blocks">>
   onBlockSelect: (blockId: Id<"blocks">, selected: boolean) => void
+  onSkillFile?: (file: File, zone: Zone) => void
 }) {
   const [isZoneCompressionDialogOpen, setIsZoneCompressionDialogOpen] = useState(false)
   const blocks = useQuery(api.blocks.listByZone, { sessionId, zone })
@@ -422,6 +426,7 @@ function ZoneColumn({
   const { isDragOver, dropProps } = useFileDrop({
     sessionId,
     zone,
+    onSkillFile,
     onSuccess: () => {},
     onError: () => {},
   })
@@ -563,10 +568,12 @@ function ZoneLayout({
   sessionId,
   selectedBlockIds,
   onBlockSelect,
+  onSkillFile,
 }: {
   sessionId: Id<"sessions">
   selectedBlockIds: Set<Id<"blocks">>
   onBlockSelect: (blockId: Id<"blocks">, selected: boolean) => void
+  onSkillFile?: (file: File, zone: Zone) => void
 }) {
   const metrics = useQuery(api.metrics.getZoneMetrics, { sessionId })
 
@@ -580,6 +587,7 @@ function ZoneLayout({
             zoneMetrics={metrics?.zones[zone]}
             selectedBlockIds={selectedBlockIds}
             onBlockSelect={onBlockSelect}
+            onSkillFile={onSkillFile}
           />
         </div>
       ))}
@@ -676,6 +684,29 @@ function HomePage() {
   const [isImportSkillOpen, setIsImportSkillOpen] = useState(false)
   const [isExportSkillOpen, setIsExportSkillOpen] = useState(false)
   const { toast } = useToast()
+
+  // Skill import for drag-and-drop (shared across all zones)
+  const {
+    importFromFile: skillImportFromFile,
+    isImporting: isSkillImporting,
+    pendingProjectImport,
+    confirmProjectImport,
+    cancelProjectImport,
+  } = useSkillImport({
+    sessionId: sessionId!,
+    onSuccess: (name, refCount) => {
+      const refText = refCount ? ` (+ ${refCount} reference${refCount !== 1 ? "s" : ""})` : ""
+      toast.success("Skill imported", `${name}${refText}`)
+    },
+    onError: (msg) => toast.error("Skill import failed", msg),
+  })
+
+  const handleSkillFileDrop = useCallback(
+    (file: File, zone: Zone) => {
+      skillImportFromFile(file, zone)
+    },
+    [skillImportFromFile]
+  )
 
   // Fetch all blocks for multi-select compression
   const allBlocks = useQuery(api.blocks.list, sessionId ? { sessionId } : "skip")
@@ -781,6 +812,7 @@ function HomePage() {
         sessionId={sessionId}
         selectedBlockIds={selectedBlockIds}
         onBlockSelect={handleBlockSelect}
+        onSkillFile={handleSkillFileDrop}
       />
 
       {/* Floating action bar for multi-select */}
@@ -831,6 +863,16 @@ function HomePage() {
           isOpen={isExportSkillOpen}
           onClose={() => setIsExportSkillOpen(false)}
           sessionId={sessionId}
+        />
+      )}
+
+      {/* Project import confirmation from drag-and-drop */}
+      {pendingProjectImport && (
+        <ImportProjectConfirmDialog
+          pending={pendingProjectImport}
+          onConfirm={confirmProjectImport}
+          onCancel={cancelProjectImport}
+          isImporting={isSkillImporting}
         />
       )}
     </div>

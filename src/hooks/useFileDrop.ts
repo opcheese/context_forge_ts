@@ -1,7 +1,7 @@
 /**
  * Hook for handling native file drops to create blocks.
  *
- * SKILL.md and .zip files are routed through the skill import flow.
+ * SKILL.md and .zip files are delegated to the onSkillFile callback.
  * Other .md/.txt files create plain blocks in the target zone.
  */
 
@@ -10,7 +10,6 @@ import { useMutation } from "convex/react"
 import { api } from "../../convex/_generated/api"
 import type { Zone } from "@/components/dnd"
 import type { Id } from "../../convex/_generated/dataModel"
-import { useSkillImport } from "./useSkillImport"
 
 // Map zone to default block type for plain file drops
 const ZONE_TO_BLOCK_TYPE: Record<Zone, string> = {
@@ -32,25 +31,19 @@ function isSupportedFile(file: File): boolean {
 interface UseFileDropOptions {
   sessionId: Id<"sessions">
   zone: Zone
+  onSkillFile?: (file: File, zone: Zone) => void
   onSuccess?: (fileName: string) => void
   onError?: (error: string) => void
 }
 
-export function useFileDrop({ sessionId, zone, onSuccess, onError }: UseFileDropOptions) {
+export function useFileDrop({ sessionId, zone, onSkillFile, onSuccess, onError }: UseFileDropOptions) {
   const [isDragOver, setIsDragOver] = useState(false)
   const createBlock = useMutation(api.blocks.create)
-
-  const { importFromFile } = useSkillImport({
-    sessionId,
-    onSuccess: (name) => onSuccess?.(`Imported skill: ${name}`),
-    onError: (msg) => onError?.(msg),
-  })
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
 
-    // Check if dragging files
     if (e.dataTransfer.types.includes("Files")) {
       setIsDragOver(true)
     }
@@ -79,7 +72,7 @@ export function useFileDrop({ sessionId, zone, onSuccess, onError }: UseFileDrop
       for (const file of validFiles) {
         try {
           if (isSkillFile(file)) {
-            await importFromFile(file, zone)
+            onSkillFile?.(file, zone)
           } else {
             const content = await file.text()
             const blockType = ZONE_TO_BLOCK_TYPE[zone]
@@ -91,7 +84,7 @@ export function useFileDrop({ sessionId, zone, onSuccess, onError }: UseFileDrop
         }
       }
     },
-    [sessionId, zone, createBlock, importFromFile, onSuccess, onError]
+    [sessionId, zone, createBlock, onSkillFile, onSuccess, onError]
   )
 
   return {
