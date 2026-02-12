@@ -27,6 +27,7 @@ import type * as lib_validators from "../lib/validators.js";
 import type * as metrics from "../metrics.js";
 import type * as projects from "../projects.js";
 import type * as sessions from "../sessions.js";
+import type * as skillExport from "../skillExport.js";
 import type * as skills from "../skills.js";
 import type * as skillsNode from "../skillsNode.js";
 import type * as snapshots from "../snapshots.js";
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   metrics: typeof metrics;
   projects: typeof projects;
   sessions: typeof sessions;
+  skillExport: typeof skillExport;
   skills: typeof skills;
   skillsNode: typeof skillsNode;
   snapshots: typeof snapshots;

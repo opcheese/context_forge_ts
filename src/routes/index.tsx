@@ -27,12 +27,13 @@ import {
 import { useNavigate } from "@tanstack/react-router"
 import { useCompression } from "@/hooks/useCompression"
 import { useConfirmDelete } from "@/hooks/useConfirmDelete"
-import { Minimize2, Puzzle, Upload, Link as LinkIcon, FolderSearch } from "lucide-react"
+import { Minimize2, Puzzle, Upload, Link as LinkIcon, FolderSearch, Download } from "lucide-react"
 import { CompressionDialog } from "@/components/compression/CompressionDialog"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { DebouncedButton } from "@/components/ui/debounced-button"
 import { useToast } from "@/components/ui/toast"
 import { ImportSkillDialog } from "@/components/skills/ImportSkillDialog"
+import { ExportSkillDialog } from "@/components/skills/ExportSkillDialog"
 
 // Zone display info
 const ZONE_INFO: Record<Zone, { label: string; description: string }> = {
@@ -673,6 +674,7 @@ function HomePage() {
   const [selectedBlockIds, setSelectedBlockIds] = useState<Set<Id<"blocks">>>(new Set())
   const [isCompressionDialogOpen, setIsCompressionDialogOpen] = useState(false)
   const [isImportSkillOpen, setIsImportSkillOpen] = useState(false)
+  const [isExportSkillOpen, setIsExportSkillOpen] = useState(false)
   const { toast } = useToast()
 
   // Fetch all blocks for multi-select compression
@@ -758,6 +760,15 @@ function HomePage() {
             <Puzzle className="w-3 h-3 mr-1" />
             Import Skill
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsExportSkillOpen(true)}
+            className="h-7 text-xs"
+          >
+            <Download className="w-3 h-3 mr-1" />
+            Export Skill
+          </Button>
         </div>
         <div className="flex items-center gap-2">
           <BrainstormPanel sessionId={sessionId} compact />
@@ -810,6 +821,15 @@ function HomePage() {
         <ImportSkillDialog
           isOpen={isImportSkillOpen}
           onClose={() => setIsImportSkillOpen(false)}
+          sessionId={sessionId}
+        />
+      )}
+
+      {/* Export Skill dialog */}
+      {sessionId && (
+        <ExportSkillDialog
+          isOpen={isExportSkillOpen}
+          onClose={() => setIsExportSkillOpen(false)}
           sessionId={sessionId}
         />
       )}
