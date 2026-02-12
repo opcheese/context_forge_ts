@@ -14,7 +14,7 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from "@dnd-kit/core"
-import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable"
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable"
 import { useMutation, useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { BlockDragOverlay } from "./BlockDragOverlay"
@@ -134,15 +134,17 @@ export function DndProvider({ children }: DndProviderProps) {
       return
     }
 
-    // Compute optimistic order for immediate visual feedback before mutation round-trip
+    // Compute optimistic order for immediate visual feedback before mutation round-trip.
+    // Must mirror position calculation logic: remove block, insert before target.
     if (sourceZone === targetZone) {
-      // Same-zone reorder: use arrayMove
+      // Same-zone reorder: remove then insert-before-target (matches fractional position calc)
       const zoneBlocks = blocks.filter((b) => b.zone === sourceZone).sort((a, b) => a.position - b.position)
       const ids = zoneBlocks.map((b) => b._id)
-      const oldIndex = ids.indexOf(blockId)
-      const newIndex = ids.indexOf(over.id as Id<"blocks">)
-      if (oldIndex !== -1 && newIndex !== -1) {
-        setOptimisticOrder({ [sourceZone]: arrayMove(ids, oldIndex, newIndex) })
+      const idsWithout = ids.filter((id) => id !== blockId)
+      const targetIdx = idsWithout.indexOf(over.id as Id<"blocks">)
+      if (targetIdx !== -1) {
+        idsWithout.splice(targetIdx, 0, blockId)
+        setOptimisticOrder({ [sourceZone]: idsWithout })
       }
     } else {
       // Cross-zone: remove from source, add to target end

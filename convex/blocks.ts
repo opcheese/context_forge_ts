@@ -90,6 +90,7 @@ export const listByZone = query({
       .withIndex("by_session_zone", (q) =>
         q.eq("sessionId", args.sessionId).eq("zone", args.zone)
       )
+      .order("asc")
       .collect()
   },
 })
