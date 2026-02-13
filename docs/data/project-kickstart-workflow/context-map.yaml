@@ -1,0 +1,73 @@
+contexts:
+  l0-brief:
+    label: "L0: Brief (CIRCLES)"
+    permanent:
+      - references/permanent/pm-persona.md
+    stable:
+      - references/stable/circles-reference.md
+      - references/stable/brief-template.md
+    depends_on: []
+
+  l1-ird:
+    label: "L1: IRD (EARS)"
+    permanent:
+      - references/permanent/pm-persona.md
+    stable:
+      - references/stable/ears-reference.md
+      - references/stable/ird-template.md
+    depends_on:
+      - l0-brief
+
+  gate:
+    label: "GATE: GO/PIVOT/KILL"
+    permanent:
+      - references/permanent/pm-persona.md
+    stable:
+      - references/stable/gate-template.md
+    depends_on:
+      - l1-ird
+
+  l2-personas:
+    label: "L2: Personas"
+    permanent:
+      - references/permanent/pm-persona.md
+    stable:
+      - references/stable/persona-template.md
+    depends_on:
+      - gate
+
+  l3-scenarios:
+    label: "L3: Scenarios"
+    permanent:
+      - references/permanent/pm-persona.md
+    stable:
+      - references/stable/scenario-template.md
+    depends_on:
+      - l2-personas
+
+  l3-5-mocks:
+    label: "L3.5: Mocks (optional)"
+    permanent:
+      - references/permanent/pm-persona.md
+    stable:
+      - references/stable/mocks-template.md
+    depends_on:
+      - l3-scenarios
+
+  l4-conceptual-model:
+    label: "L4: Conceptual Model"
+    permanent:
+      - references/permanent/pm-persona.md
+    stable:
+      - references/stable/conceptual-model-template.md
+    depends_on:
+      - l3-5-mocks
+
+  l5-stories:
+    label: "L5: Stories"
+    permanent:
+      - references/permanent/pm-persona.md
+    stable:
+      - references/stable/stories-template.md
+    depends_on:
+      - l4-conceptual-model
