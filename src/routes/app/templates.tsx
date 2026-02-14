@@ -5,9 +5,9 @@
 import { useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import { useQuery, useMutation } from "convex/react"
-import { api } from "../../convex/_generated/api"
+import { api } from "../../../convex/_generated/api"
 import { Button } from "@/components/ui/button"
-import type { Id, Doc } from "../../convex/_generated/dataModel"
+import type { Id, Doc } from "../../../convex/_generated/dataModel"
 
 // Format relative time
 function formatTimeAgo(timestamp: number): string {
@@ -284,6 +284,6 @@ function TemplatesPage() {
   )
 }
 
-export const Route = createFileRoute("/templates")({
+export const Route = createFileRoute("/app/templates")({
   component: TemplatesPage,
 })

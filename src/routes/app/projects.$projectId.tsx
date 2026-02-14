@@ -5,10 +5,10 @@
 import { useState } from "react"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { useQuery, useMutation } from "convex/react"
-import { api } from "../../convex/_generated/api"
+import { api } from "../../../convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { useSession } from "@/contexts/SessionContext"
-import type { Id, Doc } from "../../convex/_generated/dataModel"
+import type { Id, Doc } from "../../../convex/_generated/dataModel"
 
 // Format relative time
 function formatTimeAgo(timestamp: number): string {
@@ -278,7 +278,7 @@ function ProjectDashboard() {
 
   const handleOpenSession = (sessionId: Id<"sessions">) => {
     switchSession(sessionId)
-    navigate({ to: "/" })
+    navigate({ to: "/app" })
   }
 
   const handleRemoveSession = async (sessionId: Id<"sessions">) => {
@@ -315,7 +315,7 @@ function ProjectDashboard() {
     return (
       <div className="text-center py-12">
         <h2 className="text-lg font-medium mb-2">Project not found</h2>
-        <Link to="/projects">
+        <Link to="/app/projects">
           <Button variant="outline">Back to Projects</Button>
         </Link>
       </div>
@@ -328,7 +328,7 @@ function ProjectDashboard() {
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-            <Link to="/projects" className="hover:text-foreground">
+            <Link to="/app/projects" className="hover:text-foreground">
               Projects
             </Link>
             <span>/</span>
@@ -355,7 +355,7 @@ function ProjectDashboard() {
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-muted-foreground">WORKFLOW</span>
               <Link
-                to="/workflows/$workflowId"
+                to="/app/workflows/$workflowId"
                 params={{ workflowId: project.workflow._id }}
                 className="text-sm font-medium hover:underline"
               >
@@ -461,6 +461,6 @@ function ProjectDashboard() {
   )
 }
 
-export const Route = createFileRoute("/projects/$projectId")({
+export const Route = createFileRoute("/app/projects/$projectId")({
   component: ProjectDashboard,
 })

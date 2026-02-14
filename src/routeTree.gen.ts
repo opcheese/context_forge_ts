@@ -9,41 +9,28 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WorkflowsRouteImport } from './routes/workflows'
-import { Route as TemplatesRouteImport } from './routes/templates'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as WorkflowsIndexRouteImport } from './routes/workflows.index'
-import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
-import { Route as WorkflowsWorkflowIdRouteImport } from './routes/workflows.$workflowId'
-import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
-import { Route as BlocksBlockIdRouteImport } from './routes/blocks/$blockId'
+import { Route as AppIndexRouteImport } from './routes/app/index'
+import { Route as AppWorkflowsRouteImport } from './routes/app/workflows'
+import { Route as AppTemplatesRouteImport } from './routes/app/templates'
+import { Route as AppSettingsRouteImport } from './routes/app/settings'
+import { Route as AppProjectsRouteImport } from './routes/app/projects'
+import { Route as AppWorkflowsIndexRouteImport } from './routes/app/workflows.index'
+import { Route as AppProjectsIndexRouteImport } from './routes/app/projects.index'
+import { Route as AppWorkflowsWorkflowIdRouteImport } from './routes/app/workflows.$workflowId'
+import { Route as AppProjectsProjectIdRouteImport } from './routes/app/projects.$projectId'
+import { Route as AppBlocksBlockIdRouteImport } from './routes/app/blocks.$blockId'
 
-const WorkflowsRoute = WorkflowsRouteImport.update({
-  id: '/workflows',
-  path: '/workflows',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TemplatesRoute = TemplatesRouteImport.update({
-  id: '/templates',
-  path: '/templates',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProjectsRoute = ProjectsRouteImport.update({
-  id: '/projects',
-  path: '/projects',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -51,155 +38,165 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WorkflowsIndexRoute = WorkflowsIndexRouteImport.update({
+const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => WorkflowsRoute,
+  getParentRoute: () => AppRoute,
 } as any)
-const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
+const AppWorkflowsRoute = AppWorkflowsRouteImport.update({
+  id: '/workflows',
+  path: '/workflows',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTemplatesRoute = AppTemplatesRouteImport.update({
+  id: '/templates',
+  path: '/templates',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProjectsRoute = AppProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppWorkflowsIndexRoute = AppWorkflowsIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => ProjectsRoute,
+  getParentRoute: () => AppWorkflowsRoute,
 } as any)
-const WorkflowsWorkflowIdRoute = WorkflowsWorkflowIdRouteImport.update({
+const AppProjectsIndexRoute = AppProjectsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppProjectsRoute,
+} as any)
+const AppWorkflowsWorkflowIdRoute = AppWorkflowsWorkflowIdRouteImport.update({
   id: '/$workflowId',
   path: '/$workflowId',
-  getParentRoute: () => WorkflowsRoute,
+  getParentRoute: () => AppWorkflowsRoute,
 } as any)
-const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
+const AppProjectsProjectIdRoute = AppProjectsProjectIdRouteImport.update({
   id: '/$projectId',
   path: '/$projectId',
-  getParentRoute: () => ProjectsRoute,
+  getParentRoute: () => AppProjectsRoute,
 } as any)
-const BlocksBlockIdRoute = BlocksBlockIdRouteImport.update({
+const AppBlocksBlockIdRoute = AppBlocksBlockIdRouteImport.update({
   id: '/blocks/$blockId',
   path: '/blocks/$blockId',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
-  '/projects': typeof ProjectsRouteWithChildren
-  '/settings': typeof SettingsRoute
-  '/templates': typeof TemplatesRoute
-  '/workflows': typeof WorkflowsRouteWithChildren
-  '/blocks/$blockId': typeof BlocksBlockIdRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRoute
-  '/workflows/$workflowId': typeof WorkflowsWorkflowIdRoute
-  '/projects/': typeof ProjectsIndexRoute
-  '/workflows/': typeof WorkflowsIndexRoute
+  '/app/projects': typeof AppProjectsRouteWithChildren
+  '/app/settings': typeof AppSettingsRoute
+  '/app/templates': typeof AppTemplatesRoute
+  '/app/workflows': typeof AppWorkflowsRouteWithChildren
+  '/app/': typeof AppIndexRoute
+  '/app/blocks/$blockId': typeof AppBlocksBlockIdRoute
+  '/app/projects/$projectId': typeof AppProjectsProjectIdRoute
+  '/app/workflows/$workflowId': typeof AppWorkflowsWorkflowIdRoute
+  '/app/projects/': typeof AppProjectsIndexRoute
+  '/app/workflows/': typeof AppWorkflowsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/settings': typeof SettingsRoute
-  '/templates': typeof TemplatesRoute
-  '/blocks/$blockId': typeof BlocksBlockIdRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRoute
-  '/workflows/$workflowId': typeof WorkflowsWorkflowIdRoute
-  '/projects': typeof ProjectsIndexRoute
-  '/workflows': typeof WorkflowsIndexRoute
+  '/app/settings': typeof AppSettingsRoute
+  '/app/templates': typeof AppTemplatesRoute
+  '/app': typeof AppIndexRoute
+  '/app/blocks/$blockId': typeof AppBlocksBlockIdRoute
+  '/app/projects/$projectId': typeof AppProjectsProjectIdRoute
+  '/app/workflows/$workflowId': typeof AppWorkflowsWorkflowIdRoute
+  '/app/projects': typeof AppProjectsIndexRoute
+  '/app/workflows': typeof AppWorkflowsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
-  '/projects': typeof ProjectsRouteWithChildren
-  '/settings': typeof SettingsRoute
-  '/templates': typeof TemplatesRoute
-  '/workflows': typeof WorkflowsRouteWithChildren
-  '/blocks/$blockId': typeof BlocksBlockIdRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRoute
-  '/workflows/$workflowId': typeof WorkflowsWorkflowIdRoute
-  '/projects/': typeof ProjectsIndexRoute
-  '/workflows/': typeof WorkflowsIndexRoute
+  '/app/projects': typeof AppProjectsRouteWithChildren
+  '/app/settings': typeof AppSettingsRoute
+  '/app/templates': typeof AppTemplatesRoute
+  '/app/workflows': typeof AppWorkflowsRouteWithChildren
+  '/app/': typeof AppIndexRoute
+  '/app/blocks/$blockId': typeof AppBlocksBlockIdRoute
+  '/app/projects/$projectId': typeof AppProjectsProjectIdRoute
+  '/app/workflows/$workflowId': typeof AppWorkflowsWorkflowIdRoute
+  '/app/projects/': typeof AppProjectsIndexRoute
+  '/app/workflows/': typeof AppWorkflowsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/app'
     | '/login'
-    | '/projects'
-    | '/settings'
-    | '/templates'
-    | '/workflows'
-    | '/blocks/$blockId'
-    | '/projects/$projectId'
-    | '/workflows/$workflowId'
-    | '/projects/'
-    | '/workflows/'
+    | '/app/projects'
+    | '/app/settings'
+    | '/app/templates'
+    | '/app/workflows'
+    | '/app/'
+    | '/app/blocks/$blockId'
+    | '/app/projects/$projectId'
+    | '/app/workflows/$workflowId'
+    | '/app/projects/'
+    | '/app/workflows/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
-    | '/settings'
-    | '/templates'
-    | '/blocks/$blockId'
-    | '/projects/$projectId'
-    | '/workflows/$workflowId'
-    | '/projects'
-    | '/workflows'
+    | '/app/settings'
+    | '/app/templates'
+    | '/app'
+    | '/app/blocks/$blockId'
+    | '/app/projects/$projectId'
+    | '/app/workflows/$workflowId'
+    | '/app/projects'
+    | '/app/workflows'
   id:
     | '__root__'
     | '/'
+    | '/app'
     | '/login'
-    | '/projects'
-    | '/settings'
-    | '/templates'
-    | '/workflows'
-    | '/blocks/$blockId'
-    | '/projects/$projectId'
-    | '/workflows/$workflowId'
-    | '/projects/'
-    | '/workflows/'
+    | '/app/projects'
+    | '/app/settings'
+    | '/app/templates'
+    | '/app/workflows'
+    | '/app/'
+    | '/app/blocks/$blockId'
+    | '/app/projects/$projectId'
+    | '/app/workflows/$workflowId'
+    | '/app/projects/'
+    | '/app/workflows/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
-  ProjectsRoute: typeof ProjectsRouteWithChildren
-  SettingsRoute: typeof SettingsRoute
-  TemplatesRoute: typeof TemplatesRoute
-  WorkflowsRoute: typeof WorkflowsRouteWithChildren
-  BlocksBlockIdRoute: typeof BlocksBlockIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/workflows': {
-      id: '/workflows'
-      path: '/workflows'
-      fullPath: '/workflows'
-      preLoaderRoute: typeof WorkflowsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/templates': {
-      id: '/templates'
-      path: '/templates'
-      fullPath: '/templates'
-      preLoaderRoute: typeof TemplatesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/projects': {
-      id: '/projects'
-      path: '/projects'
-      fullPath: '/projects'
-      preLoaderRoute: typeof ProjectsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -209,80 +206,131 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/workflows/': {
-      id: '/workflows/'
+    '/app/': {
+      id: '/app/'
       path: '/'
-      fullPath: '/workflows/'
-      preLoaderRoute: typeof WorkflowsIndexRouteImport
-      parentRoute: typeof WorkflowsRoute
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
     }
-    '/projects/': {
-      id: '/projects/'
+    '/app/workflows': {
+      id: '/app/workflows'
+      path: '/workflows'
+      fullPath: '/app/workflows'
+      preLoaderRoute: typeof AppWorkflowsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/templates': {
+      id: '/app/templates'
+      path: '/templates'
+      fullPath: '/app/templates'
+      preLoaderRoute: typeof AppTemplatesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/settings': {
+      id: '/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/projects': {
+      id: '/app/projects'
+      path: '/projects'
+      fullPath: '/app/projects'
+      preLoaderRoute: typeof AppProjectsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/workflows/': {
+      id: '/app/workflows/'
       path: '/'
-      fullPath: '/projects/'
-      preLoaderRoute: typeof ProjectsIndexRouteImport
-      parentRoute: typeof ProjectsRoute
+      fullPath: '/app/workflows/'
+      preLoaderRoute: typeof AppWorkflowsIndexRouteImport
+      parentRoute: typeof AppWorkflowsRoute
     }
-    '/workflows/$workflowId': {
-      id: '/workflows/$workflowId'
+    '/app/projects/': {
+      id: '/app/projects/'
+      path: '/'
+      fullPath: '/app/projects/'
+      preLoaderRoute: typeof AppProjectsIndexRouteImport
+      parentRoute: typeof AppProjectsRoute
+    }
+    '/app/workflows/$workflowId': {
+      id: '/app/workflows/$workflowId'
       path: '/$workflowId'
-      fullPath: '/workflows/$workflowId'
-      preLoaderRoute: typeof WorkflowsWorkflowIdRouteImport
-      parentRoute: typeof WorkflowsRoute
+      fullPath: '/app/workflows/$workflowId'
+      preLoaderRoute: typeof AppWorkflowsWorkflowIdRouteImport
+      parentRoute: typeof AppWorkflowsRoute
     }
-    '/projects/$projectId': {
-      id: '/projects/$projectId'
+    '/app/projects/$projectId': {
+      id: '/app/projects/$projectId'
       path: '/$projectId'
-      fullPath: '/projects/$projectId'
-      preLoaderRoute: typeof ProjectsProjectIdRouteImport
-      parentRoute: typeof ProjectsRoute
+      fullPath: '/app/projects/$projectId'
+      preLoaderRoute: typeof AppProjectsProjectIdRouteImport
+      parentRoute: typeof AppProjectsRoute
     }
-    '/blocks/$blockId': {
-      id: '/blocks/$blockId'
+    '/app/blocks/$blockId': {
+      id: '/app/blocks/$blockId'
       path: '/blocks/$blockId'
-      fullPath: '/blocks/$blockId'
-      preLoaderRoute: typeof BlocksBlockIdRouteImport
-      parentRoute: typeof rootRouteImport
+      fullPath: '/app/blocks/$blockId'
+      preLoaderRoute: typeof AppBlocksBlockIdRouteImport
+      parentRoute: typeof AppRoute
     }
   }
 }
 
-interface ProjectsRouteChildren {
-  ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
-  ProjectsIndexRoute: typeof ProjectsIndexRoute
+interface AppProjectsRouteChildren {
+  AppProjectsProjectIdRoute: typeof AppProjectsProjectIdRoute
+  AppProjectsIndexRoute: typeof AppProjectsIndexRoute
 }
 
-const ProjectsRouteChildren: ProjectsRouteChildren = {
-  ProjectsProjectIdRoute: ProjectsProjectIdRoute,
-  ProjectsIndexRoute: ProjectsIndexRoute,
+const AppProjectsRouteChildren: AppProjectsRouteChildren = {
+  AppProjectsProjectIdRoute: AppProjectsProjectIdRoute,
+  AppProjectsIndexRoute: AppProjectsIndexRoute,
 }
 
-const ProjectsRouteWithChildren = ProjectsRoute._addFileChildren(
-  ProjectsRouteChildren,
+const AppProjectsRouteWithChildren = AppProjectsRoute._addFileChildren(
+  AppProjectsRouteChildren,
 )
 
-interface WorkflowsRouteChildren {
-  WorkflowsWorkflowIdRoute: typeof WorkflowsWorkflowIdRoute
-  WorkflowsIndexRoute: typeof WorkflowsIndexRoute
+interface AppWorkflowsRouteChildren {
+  AppWorkflowsWorkflowIdRoute: typeof AppWorkflowsWorkflowIdRoute
+  AppWorkflowsIndexRoute: typeof AppWorkflowsIndexRoute
 }
 
-const WorkflowsRouteChildren: WorkflowsRouteChildren = {
-  WorkflowsWorkflowIdRoute: WorkflowsWorkflowIdRoute,
-  WorkflowsIndexRoute: WorkflowsIndexRoute,
+const AppWorkflowsRouteChildren: AppWorkflowsRouteChildren = {
+  AppWorkflowsWorkflowIdRoute: AppWorkflowsWorkflowIdRoute,
+  AppWorkflowsIndexRoute: AppWorkflowsIndexRoute,
 }
 
-const WorkflowsRouteWithChildren = WorkflowsRoute._addFileChildren(
-  WorkflowsRouteChildren,
+const AppWorkflowsRouteWithChildren = AppWorkflowsRoute._addFileChildren(
+  AppWorkflowsRouteChildren,
 )
+
+interface AppRouteChildren {
+  AppProjectsRoute: typeof AppProjectsRouteWithChildren
+  AppSettingsRoute: typeof AppSettingsRoute
+  AppTemplatesRoute: typeof AppTemplatesRoute
+  AppWorkflowsRoute: typeof AppWorkflowsRouteWithChildren
+  AppIndexRoute: typeof AppIndexRoute
+  AppBlocksBlockIdRoute: typeof AppBlocksBlockIdRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppProjectsRoute: AppProjectsRouteWithChildren,
+  AppSettingsRoute: AppSettingsRoute,
+  AppTemplatesRoute: AppTemplatesRoute,
+  AppWorkflowsRoute: AppWorkflowsRouteWithChildren,
+  AppIndexRoute: AppIndexRoute,
+  AppBlocksBlockIdRoute: AppBlocksBlockIdRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
-  ProjectsRoute: ProjectsRouteWithChildren,
-  SettingsRoute: SettingsRoute,
-  TemplatesRoute: TemplatesRoute,
-  WorkflowsRoute: WorkflowsRouteWithChildren,
-  BlocksBlockIdRoute: BlocksBlockIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

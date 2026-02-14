@@ -87,7 +87,7 @@ function BlockEditor({ blockId }: { blockId: Id<"blocks"> }) {
       setIsEditing(false)
       setIsDirty(false)
     } else {
-      navigate({ to: "/" }) // Go back in browser history
+      navigate({ to: "/app" })
     }
   }
 
@@ -96,7 +96,7 @@ function BlockEditor({ blockId }: { blockId: Id<"blocks"> }) {
     if (!confirm("Are you sure you want to delete this block?")) return
 
     await removeBlock({ id: blockId })
-    navigate({ to: "/" })
+    navigate({ to: "/app" })
   }
 
   // Loading state
@@ -116,7 +116,7 @@ function BlockEditor({ blockId }: { blockId: Id<"blocks"> }) {
         <p className="text-muted-foreground mb-4">
           The block you're looking for doesn't exist or has been deleted.
         </p>
-        <Link to="/">
+        <Link to="/app">
           <Button>Go back to zones</Button>
         </Link>
       </div>
@@ -271,6 +271,6 @@ function BlockEditorPage() {
   return <BlockEditor blockId={blockId as Id<"blocks">} />
 }
 
-export const Route = createFileRoute("/blocks/$blockId")({
+export const Route = createFileRoute("/app/blocks/$blockId")({
   component: BlockEditorPage,
 })

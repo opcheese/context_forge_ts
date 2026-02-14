@@ -5,9 +5,9 @@
 import { useState } from "react"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { useQuery, useMutation } from "convex/react"
-import { api } from "../../convex/_generated/api"
+import { api } from "../../../convex/_generated/api"
 import { Button } from "@/components/ui/button"
-import type { Id, Doc } from "../../convex/_generated/dataModel"
+import type { Id, Doc } from "../../../convex/_generated/dataModel"
 
 // Format relative time
 function formatTimeAgo(timestamp: number): string {
@@ -210,7 +210,7 @@ function WorkflowCard({
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <Link
-            to="/workflows/$workflowId"
+            to="/app/workflows/$workflowId"
             params={{ workflowId: workflow._id }}
             className="font-semibold text-lg truncate hover:underline"
           >
@@ -281,7 +281,7 @@ function WorkflowCard({
         >
           Start Workflow
         </Button>
-        <Link to="/workflows/$workflowId" params={{ workflowId: workflow._id }}>
+        <Link to="/app/workflows/$workflowId" params={{ workflowId: workflow._id }}>
           <Button variant="outline" size="sm">
             Edit
           </Button>
@@ -339,8 +339,7 @@ function WorkflowsIndexPage() {
   }
 
   const handleStarted = (projectId: Id<"projects">) => {
-    // Navigate to the project using router
-    navigate({ to: "/projects/$projectId", params: { projectId } })
+    navigate({ to: "/app/projects/$projectId", params: { projectId } })
   }
 
   return (
@@ -400,6 +399,6 @@ function WorkflowsIndexPage() {
   )
 }
 
-export const Route = createFileRoute("/workflows/")({
+export const Route = createFileRoute("/app/workflows/")({
   component: WorkflowsIndexPage,
 })

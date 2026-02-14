@@ -28,7 +28,7 @@ function LoginPage() {
   // Redirect to home when authenticated
   useEffect(() => {
     if (isAuthenticated && !isAuthLoading) {
-      navigate({ to: "/" })
+      navigate({ to: "/app" })
     }
   }, [isAuthenticated, isAuthLoading, navigate])
 

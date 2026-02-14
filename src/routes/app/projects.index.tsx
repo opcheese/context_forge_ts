@@ -5,9 +5,9 @@
 import { useState } from "react"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useQuery, useMutation } from "convex/react"
-import { api } from "../../convex/_generated/api"
+import { api } from "../../../convex/_generated/api"
 import { Button } from "@/components/ui/button"
-import type { Id } from "../../convex/_generated/dataModel"
+import type { Id } from "../../../convex/_generated/dataModel"
 
 // Format relative time
 function formatTimeAgo(timestamp: number): string {
@@ -123,7 +123,7 @@ function ProjectCard({
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <Link
-            to="/projects/$projectId"
+            to="/app/projects/$projectId"
             params={{ projectId: project._id }}
             className="font-semibold text-lg truncate hover:underline"
           >
@@ -154,7 +154,7 @@ function ProjectCard({
 
       {/* Actions */}
       <div className="mt-4 pt-3 border-t border-border flex gap-2">
-        <Link to="/projects/$projectId" params={{ projectId: project._id }}>
+        <Link to="/app/projects/$projectId" params={{ projectId: project._id }}>
           <Button variant="outline" size="sm">
             Open
           </Button>
@@ -243,6 +243,6 @@ function ProjectsIndexPage() {
   )
 }
 
-export const Route = createFileRoute("/projects/")({
+export const Route = createFileRoute("/app/projects/")({
   component: ProjectsIndexPage,
 })

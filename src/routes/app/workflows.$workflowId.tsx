@@ -5,9 +5,9 @@
 import { useState } from "react"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { useQuery, useMutation } from "convex/react"
-import { api } from "../../convex/_generated/api"
+import { api } from "../../../convex/_generated/api"
 import { Button } from "@/components/ui/button"
-import type { Id, Doc } from "../../convex/_generated/dataModel"
+import type { Id, Doc } from "../../../convex/_generated/dataModel"
 
 type Zone = "PERMANENT" | "STABLE" | "WORKING"
 
@@ -436,7 +436,7 @@ function WorkflowEditor() {
 
   const handleDeleteWorkflow = async () => {
     await removeWorkflow({ id: workflowId as Id<"workflows"> })
-    navigate({ to: "/workflows" })
+    navigate({ to: "/app/workflows" })
   }
 
   if (workflow === undefined) {
@@ -447,7 +447,7 @@ function WorkflowEditor() {
     return (
       <div className="text-center py-12">
         <h2 className="text-lg font-medium mb-2">Workflow not found</h2>
-        <Link to="/workflows">
+        <Link to="/app/workflows">
           <Button variant="outline">Back to Workflows</Button>
         </Link>
       </div>
@@ -462,7 +462,7 @@ function WorkflowEditor() {
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-            <Link to="/workflows" className="hover:text-foreground">
+            <Link to="/app/workflows" className="hover:text-foreground">
               Workflows
             </Link>
             <span>/</span>
@@ -550,6 +550,6 @@ function WorkflowEditor() {
   )
 }
 
-export const Route = createFileRoute("/workflows/$workflowId")({
+export const Route = createFileRoute("/app/workflows/$workflowId")({
   component: WorkflowEditor,
 })
