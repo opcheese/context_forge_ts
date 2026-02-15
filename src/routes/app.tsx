@@ -14,6 +14,7 @@ import { SessionProvider, useSession } from "@/contexts/SessionContext"
 import { SaveTemplateDialog, ApplyTemplateDialog } from "@/components/templates"
 import { AddToProjectDialog } from "@/components/projects"
 import { SessionDropdown } from "@/components/sessions/SessionDropdown"
+import { Anvil, Sun, Moon } from "lucide-react"
 
 // Simple theme toggle hook
 function useTheme() {
@@ -97,7 +98,7 @@ function SessionSelector() {
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       <SessionDropdown
         sessions={sessions}
         currentSessionId={sessionId}
@@ -110,30 +111,33 @@ function SessionSelector() {
       {/* Template actions - only show when session is selected */}
       {sessionId && (
         <>
-          <div className="w-px h-6 bg-border" /> {/* Divider */}
+          <div className="w-px h-5 bg-border mx-1" />
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowSaveTemplate(true)}
             title="Save current session as a reusable template"
+            className="text-xs h-7 px-2"
           >
-            Save Template
+            Save
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowApplyTemplate(true)}
             title="Apply a template to this session"
+            className="text-xs h-7 px-2"
           >
-            Apply Template
+            Apply
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowAddToProject(true)}
             title="Add this session to a project"
+            className="text-xs h-7 px-2"
           >
-            Add to Project
+            + Project
           </Button>
 
           <SaveTemplateDialog
@@ -174,61 +178,53 @@ function AuthenticatedHeader() {
   const { isDark, toggle } = useTheme()
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-2">
       <SessionSelector />
-      <Button variant="outline" size="sm" onClick={toggle}>
-        {isDark ? "Light" : "Dark"}
-      </Button>
+      <div className="w-px h-5 bg-border ml-1" />
+      <button
+        onClick={toggle}
+        className="w-8 h-8 rounded-lg border border-border bg-background hover:bg-accent flex items-center justify-center transition-colors"
+        aria-label="Toggle theme"
+      >
+        {isDark ? <Sun className="w-3.5 h-3.5 text-muted-foreground" /> : <Moon className="w-3.5 h-3.5 text-muted-foreground" />}
+      </button>
       <UserMenu />
     </div>
+  )
+}
+
+// Nav link with active underline indicator
+function NavLink({ to, children, exact }: { to: string; children: React.ReactNode; exact?: boolean }) {
+  return (
+    <Link
+      to={to}
+      className="relative text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
+      activeProps={{ className: "text-foreground font-medium" }}
+      activeOptions={exact ? { exact: true } : undefined}
+    >
+      {children}
+    </Link>
   )
 }
 
 // Shared header component
 function Header({ rightContent }: { rightContent: React.ReactNode }) {
   return (
-    <header className="border-b border-border">
-      <div className="mx-auto max-w-6xl px-8 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <Link to="/app" className="hover:opacity-80">
-            <h1 className="text-2xl font-bold text-foreground">ContextForge</h1>
+    <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-30">
+      <div className="mx-auto max-w-6xl px-8 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-8">
+          <Link to="/app" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
+            <div className="w-7 h-7 rounded-lg bg-foreground/5 border border-border flex items-center justify-center">
+              <Anvil className="w-4 h-4 text-foreground/70" />
+            </div>
+            <span className="text-lg font-bold tracking-tight">ContextForge</span>
           </Link>
-          <nav className="flex items-center gap-4">
-            <Link
-              to="/app"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              activeProps={{ className: "text-foreground font-medium" }}
-            >
-              Home
-            </Link>
-            <Link
-              to="/app/templates"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              activeProps={{ className: "text-foreground font-medium" }}
-            >
-              Templates
-            </Link>
-            <Link
-              to="/app/projects"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              activeProps={{ className: "text-foreground font-medium" }}
-            >
-              Projects
-            </Link>
-            <Link
-              to="/app/workflows"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              activeProps={{ className: "text-foreground font-medium" }}
-            >
-              Workflows
-            </Link>
-            <Link
-              to="/app/settings"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              activeProps={{ className: "text-foreground font-medium" }}
-            >
-              Settings
-            </Link>
+          <nav className="flex items-center gap-5">
+            <NavLink to="/app" exact>Home</NavLink>
+            <NavLink to="/app/templates">Templates</NavLink>
+            <NavLink to="/app/projects">Projects</NavLink>
+            <NavLink to="/app/workflows">Workflows</NavLink>
+            <NavLink to="/app/settings">Settings</NavLink>
           </nav>
         </div>
         {rightContent}

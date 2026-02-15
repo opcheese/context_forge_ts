@@ -10,6 +10,7 @@ import { api } from "../../convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Anvil } from "lucide-react"
 
 type AuthMode = "signIn" | "signUp"
 
@@ -72,7 +73,10 @@ function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-md space-y-6 p-8">
         <div className="text-center">
-          <h1 className="text-3xl font-bold">ContextForge</h1>
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-foreground/5 border border-border mb-4">
+            <Anvil className="w-6 h-6 text-foreground/70" />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight">ContextForge</h1>
           <p className="text-muted-foreground mt-2">
             {mode === "signIn" ? "Sign in to your account" : "Create a new account"}
           </p>

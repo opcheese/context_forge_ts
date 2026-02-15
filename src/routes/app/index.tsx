@@ -37,11 +37,11 @@ import { ImportProjectConfirmDialog } from "@/components/skills/ImportProjectCon
 import { ExportSkillDialog } from "@/components/skills/ExportSkillDialog"
 import { useSkillImport } from "@/hooks/useSkillImport"
 
-// Zone display info
-const ZONE_INFO: Record<Zone, { label: string; description: string }> = {
-  PERMANENT: { label: "Permanent", description: "Always included" },
-  STABLE: { label: "Stable", description: "Reference material" },
-  WORKING: { label: "Working", description: "Draft content" },
+// Zone display info with subtle color tints
+const ZONE_INFO: Record<Zone, { label: string; description: string; tint: string }> = {
+  PERMANENT: { label: "Permanent", description: "Always included", tint: "bg-blue-500/[0.02] dark:bg-blue-400/[0.03] border-blue-500/10 dark:border-blue-400/10" },
+  STABLE: { label: "Stable", description: "Reference material", tint: "bg-emerald-500/[0.02] dark:bg-emerald-400/[0.03] border-emerald-500/10 dark:border-emerald-400/10" },
+  WORKING: { label: "Working", description: "Draft content", tint: "bg-amber-500/[0.02] dark:bg-amber-400/[0.03] border-amber-500/10 dark:border-amber-400/10" },
 }
 
 // Simple client-side token estimation (4 chars/token)
@@ -308,8 +308,9 @@ function BlockCard({
   return (
     <div
       className={cn(
-        "rounded border bg-card p-2 select-none hover:border-border/80 transition-colors",
-        isSelected ? "border-primary bg-primary/5" : "border-border",
+        "rounded-lg border bg-card p-2.5 select-none transition-all duration-150",
+        "hover:shadow-sm hover:border-border/80",
+        isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border",
         isDraft && "opacity-50"
       )}
       onMouseEnter={() => setShowActions(true)}
@@ -335,7 +336,7 @@ function BlockCard({
             </span>
           )}
           <span className="text-[10px] text-muted-foreground">{formatTimeAgo(createdAt)}</span>
-          {tokens && <span className="text-[10px] text-muted-foreground font-mono">{tokens}t</span>}
+          {tokens != null && <span className="text-[10px] text-muted-foreground font-mono">{tokens}t</span>}
           {isCompressed && compressionRatio && (
             <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center gap-0.5">
               <Minimize2 className="w-2.5 h-2.5" />
@@ -629,7 +630,7 @@ function ZoneLayout({
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 flex-1 min-h-0">
       {ZONES.map((zone) => (
-        <div key={zone} className="rounded border border-border bg-card p-2 flex flex-col min-h-0 overflow-hidden">
+        <div key={zone} className={cn("rounded-lg border p-2 flex flex-col min-h-0 overflow-hidden", ZONE_INFO[zone].tint)}>
           <ZoneColumn
             sessionId={sessionId}
             zone={zone}
@@ -866,7 +867,7 @@ function HomePage() {
 
       {/* Floating action bar for multi-select */}
       {selectedBlockIds.size > 0 && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-card border border-border rounded-lg shadow-lg p-3 flex items-center gap-3 z-40">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-card border border-border rounded-xl shadow-xl shadow-black/5 dark:shadow-black/20 p-3 flex items-center gap-3 z-40 backdrop-blur-sm">
           <span className="text-sm font-medium">
             {selectedBlockIds.size} block{selectedBlockIds.size > 1 ? "s" : ""} selected
           </span>

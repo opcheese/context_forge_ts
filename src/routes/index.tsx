@@ -6,7 +6,7 @@ import { useState, useEffect } from "react"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useConvexAuth } from "convex/react"
 import { Button } from "@/components/ui/button"
-import { Layers, LayoutTemplate, GitBranch, ArrowRight, Anvil, Sparkles, Package } from "lucide-react"
+import { Layers, LayoutTemplate, GitBranch, ArrowRight, Anvil, Sparkles, Package, Sun, Moon } from "lucide-react"
 
 // Theme toggle hook (duplicated from app layout since landing is independent)
 function useTheme() {
@@ -44,21 +44,21 @@ function LandingPage() {
       />
 
       {/* Header */}
-      <header className="relative z-10 border-b border-border/50">
-        <div className="mx-auto max-w-6xl px-6 sm:px-8 py-4 flex items-center justify-between">
+      <header className="relative z-10 border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0">
+        <div className="mx-auto max-w-6xl px-6 sm:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-foreground/5 border border-border flex items-center justify-center">
-              <Anvil className="w-4.5 h-4.5 text-foreground/70" />
+            <div className="w-7 h-7 rounded-lg bg-foreground/5 border border-border flex items-center justify-center">
+              <Anvil className="w-4 h-4 text-foreground/70" />
             </div>
             <span className="text-lg font-bold tracking-tight">ContextForge</span>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={toggle}
-              className="w-8 h-8 rounded-lg border border-border bg-background hover:bg-accent flex items-center justify-center transition-colors text-xs"
+              className="w-8 h-8 rounded-lg border border-border bg-background hover:bg-accent flex items-center justify-center transition-colors"
               aria-label="Toggle theme"
             >
-              {isDark ? "☀" : "☾"}
+              {isDark ? <Sun className="w-3.5 h-3.5 text-muted-foreground" /> : <Moon className="w-3.5 h-3.5 text-muted-foreground" />}
             </button>
             {isAuthenticated ? (
               <Link to="/app">

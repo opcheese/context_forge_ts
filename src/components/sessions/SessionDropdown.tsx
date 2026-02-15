@@ -82,17 +82,17 @@ export function SessionDropdown({
 
       {/* Dropdown menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 w-72 rounded-md border border-border bg-background shadow-lg z-50">
-          <div className="max-h-60 overflow-y-auto py-1">
+        <div className="absolute top-full left-0 mt-1.5 w-72 rounded-lg border border-border bg-background shadow-lg z-50">
+          <div className="max-h-60 overflow-y-auto p-1.5">
             {sessions.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-muted-foreground">
+              <div className="px-3 py-2.5 text-sm text-muted-foreground">
                 No sessions yet
               </div>
             ) : (
               sessions.map((session) => (
                 <div
                   key={session._id}
-                  className={`flex items-center justify-between px-2 py-1.5 hover:bg-accent group ${
+                  className={`flex items-center justify-between px-3 py-2 rounded-md hover:bg-accent group ${
                     session._id === currentSessionId ? "bg-accent/50" : ""
                   }`}
                 >
@@ -121,7 +121,7 @@ export function SessionDropdown({
           </div>
 
           {/* Create new session button */}
-          <div className="border-t border-border p-1">
+          <div className="border-t border-border p-1.5">
             <Button
               variant="ghost"
               size="sm"
