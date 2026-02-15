@@ -44,6 +44,7 @@ export function useClaudeGenerate(
   // Convex hooks
   const startGeneration = useMutation(api.generations.startClaudeGeneration)
   const saveToBlocks = useMutation(api.generations.saveToBlocks)
+  const cancelGeneration = useMutation(api.generations.cancel)
 
   // Subscribe to generation updates
   const generation = useQuery(
@@ -86,12 +87,17 @@ export function useClaudeGenerate(
 
     // Handle error
     if (generation.status === "error" && isGenerating) {
-       
+
       setIsGenerating(false)
       const errorMsg = generation.error || "Unknown error"
-       
+
       setError(errorMsg)
       onError?.(errorMsg)
+    }
+
+    // Handle cancellation (from stop button or another tab)
+    if (generation.status === "cancelled" && isGenerating) {
+      setIsGenerating(false)
     }
   }, [
     generation,
@@ -127,10 +133,13 @@ export function useClaudeGenerate(
   )
 
   const stop = useCallback(() => {
-    // For now, just mark as not generating locally
-    // TODO: Implement server-side cancellation
+    if (generationId) {
+      cancelGeneration({ generationId }).catch(console.error)
+    }
     setIsGenerating(false)
-  }, [])
+    // Keep partial text visible — don't clear streamedText
+    setGenerationId(null)
+  }, [generationId, cancelGeneration])
 
   return { generate, isGenerating, streamedText, error, stop }
 }

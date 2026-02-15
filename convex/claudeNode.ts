@@ -365,6 +365,17 @@ export const streamGenerateWithContext = action({
     let outputTokens: number | undefined
     let costUsd: number | undefined
 
+    // AbortController for SDK process termination
+    const abortController = new AbortController()
+
+    // Helper to check if generation was cancelled via DB flag
+    const isCancelled = async (): Promise<boolean> => {
+      const gen = await ctx.runQuery(internal.generations.getInternal, {
+        generationId: args.generationId,
+      })
+      return gen?.status === "cancelled"
+    }
+
     // Helper to flush buffer to database
     const flushBuffer = async () => {
       if (buffer.length > 0) {
@@ -383,6 +394,7 @@ export const streamGenerateWithContext = action({
       for await (const message of claudeQuery({
         prompt,
         options: {
+          abortController,
           allowedTools: [], // Text-only mode
           maxTurns: 1,
           systemPrompt, // Pass system prompt from blocks to provider
@@ -403,10 +415,14 @@ export const streamGenerateWithContext = action({
               buffer += delta.text
               fullText += delta.text
 
-              // Throttle writes
+              // Throttle writes + check cancellation
               const now = Date.now()
               if (now - lastFlush >= throttleMs) {
                 await flushBuffer()
+                if (await isCancelled()) {
+                  abortController.abort()
+                  break
+                }
               }
             }
           }
@@ -443,8 +459,19 @@ export const streamGenerateWithContext = action({
       // Final flush of any remaining buffer
       await flushBuffer()
 
-      // Mark as complete with usage stats
       const durationMs = Date.now() - startTime
+
+      // Only mark complete if not cancelled
+      const gen = await ctx.runQuery(internal.generations.getInternal, {
+        generationId: args.generationId,
+      })
+      if (gen?.status === "cancelled") {
+        trace.complete({ text: fullText, inputTokens, outputTokens, costUsd, durationMs })
+        await flushLangfuse()
+        return
+      }
+
+      // Mark as complete with usage stats
       await ctx.runMutation(internal.generations.completeWithUsage, {
         generationId: args.generationId,
         inputTokens,
@@ -463,6 +490,15 @@ export const streamGenerateWithContext = action({
       })
       await flushLangfuse()
     } catch (error) {
+      // Handle AbortError gracefully — not a real error
+      if (error instanceof Error && error.name === "AbortError") {
+        await flushBuffer()
+        const durationMs = Date.now() - startTime
+        trace.complete({ text: fullText, inputTokens, outputTokens, costUsd, durationMs })
+        await flushLangfuse()
+        return
+      }
+
       const errorMessage = error instanceof Error ? error.message : String(error)
       console.error(`[Claude Stream] Error: ${errorMessage}`)
 
@@ -554,6 +590,17 @@ export const streamBrainstormMessage = action({
     let outputTokens: number | undefined
     let costUsd: number | undefined
 
+    // AbortController for SDK process termination
+    const abortController = new AbortController()
+
+    // Helper to check if generation was cancelled via DB flag
+    const isCancelled = async (): Promise<boolean> => {
+      const gen = await ctx.runQuery(internal.generations.getInternal, {
+        generationId: args.generationId,
+      })
+      return gen?.status === "cancelled"
+    }
+
     // Helper to flush buffer to database
     const flushBuffer = async () => {
       if (buffer.length > 0) {
@@ -572,6 +619,7 @@ export const streamBrainstormMessage = action({
       for await (const message of claudeQuery({
         prompt,
         options: {
+          abortController,
           allowedTools: [], // Text-only mode
           maxTurns: 1,
           systemPrompt, // Pass system prompt from blocks to provider
@@ -591,10 +639,14 @@ export const streamBrainstormMessage = action({
               buffer += delta.text
               fullText += delta.text
 
-              // Throttle writes
+              // Throttle writes + check cancellation
               const now = Date.now()
               if (now - lastFlush >= throttleMs) {
                 await flushBuffer()
+                if (await isCancelled()) {
+                  abortController.abort()
+                  break
+                }
               }
             }
           }
@@ -631,8 +683,19 @@ export const streamBrainstormMessage = action({
       // Final flush of any remaining buffer
       await flushBuffer()
 
-      // Mark as complete with usage stats (no auto-save to blocks)
       const durationMs = Date.now() - startTime
+
+      // Only mark complete if not cancelled
+      const gen = await ctx.runQuery(internal.generations.getInternal, {
+        generationId: args.generationId,
+      })
+      if (gen?.status === "cancelled") {
+        trace.complete({ text: fullText, inputTokens, outputTokens, costUsd, durationMs })
+        await flushLangfuse()
+        return
+      }
+
+      // Mark as complete with usage stats (no auto-save to blocks)
       await ctx.runMutation(internal.generations.completeWithUsage, {
         generationId: args.generationId,
         inputTokens,
@@ -651,6 +714,15 @@ export const streamBrainstormMessage = action({
       })
       await flushLangfuse()
     } catch (error) {
+      // Handle AbortError gracefully — not a real error
+      if (error instanceof Error && error.name === "AbortError") {
+        await flushBuffer()
+        const durationMs = Date.now() - startTime
+        trace.complete({ text: fullText, inputTokens, outputTokens, costUsd, durationMs })
+        await flushLangfuse()
+        return
+      }
+
       const errorMessage = error instanceof Error ? error.message : String(error)
       console.error(`[Claude Brainstorm] Error: ${errorMessage}`)
 

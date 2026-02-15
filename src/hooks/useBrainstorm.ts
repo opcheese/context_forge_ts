@@ -33,6 +33,7 @@ interface UseBrainstormResult {
   messages: Message[]
   isOpen: boolean
   provider: Provider
+  hasUnsavedContent: boolean
 
   // Actions
   open: (provider?: Provider) => void
@@ -46,6 +47,7 @@ interface UseBrainstormResult {
   // Streaming state
   isStreaming: boolean
   streamingText: string
+  stopStreaming: () => void
 
   // Save to blocks
   saveMessage: (messageId: string, zone: Zone) => Promise<Id<"blocks">>
@@ -87,10 +89,16 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
   const [generationId, setGenerationId] = useState<Id<"generations"> | null>(null)
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamingText, setStreamingText] = useState("")
+  const streamingTextRef = useRef("")
   const [error, setError] = useState<string | null>(null)
 
   // Track previous text for Claude chunk detection
   const prevTextRef = useRef("")
+
+  // Keep streamingTextRef in sync for use in callbacks
+  useEffect(() => {
+    streamingTextRef.current = streamingText
+  }, [streamingText])
 
   // Abort controller for client-side streaming
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -112,6 +120,19 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
   // Convex mutations (for Claude)
   const startBrainstormGeneration = useMutation(api.generations.startBrainstormGeneration)
   const saveBrainstormMessage = useMutation(api.generations.saveBrainstormMessage)
+  const cancelGeneration = useMutation(api.generations.cancel)
+
+  // Cancel generation on page close/refresh (best-effort)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (generationId) {
+        cancelGeneration({ generationId }).catch(() => {})
+      }
+      abortControllerRef.current?.abort()
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
+  }, [generationId, cancelGeneration])
 
   // Subscribe to generation updates (for Claude)
   const generation = useQuery(
@@ -157,6 +178,13 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
       setStreamingText("")
       setGenerationId(null)
     }
+
+    // Handle cancellation (e.g. from another tab — stopStreaming already saved partial text)
+    if (generation.status === "cancelled" && isStreaming) {
+      setIsStreaming(false)
+      setStreamingText("")
+      setGenerationId(null)
+    }
   }, [generation, isStreaming, onError, provider])
 
   // Open dialog
@@ -167,12 +195,44 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
     setIsOpen(true)
   }, [])
 
-  // Close dialog
+  // Close dialog — also stops any ongoing generation
   const close = useCallback(() => {
     setIsOpen(false)
-    // Stop any ongoing streaming
     abortControllerRef.current?.abort()
-  }, [])
+    if (generationId) {
+      cancelGeneration({ generationId }).catch(console.error)
+    }
+    setIsStreaming(false)
+    setStreamingText("")
+    setGenerationId(null)
+    prevTextRef.current = ""
+  }, [generationId, cancelGeneration])
+
+  // Stop any ongoing streaming (all providers)
+  const stopStreaming = useCallback(() => {
+    // Save partial text as a message before clearing state.
+    // This is the single place that handles partial text for ALL providers —
+    // the useEffect for Claude "cancelled" status only does state cleanup.
+    const partialText = streamingTextRef.current
+    if (partialText.trim()) {
+      const assistantMessage: Message = {
+        id: generateId(),
+        role: "assistant",
+        content: partialText + "\n\n*(generation stopped)*",
+        timestamp: Date.now(),
+      }
+      setMessages((prev) => [...prev, assistantMessage])
+    }
+
+    abortControllerRef.current?.abort()
+    if (generationId) {
+      cancelGeneration({ generationId }).catch(console.error)
+    }
+    setIsStreaming(false)
+    setStreamingText("")
+    setGenerationId(null)
+    prevTextRef.current = ""
+  }, [generationId, cancelGeneration])
 
   // Clear conversation
   const clearConversation = useCallback(() => {
@@ -220,8 +280,14 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
 
       let fullText = ""
 
+      // Create a fresh AbortController for this request
+      const controller = new AbortController()
+      abortControllerRef.current = controller
+
       try {
-        const generator = ollamaClient.streamChat(ollamaMessages)
+        const generator = ollamaClient.streamChat(ollamaMessages, {
+          signal: controller.signal,
+        })
 
         for await (const chunk of generator) {
           fullText += chunk
@@ -279,8 +345,14 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
 
       let fullText = ""
 
+      // Create a fresh AbortController for this request
+      const controller = new AbortController()
+      abortControllerRef.current = controller
+
       try {
-        const generator = openrouterClient.streamChat(openrouterMessages)
+        const generator = openrouterClient.streamChat(openrouterMessages, {
+          signal: controller.signal,
+        })
 
         for await (const chunk of generator) {
           fullText += chunk
@@ -360,6 +432,10 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
           await sendMessageClaude(content.trim())
         }
       } catch (err) {
+        // Ignore AbortError — user pressed stop, partial text already saved by stopStreaming
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return
+        }
         const message = err instanceof Error ? err.message : "Unknown error"
         setError(message)
         onError?.(message)
@@ -458,6 +534,9 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
           await sendMessageClaude(userMessage.content)
         }
       } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return
+        }
         const errorMsg = err instanceof Error ? err.message : "Unknown error"
         setError(errorMsg)
         onError?.(errorMsg)
@@ -515,6 +594,9 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
           await sendMessageClaude(newContent.trim())
         }
       } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return
+        }
         const errorMsg = err instanceof Error ? err.message : "Unknown error"
         setError(errorMsg)
         onError?.(errorMsg)
@@ -546,6 +628,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
     // Streaming
     isStreaming,
     streamingText,
+    stopStreaming,
 
     // Save
     saveMessage,

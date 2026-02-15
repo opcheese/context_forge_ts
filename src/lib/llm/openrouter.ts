@@ -48,6 +48,7 @@ export interface StreamChatOptions {
   temperature?: number
   topP?: number
   maxTokens?: number
+  signal?: AbortSignal
 }
 
 export interface StreamChatResult {
@@ -90,6 +91,7 @@ export async function* streamChat(
       top_p: options?.topP,
       max_tokens: options?.maxTokens,
     }),
+    signal: options?.signal,
   })
 
   if (!response.ok) {

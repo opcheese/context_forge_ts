@@ -92,7 +92,12 @@ export function useGenerate(options: UseGenerateOptions): UseGenerateResult {
 
         let fullText = ""
 
-        const generator = ollamaClient.streamChat(ollamaMessages)
+        const controller = new AbortController()
+        abortControllerRef.current = controller
+
+        const generator = ollamaClient.streamChat(ollamaMessages, {
+          signal: controller.signal,
+        })
 
         for await (const chunk of generator) {
           fullText += chunk

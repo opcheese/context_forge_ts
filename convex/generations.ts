@@ -7,7 +7,7 @@
  * 3. Clients subscribe via useQuery for real-time updates
  */
 
-import { mutation, query, internalMutation } from "./_generated/server"
+import { mutation, query, internalMutation, internalQuery } from "./_generated/server"
 import { api } from "./_generated/api"
 import { v } from "convex/values"
 import { countTokens, DEFAULT_TOKEN_MODEL } from "./lib/tokenizer"
@@ -140,6 +140,35 @@ export const fail = internalMutation({
       error: args.error,
       updatedAt: Date.now(),
     })
+  },
+})
+
+/**
+ * Cancel a streaming generation.
+ * Sets status to "cancelled" so the server action stops writing chunks.
+ */
+export const cancel = mutation({
+  args: { generationId: v.id("generations") },
+  handler: async (ctx, args) => {
+    const generation = await ctx.db.get(args.generationId)
+    if (!generation) return
+    if (generation.status !== "streaming") return
+
+    await ctx.db.patch(args.generationId, {
+      status: "cancelled",
+      updatedAt: Date.now(),
+    })
+  },
+})
+
+/**
+ * Internal query to get generation by ID.
+ * Used by server actions to check cancellation status.
+ */
+export const getInternal = internalQuery({
+  args: { generationId: v.id("generations") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.generationId)
   },
 })
 

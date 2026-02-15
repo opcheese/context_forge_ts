@@ -200,6 +200,7 @@ export function BrainstormPanel({ sessionId, compact = false }: BrainstormPanelP
           systemPrompt={activeSystemPrompt}
           disableAgentBehavior={brainstorm.disableAgentBehavior}
           onDisableAgentBehaviorChange={brainstorm.setDisableAgentBehavior}
+          onStopStreaming={brainstorm.stopStreaming}
         />
       </>
     )
@@ -338,6 +339,7 @@ export function BrainstormPanel({ sessionId, compact = false }: BrainstormPanelP
         systemPrompt={activeSystemPrompt}
         disableAgentBehavior={brainstorm.disableAgentBehavior}
         onDisableAgentBehaviorChange={brainstorm.setDisableAgentBehavior}
+        onStopStreaming={brainstorm.stopStreaming}
       />
     </div>
   )

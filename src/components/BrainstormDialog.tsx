@@ -42,6 +42,8 @@ interface BrainstormDialogProps {
   // Claude Code agent behavior toggle
   disableAgentBehavior?: boolean
   onDisableAgentBehaviorChange?: (value: boolean) => void
+  // Stop streaming
+  onStopStreaming: () => void
 }
 
 // Message bubble component
@@ -252,6 +254,7 @@ export function BrainstormDialog({
   systemPrompt,
   disableAgentBehavior = true,
   onDisableAgentBehaviorChange,
+  onStopStreaming,
 }: BrainstormDialogProps) {
   const [inputValue, setInputValue] = useState("")
   const [showCloseWarning, setShowCloseWarning] = useState(false)
@@ -435,7 +438,12 @@ export function BrainstormDialog({
             >
               Clear
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleCloseRequest}>
+            <Button variant="ghost" size="sm" onClick={() => {
+              if (isStreaming) {
+                onStopStreaming()
+              }
+              handleCloseRequest()
+            }}>
               Close
             </Button>
           </div>
@@ -495,14 +503,24 @@ export function BrainstormDialog({
               disabled={isStreaming || !isProviderAvailable}
               className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm resize-none disabled:opacity-50 min-h-[80px] max-h-[200px] overflow-y-auto"
             />
-            <DebouncedButton
-              onClick={handleSend}
-              disabled={!inputValue.trim() || isStreaming || !isProviderAvailable}
-              className="self-end"
-              debounceMs={300}
-            >
-              {isStreaming ? "Sending..." : "Send"}
-            </DebouncedButton>
+            {isStreaming ? (
+              <Button
+                variant="destructive"
+                onClick={onStopStreaming}
+                className="self-end"
+              >
+                Stop
+              </Button>
+            ) : (
+              <DebouncedButton
+                onClick={handleSend}
+                disabled={!inputValue.trim() || !isProviderAvailable}
+                className="self-end"
+                debounceMs={300}
+              >
+                Send
+              </DebouncedButton>
+            )}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             Ctrl+Enter to send, Esc to close

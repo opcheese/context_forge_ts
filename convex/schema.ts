@@ -159,7 +159,8 @@ export default defineSchema({
     status: v.union(
       v.literal("streaming"),
       v.literal("complete"),
-      v.literal("error")
+      v.literal("error"),
+      v.literal("cancelled")
     ),
     text: v.string(), // Accumulated text, updated as chunks arrive
     error: v.optional(v.string()), // Error message if status is "error"
