@@ -107,7 +107,8 @@ export const checkHealth = action({
     }
 
     return new Promise((resolve) => {
-      const proc = spawn("claude", ["--version"], {
+      const claudePath = getClaudeCodePath() || "claude"
+      const proc = spawn(claudePath, ["--version"], {
         timeout: 5000,
       })
 

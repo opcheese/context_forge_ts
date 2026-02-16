@@ -53,6 +53,10 @@ module.exports = {
       interpreter: "none",
       autorestart: true,
       max_restarts: 10,
+      env: {
+        ACTIONS_USER_TIMEOUT_SECS: "120",
+        HTTP_SERVER_TIMEOUT_SECONDS: "120",
+      },
     },
     {
       name: "contextforge-frontend",
