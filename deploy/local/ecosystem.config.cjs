@@ -54,6 +54,7 @@ module.exports = {
       autorestart: true,
       max_restarts: 10,
       env: {
+        DATABASE_UDF_USER_TIMEOUT_SECONDS: "10",
         ACTIONS_USER_TIMEOUT_SECS: "120",
         HTTP_SERVER_TIMEOUT_SECONDS: "120",
       },

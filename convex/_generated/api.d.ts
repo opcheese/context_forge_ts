@@ -26,6 +26,7 @@ import type * as lib_tokenizer from "../lib/tokenizer.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as marketplace from "../marketplace.js";
 import type * as metrics from "../metrics.js";
+import type * as migrations from "../migrations.js";
 import type * as projects from "../projects.js";
 import type * as sessions from "../sessions.js";
 import type * as skillExport from "../skillExport.js";
@@ -61,6 +62,7 @@ declare const fullApi: ApiFromModules<{
   "lib/validators": typeof lib_validators;
   marketplace: typeof marketplace;
   metrics: typeof metrics;
+  migrations: typeof migrations;
   projects: typeof projects;
   sessions: typeof sessions;
   skillExport: typeof skillExport;
