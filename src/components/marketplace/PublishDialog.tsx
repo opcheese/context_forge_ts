@@ -38,16 +38,26 @@ export function PublishDialog({
   const publishTemplate = useMutation(api.marketplace.publishTemplate)
   const publishWorkflow = useMutation(api.marketplace.publishWorkflow)
   const updateMarketplace = useMutation(api.marketplace.update)
+  const published = useQuery(
+    api.marketplace.get,
+    publishedMarketplaceId ? { id: publishedMarketplaceId } : "skip"
+  )
   const { toast } = useToast()
 
-  // Reset form when dialog opens
+  // Sync form state with marketplace data for updates or source data for new posts
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) return
+
+    if (publishMode === "update" && published) {
+      setName(published.name ?? sourceName)
+      setDescription(published.description ?? "")
+      setCategory(published.category ?? (categories?.[0]?.slug ?? ""))
+    } else {
       setName(sourceName)
       setDescription(sourceDescription ?? "")
-      setPublishMode(publishedMarketplaceId ? "update" : "new")
+      if (categories?.length) setCategory(categories[0].slug)
     }
-  }, [isOpen, sourceName, sourceDescription, publishedMarketplaceId])
+  }, [isOpen, publishMode, published, sourceName, sourceDescription, categories])
 
   // Set default category when categories load
   useEffect(() => {

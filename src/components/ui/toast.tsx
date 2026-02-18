@@ -78,9 +78,9 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
   }
 
   const colors = {
-    success: "border-green-500/50 bg-green-500/10 text-green-600 dark:text-green-400",
-    error: "border-destructive/50 bg-destructive/10 text-destructive",
-    info: "border-blue-500/50 bg-blue-500/10 text-blue-600 dark:text-blue-400",
+    success: "bg-green-300 dark:bg-green-900 text-green-900 dark:text-green-300",
+    error: "bg-red-300 dark:bg-red-900 text-red-900 dark:text-red-300",
+    info: "bg-blue-300 dark:bg-blue-900 text-blue-900 dark:text-blue-300",
   }
 
   const Icon = icons[toast.type]
