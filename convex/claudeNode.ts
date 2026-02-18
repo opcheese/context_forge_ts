@@ -563,6 +563,7 @@ export const streamBrainstormMessage = action({
     throttleMs: v.optional(v.number()),
     disableAgentBehavior: v.optional(v.boolean()), // Append anti-agent suffix
     activeSkillIds: v.optional(v.array(v.string())), // Ephemeral skill IDs to inject
+    model: v.optional(v.string()), // Claude model override (e.g. "claude-sonnet-4-5-20250929")
   },
   handler: async (ctx, args): Promise<void> => {
     const throttleMs = args.throttleMs ?? 100
@@ -656,6 +657,7 @@ export const streamBrainstormMessage = action({
           allowedTools: [], // Text-only mode
           maxTurns: 1,
           systemPrompt, // Pass system prompt from blocks to provider
+          model: args.model, // Model override (undefined = CLI default)
           pathToClaudeCodeExecutable: getClaudeCodePath(),
           includePartialMessages: true, // Enable streaming deltas
           stderr: (data: string) => {

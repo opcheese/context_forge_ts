@@ -57,6 +57,10 @@ interface UseBrainstormResult {
   disableAgentBehavior: boolean
   setDisableAgentBehavior: (value: boolean) => void
 
+  // Model selection (for Claude provider)
+  model: string | null
+  setModel: (model: string | null) => void
+
   // Ephemeral skills
   activeSkills: Record<string, boolean>
   toggleSkill: (skillId: string) => void
@@ -85,6 +89,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
   const [isOpen, setIsOpen] = useState(false)
   const [provider, setProvider] = useState<Provider>("claude")
   const [disableAgentBehavior, setDisableAgentBehavior] = useState(defaultDisableAgentBehavior)
+  const [model, setModel] = useState<string | null>(null)
 
   // Conversation state (ephemeral - lost on close/refresh)
   const [messages, setMessages] = useState<Message[]>([])
@@ -412,10 +417,11 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
         newMessage: content,
         disableAgentBehavior,
         activeSkillIds,
+        model: model ?? undefined,
       })
       setGenerationId(result.generationId)
     },
-    [sessionId, messages, startBrainstormGeneration, disableAgentBehavior, activeSkills]
+    [sessionId, messages, startBrainstormGeneration, disableAgentBehavior, activeSkills, model]
   )
 
   // Send a new message (dispatches to correct provider)
@@ -659,6 +665,10 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
     // Claude Code agent behavior toggle
     disableAgentBehavior,
     setDisableAgentBehavior,
+
+    // Model selection
+    model,
+    setModel,
 
     // Ephemeral skills
     activeSkills,

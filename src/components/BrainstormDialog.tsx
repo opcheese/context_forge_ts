@@ -45,6 +45,9 @@ interface BrainstormDialogProps {
   onDisableAgentBehaviorChange?: (value: boolean) => void
   // Stop streaming
   onStopStreaming: () => void
+  // Model selection (Claude provider)
+  model?: string | null
+  onModelChange?: (model: string | null) => void
   // Ephemeral skills
   activeSkills?: Record<string, boolean>
   onToggleSkill?: (skillId: string) => void
@@ -259,6 +262,8 @@ export function BrainstormDialog({
   disableAgentBehavior = true,
   onDisableAgentBehaviorChange,
   onStopStreaming,
+  model,
+  onModelChange,
   activeSkills,
   onToggleSkill,
 }: BrainstormDialogProps) {
@@ -410,6 +415,20 @@ export function BrainstormDialog({
                 OpenRouter {providerHealth?.openrouter?.ok ? "" : "(offline)"}
               </option>
             </select>
+            {/* Model selector (Claude provider only) */}
+            {provider === "claude" && onModelChange && !providerHealth?.claude?.disabled && (
+              <select
+                value={model ?? ""}
+                onChange={(e) => onModelChange(e.target.value || null)}
+                disabled={!canChangeProvider || isStreaming}
+                className="text-sm border border-input rounded-md px-2 py-1 bg-background disabled:opacity-50 max-w-[200px]"
+              >
+                <option value="">Default model</option>
+                <option value="claude-sonnet-4-5-20250929">Sonnet 4.5</option>
+                <option value="claude-opus-4-6">Opus 4.6</option>
+                <option value="claude-haiku-4-5-20251001">Haiku 4.5</option>
+              </select>
+            )}
             {/* Claude: disable agent behavior toggle (only when Claude is enabled) */}
             {provider === "claude" && onDisableAgentBehaviorChange && !providerHealth?.claude?.disabled && (
               <label
