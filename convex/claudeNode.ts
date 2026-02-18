@@ -22,6 +22,7 @@ import {
   assembleContextWithConversation,
   extractSystemPromptFromBlocks,
   NO_TOOLS_SUFFIX,
+  NO_SELF_TALK_SUFFIX,
 } from "./lib/context"
 import { getActiveSkillsContent } from "./lib/skills"
 import { createGeneration, flushLangfuse } from "./lib/langfuse"
@@ -562,6 +563,7 @@ export const streamBrainstormMessage = action({
     newMessage: v.string(),
     throttleMs: v.optional(v.number()),
     disableAgentBehavior: v.optional(v.boolean()), // Append anti-agent suffix
+    preventSelfTalk: v.optional(v.boolean()), // Append anti-self-talk suffix
     activeSkillIds: v.optional(v.array(v.string())), // Ephemeral skill IDs to inject
     model: v.optional(v.string()), // Claude model override (e.g. "claude-sonnet-4-5-20250929")
   },
@@ -569,6 +571,7 @@ export const streamBrainstormMessage = action({
     const throttleMs = args.throttleMs ?? 100
     const startTime = Date.now()
     const disableAgentBehavior = args.disableAgentBehavior ?? true
+    const preventSelfTalk = args.preventSelfTalk ?? true
 
     // Get blocks for context assembly (use internal query to bypass auth in scheduled actions)
     const blocks = await ctx.runQuery(internal.blocks.listBySessionInternal, {
@@ -581,6 +584,13 @@ export const streamBrainstormMessage = action({
     // Append anti-agent suffix if enabled
     if (disableAgentBehavior) {
       systemPrompt = (systemPrompt ?? "") + NO_TOOLS_SUFFIX
+    }
+
+    // Append anti-self-talk suffix to prevent model from simulating user turns
+    // (the XML-formatted conversation is a single prompt string, so the model
+    // might continue the <user>/<assistant> XML pattern)
+    if (preventSelfTalk) {
+      systemPrompt = (systemPrompt ?? "") + NO_SELF_TALK_SUFFIX
     }
 
     // Build active skills content for injection

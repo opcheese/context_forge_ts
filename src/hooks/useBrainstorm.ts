@@ -57,6 +57,10 @@ interface UseBrainstormResult {
   disableAgentBehavior: boolean
   setDisableAgentBehavior: (value: boolean) => void
 
+  // Prevent self-talk toggle
+  preventSelfTalk: boolean
+  setPreventSelfTalk: (value: boolean) => void
+
   // Model selection (for Claude provider)
   model: string | null
   setModel: (model: string | null) => void
@@ -89,6 +93,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
   const [isOpen, setIsOpen] = useState(false)
   const [provider, setProvider] = useState<Provider>("claude")
   const [disableAgentBehavior, setDisableAgentBehavior] = useState(defaultDisableAgentBehavior)
+  const [preventSelfTalk, setPreventSelfTalk] = useState(true)
   const [model, setModel] = useState<string | null>(null)
 
   // Conversation state (ephemeral - lost on close/refresh)
@@ -416,12 +421,13 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
         conversationHistory,
         newMessage: content,
         disableAgentBehavior,
+        preventSelfTalk,
         activeSkillIds,
         model: model ?? undefined,
       })
       setGenerationId(result.generationId)
     },
-    [sessionId, messages, startBrainstormGeneration, disableAgentBehavior, activeSkills, model]
+    [sessionId, messages, startBrainstormGeneration, disableAgentBehavior, preventSelfTalk, activeSkills, model]
   )
 
   // Send a new message (dispatches to correct provider)
@@ -665,6 +671,10 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
     // Claude Code agent behavior toggle
     disableAgentBehavior,
     setDisableAgentBehavior,
+
+    // Prevent self-talk
+    preventSelfTalk,
+    setPreventSelfTalk,
 
     // Model selection
     model,

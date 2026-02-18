@@ -11,6 +11,15 @@ export const NO_TOOLS_SUFFIX = `
 
 IMPORTANT: In this conversation you do NOT have access to tools, files, or code execution. Do NOT say "let me read that file" or "I'll search for that" - work only with information provided in this conversation.`
 
+/**
+ * Anti-self-talk suffix to prevent the model from simulating user messages.
+ * The XML-formatted conversation is passed as a single prompt string to the SDK,
+ * so the model might continue the XML pattern by generating <user> tags.
+ */
+export const NO_SELF_TALK_SUFFIX = `
+
+IMPORTANT: Generate ONLY your single assistant response. Do NOT simulate, generate, or continue with any user messages. Do NOT write <user> tags or pretend to be the user. Stop after your response is complete.`
+
 export interface ContextMessage {
   role: "system" | "user" | "assistant"
   content: string

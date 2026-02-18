@@ -280,6 +280,7 @@ export const startBrainstormGeneration = mutation({
     ),
     newMessage: v.string(),
     disableAgentBehavior: v.optional(v.boolean()), // Append anti-agent suffix to system prompt
+    preventSelfTalk: v.optional(v.boolean()), // Append anti-self-talk suffix
     activeSkillIds: v.optional(v.array(v.string())), // Ephemeral skill IDs to inject
     model: v.optional(v.string()), // Claude model override
   },
@@ -303,6 +304,7 @@ export const startBrainstormGeneration = mutation({
       conversationHistory: args.conversationHistory,
       newMessage: args.newMessage,
       disableAgentBehavior: args.disableAgentBehavior ?? true, // Default to true
+      preventSelfTalk: args.preventSelfTalk ?? true, // Default to true
       activeSkillIds: args.activeSkillIds,
       model: args.model,
     })

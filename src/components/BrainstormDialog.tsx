@@ -43,6 +43,9 @@ interface BrainstormDialogProps {
   // Claude Code agent behavior toggle
   disableAgentBehavior?: boolean
   onDisableAgentBehaviorChange?: (value: boolean) => void
+  // Prevent self-talk toggle
+  preventSelfTalk?: boolean
+  onPreventSelfTalkChange?: (value: boolean) => void
   // Stop streaming
   onStopStreaming: () => void
   // Model selection (Claude provider)
@@ -278,6 +281,8 @@ export function BrainstormDialog({
   systemPrompt,
   disableAgentBehavior = true,
   onDisableAgentBehaviorChange,
+  preventSelfTalk = true,
+  onPreventSelfTalkChange,
   onStopStreaming,
   model,
   onModelChange,
@@ -407,7 +412,7 @@ export function BrainstormDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-background border border-border rounded-lg shadow-xl w-full max-w-3xl h-[80vh] flex flex-col">
+      <div className="bg-background border border-border rounded-lg shadow-xl w-full max-w-5xl h-[80vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-3">
@@ -460,6 +465,22 @@ export function BrainstormDialog({
                   className="rounded border-input"
                 />
                 <span className="text-muted-foreground">No tools</span>
+              </label>
+            )}
+            {/* Claude: prevent self-talk toggle */}
+            {provider === "claude" && onPreventSelfTalkChange && !providerHealth?.claude?.disabled && (
+              <label
+                className="inline-flex items-center gap-1.5 text-xs cursor-pointer"
+                title="When enabled, prevents the model from simulating user messages and continuing the conversation with itself"
+              >
+                <input
+                  type="checkbox"
+                  checked={preventSelfTalk}
+                  onChange={(e) => onPreventSelfTalkChange(e.target.checked)}
+                  disabled={!canChangeProvider || isStreaming}
+                  className="rounded border-input"
+                />
+                <span className="text-muted-foreground">No self-talk</span>
               </label>
             )}
             {/* System prompt indicator */}
