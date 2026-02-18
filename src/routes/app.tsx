@@ -3,9 +3,9 @@
  */
 
 import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
+import { motion, LayoutGroup } from "framer-motion"
 import { springs } from "@/lib/motion"
-import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router"
 import { useQuery, Authenticated, Unauthenticated, AuthLoading } from "convex/react"
 import { useAuthActions } from "@convex-dev/auth/react"
 import { api } from "../../convex/_generated/api"
@@ -195,16 +195,26 @@ function AuthenticatedHeader() {
   )
 }
 
-// Nav link with active underline indicator
+// Nav link with animated sliding underline indicator
 function NavLink({ to, children, exact }: { to: string; children: React.ReactNode; exact?: boolean }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const isActive = exact
+    ? pathname === to
+    : pathname.startsWith(to) && (to !== "/app" || pathname === "/app" || pathname === "/app/")
+
   return (
     <Link
       to={to}
-      className="relative text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
-      activeProps={{ className: "text-foreground font-medium" }}
-      activeOptions={exact ? { exact: true } : undefined}
+      className={`relative text-sm py-1 transition-colors ${isActive ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"}`}
     >
       {children}
+      {isActive && (
+        <motion.div
+          className="absolute -bottom-[13px] left-0 right-0 h-[2px] bg-foreground"
+          layoutId="nav-indicator"
+          transition={springs.snappy}
+        />
+      )}
     </Link>
   )
 }
@@ -221,14 +231,16 @@ function Header({ rightContent }: { rightContent: React.ReactNode }) {
             </div>
             <span className="text-lg font-bold tracking-tight">ContextForge</span>
           </Link>
-          <nav className="flex items-center gap-5">
-            <NavLink to="/app" exact>Home</NavLink>
-            <NavLink to="/app/templates">Templates</NavLink>
-            <NavLink to="/app/projects">Projects</NavLink>
-            <NavLink to="/app/workflows">Workflows</NavLink>
-            <NavLink to="/app/marketplace">Marketplace</NavLink>
-            <NavLink to="/app/settings">Settings</NavLink>
-          </nav>
+          <LayoutGroup>
+            <nav className="flex items-center gap-5">
+              <NavLink to="/app" exact>Home</NavLink>
+              <NavLink to="/app/templates">Templates</NavLink>
+              <NavLink to="/app/projects">Projects</NavLink>
+              <NavLink to="/app/workflows">Workflows</NavLink>
+              <NavLink to="/app/marketplace">Marketplace</NavLink>
+              <NavLink to="/app/settings">Settings</NavLink>
+            </nav>
+          </LayoutGroup>
         </div>
         {rightContent}
       </div>
