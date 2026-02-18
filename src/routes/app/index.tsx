@@ -13,7 +13,8 @@ import { DroppableZone, SortableBlock, ZONES, useDndOptimistic, type Zone } from
 import { useFileDrop } from "@/hooks/useFileDrop"
 import { useSession } from "@/contexts/SessionContext"
 import { BrainstormPanel } from "@/components/BrainstormPanel"
-import { SessionMetrics, ZoneHeader } from "@/components/metrics"
+import { SessionMetrics, ZoneHeader, ZoneHeaderSkeleton } from "@/components/metrics"
+import { Skeleton } from "@/components/ui/skeleton"
 import { ContextExport } from "@/components/ContextExport"
 import { cn } from "@/lib/utils"
 import {
@@ -564,7 +565,7 @@ function ZoneColumn({
             isCompressing={isZoneCompressing}
           />
         ) : (
-          <h3 className="text-sm font-semibold">{info.label}</h3>
+          <ZoneHeaderSkeleton />
         )}
         {isDanger && (
           <div className="mt-1 p-1 rounded bg-destructive/10 text-destructive text-[10px]">
@@ -581,7 +582,19 @@ function ZoneColumn({
       <DroppableZone zone={zone} itemIds={displayIds}>
         <div className="flex-1 space-y-1.5 min-h-[60px] overflow-y-auto">
           {blocks === undefined ? (
-            <div className="text-xs text-muted-foreground">Loading...</div>
+            <div className="space-y-1.5">
+              {[0, 1].map((i) => (
+                <div key={i} className="rounded-lg border border-border bg-card p-2.5">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Skeleton className="h-4 w-14 rounded" />
+                    <Skeleton className="h-3 w-10" />
+                    <Skeleton className="h-3 w-8" />
+                  </div>
+                  <Skeleton className="h-3 w-full mb-1" />
+                  <Skeleton className="h-3 w-3/4" />
+                </div>
+              ))}
+            </div>
           ) : displayBlocks.length === 0 ? (
             <div className="text-xs text-muted-foreground text-center py-4 border border-dashed border-border rounded">
               Drop here
@@ -840,7 +853,40 @@ function HomePage() {
   }
 
   if (isLoading) {
-    return <div className="text-center py-12 text-muted-foreground">Loading...</div>
+    return (
+      <div className="flex flex-col gap-3 h-[calc(100vh-120px)]">
+        {/* Toolbar skeleton */}
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-5 w-24" />
+          <Skeleton className="h-1.5 w-12 rounded-full" />
+          <Skeleton className="h-5 w-10" />
+          <Skeleton className="h-7 w-20 rounded-md" />
+        </div>
+        {/* 3-column zone skeleton */}
+        <div className="grid grid-cols-3 gap-3 flex-1 min-h-0">
+          {[0, 1, 2].map((col) => (
+            <div key={col} className="flex flex-col h-full">
+              <div className="mb-2">
+                <ZoneHeaderSkeleton />
+              </div>
+              <div className="flex-1 space-y-1.5">
+                {[0, 1].map((i) => (
+                  <div key={i} className="rounded-lg border border-border bg-card p-2.5">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <Skeleton className="h-4 w-14 rounded" />
+                      <Skeleton className="h-3 w-10" />
+                      <Skeleton className="h-3 w-8" />
+                    </div>
+                    <Skeleton className="h-3 w-full mb-1" />
+                    <Skeleton className="h-3 w-3/4" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   if (!sessionId) {

@@ -6,12 +6,30 @@ import { useQuery } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import type { Id } from "../../../convex/_generated/dataModel"
 import { ZoneHeader } from "./ZoneHeader"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 interface SessionMetricsProps {
   sessionId: Id<"sessions">
   collapsed?: boolean
   className?: string
+}
+
+/** Skeleton matching ZoneHeader layout: "Zone N blocks | tokens / budget | bar | %" */
+export function ZoneHeaderSkeleton() {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-3 w-14" />
+      </div>
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-3 w-20 font-mono" />
+        <Skeleton className="h-2 w-16 rounded-full" />
+        <Skeleton className="h-3 w-10" />
+      </div>
+    </div>
+  )
 }
 
 // Zone display names
@@ -29,13 +47,27 @@ export function SessionMetrics({
   const metrics = useQuery(api.metrics.getZoneMetrics, { sessionId })
 
   if (!metrics) {
+    if (collapsed) {
+      // Match compact view shape: "tokens / budget" | bar | "%"
+      return (
+        <div className={cn("inline-flex items-center gap-2 text-sm", className)}>
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-1.5 w-12 rounded-full" />
+          <Skeleton className="h-3 w-8" />
+        </div>
+      )
+    }
+    // Match expanded view: title + 3 zone rows + total
     return (
       <div className={cn("rounded-lg border border-border bg-card p-4", className)}>
-        <div className="animate-pulse space-y-2">
-          <div className="h-4 bg-muted rounded w-1/3" />
-          <div className="h-2 bg-muted rounded w-full" />
-          <div className="h-2 bg-muted rounded w-full" />
-          <div className="h-2 bg-muted rounded w-full" />
+        <Skeleton className="h-5 w-28 mb-3" />
+        <div className="space-y-3">
+          {[0, 1, 2].map((i) => (
+            <ZoneHeaderSkeleton key={i} />
+          ))}
+          <div className="pt-2 border-t border-border">
+            <ZoneHeaderSkeleton />
+          </div>
         </div>
       </div>
     )

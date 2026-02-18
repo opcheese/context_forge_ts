@@ -4,4 +4,4 @@
 
 export { ZoneHeader } from "./ZoneHeader"
 export { BlockTokenBadge } from "./BlockTokenBadge"
-export { SessionMetrics } from "./SessionMetrics"
+export { SessionMetrics, ZoneHeaderSkeleton } from "./SessionMetrics"
