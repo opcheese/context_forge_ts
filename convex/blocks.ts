@@ -1,10 +1,33 @@
 import { query, mutation, internalQuery, internalMutation } from "./_generated/server"
 import type { MutationCtx } from "./_generated/server"
 import { v } from "convex/values"
-import type { Id } from "./_generated/dataModel"
+import type { Doc, Id } from "./_generated/dataModel"
 import { zoneValidator, type Zone } from "./lib/validators"
 import { countTokens, DEFAULT_TOKEN_MODEL } from "./lib/tokenizer"
 import { canAccessSession, requireSessionAccess } from "./lib/auth"
+import { resolveBlocks } from "./lib/resolve"
+
+// Fetch canonical blocks for a set of linked blocks, returns lookup map
+async function fetchCanonicalLookup(
+  ctx: { db: any },
+  blocks: Array<{ refBlockId?: Id<"blocks"> | undefined }>
+): Promise<Map<string, Pick<Doc<"blocks">, "content">>> {
+  const refIds = blocks
+    .filter((b): b is typeof b & { refBlockId: Id<"blocks"> } => !!b.refBlockId)
+    .map((b) => b.refBlockId)
+  const uniqueIds = [...new Set(refIds.map(String))]
+
+  const lookup = new Map<string, Pick<Doc<"blocks">, "content">>()
+  await Promise.all(
+    uniqueIds.map(async (id) => {
+      const canonical = await ctx.db.get(id as Id<"blocks">)
+      if (canonical) {
+        lookup.set(id, { content: canonical.content })
+      }
+    })
+  )
+  return lookup
+}
 
 // ============ Internal functions (for use by other Convex functions) ============
 
@@ -29,11 +52,13 @@ export const removeInternal = internalMutation({
 export const listBySessionInternal = internalQuery({
   args: { sessionId: v.id("sessions") },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const blocks = await ctx.db
       .query("blocks")
       .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
       .order("desc")
       .collect()
+    const lookup = await fetchCanonicalLookup(ctx, blocks)
+    return resolveBlocks(blocks, lookup)
   },
 })
 
@@ -64,11 +89,13 @@ export const list = query({
       return []
     }
 
-    return await ctx.db
+    const blocks = await ctx.db
       .query("blocks")
       .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
       .order("desc")
       .collect()
+    const lookup = await fetchCanonicalLookup(ctx, blocks)
+    return resolveBlocks(blocks, lookup)
   },
 })
 
@@ -85,13 +112,15 @@ export const listByZone = query({
       return []
     }
 
-    return await ctx.db
+    const blocks = await ctx.db
       .query("blocks")
       .withIndex("by_session_zone", (q) =>
         q.eq("sessionId", args.sessionId).eq("zone", args.zone)
       )
       .order("asc")
       .collect()
+    const lookup = await fetchCanonicalLookup(ctx, blocks)
+    return resolveBlocks(blocks, lookup)
   },
 })
 
@@ -108,6 +137,11 @@ export const get = query({
       return null
     }
 
+    // Resolve linked block content
+    if (block.refBlockId) {
+      const canonical = await ctx.db.get(block.refBlockId)
+      return { ...block, content: canonical?.content ?? "" }
+    }
     return block
   },
 })
