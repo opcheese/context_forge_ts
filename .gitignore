@@ -46,3 +46,7 @@ Thumbs.db
 
 # Misc
 *.tsbuildinfo
+
+# Internal docs (not for GitHub)
+docs/internal/
+2025-02-16-local-vpn-deployment-design.md
