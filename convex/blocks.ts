@@ -4,6 +4,7 @@ import { v } from "convex/values"
 import type { Doc, Id } from "./_generated/dataModel"
 import { zoneValidator, type Zone } from "./lib/validators"
 import { countTokens, DEFAULT_TOKEN_MODEL } from "./lib/tokenizer"
+import { computeContentHash } from "./lib/contentHash"
 import { canAccessSession, requireSessionAccess } from "./lib/auth"
 import { resolveBlocks } from "./lib/resolve"
 
@@ -146,6 +147,29 @@ export const get = query({
   },
 })
 
+// Find a block with matching content hash in a different session (for duplicate detection)
+export const findDuplicate = query({
+  args: {
+    contentHash: v.string(),
+    excludeSessionId: v.id("sessions"),
+  },
+  handler: async (ctx, args) => {
+    if (!args.contentHash) return null
+    const match = await ctx.db
+      .query("blocks")
+      .withIndex("by_content_hash", (q) => q.eq("contentHash", args.contentHash))
+      .first()
+    if (!match || match.sessionId === args.excludeSessionId) return null
+    // Get session name for display
+    const session = await ctx.db.get(match.sessionId)
+    return {
+      blockId: match._id,
+      sessionId: match.sessionId,
+      sessionName: session?.name ?? "Untitled",
+    }
+  },
+})
+
 // Create a new block in a session
 export const create = mutation({
   args: {
@@ -168,6 +192,7 @@ export const create = mutation({
 
     // Count tokens for the content
     const tokens = countTokens(args.content)
+    const contentHash = computeContentHash(args.content)
 
     // Update session's updatedAt
     await ctx.db.patch(args.sessionId, { updatedAt: now })
@@ -185,6 +210,7 @@ export const create = mutation({
       tokens,
       originalTokens: tokens,
       tokenModel: DEFAULT_TOKEN_MODEL,
+      contentHash,
     })
   },
 })
@@ -347,6 +373,7 @@ export const update = mutation({
       updatedAt: number
       tokens?: number
       tokenModel?: string
+      contentHash?: string
     } = {
       updatedAt: now,
     }
@@ -356,6 +383,7 @@ export const update = mutation({
       // Recount tokens when content changes
       updates.tokens = countTokens(args.content)
       updates.tokenModel = DEFAULT_TOKEN_MODEL
+      updates.contentHash = computeContentHash(args.content)
     }
     if (args.type !== undefined) {
       updates.type = args.type
