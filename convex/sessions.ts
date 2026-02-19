@@ -443,19 +443,44 @@ export const goToNextStep = mutation({
       )
 
       for (const block of blocksToCarry) {
-        await ctx.db.insert("blocks", {
-          sessionId: newSessionId,
-          content: block.content,
-          type: block.type,
-          zone: block.zone,
-          position: block.position,
-          createdAt: now,
-          updatedAt: now,
-          tokens: block.tokens,
-          originalTokens: block.originalTokens,
-          tokenModel: block.tokenModel,
-          metadata: block.metadata,
-        })
+        // Resolve canonical ID — if block is itself a ref, follow the chain
+        const canonicalId = block.refBlockId ?? block._id
+
+        if (block.zone === "WORKING") {
+          // WORKING: copy content (independent per step)
+          const content = block.refBlockId
+            ? (await ctx.db.get(block.refBlockId))?.content ?? block.content
+            : block.content
+          await ctx.db.insert("blocks", {
+            sessionId: newSessionId,
+            content,
+            type: block.type,
+            zone: block.zone,
+            position: block.position,
+            createdAt: now,
+            updatedAt: now,
+            tokens: block.tokens,
+            originalTokens: block.originalTokens,
+            tokenModel: block.tokenModel,
+            metadata: block.metadata,
+          })
+        } else {
+          // PERMANENT/STABLE: create reference (edits propagate across steps)
+          await ctx.db.insert("blocks", {
+            sessionId: newSessionId,
+            content: "",
+            type: block.type,
+            zone: block.zone,
+            position: block.position,
+            createdAt: now,
+            updatedAt: now,
+            refBlockId: canonicalId,
+            tokens: block.tokens,
+            originalTokens: block.originalTokens,
+            tokenModel: block.tokenModel,
+            metadata: block.metadata,
+          })
+        }
       }
     }
 
