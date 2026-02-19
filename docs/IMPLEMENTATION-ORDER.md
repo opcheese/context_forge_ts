@@ -22,7 +22,7 @@ Prioritized implementation order for ContextForgeTS tasks and bugs based on:
 | BUG-004 | Bug | Save dropdown positioning | Medium | Low | ✅ **Completed** (Radix DropdownMenu) |
 | TASK-001 | Feature | Public templates & workflows | Low | High | Documented |
 | TASK-002 | Feature | Delete confirmation dialogs | **Critical** | Low | ✅ **Completed** |
-| TASK-003 | Feature | Session deletion | Medium | Low | Documented |
+| TASK-003 | Feature | Session deletion | Medium | Low | ✅ **Completed** |
 | TASK-004 | Feature | Block editor improvements | High | Medium | ⚡ **Partial** (PR #1) |
 | TASK-005 | Feature | Block title extraction | Medium | Low | Documented |
 | TASK-006 | Feature | Zone move from editor | Medium | Low | Documented |
@@ -31,7 +31,8 @@ Prioritized implementation order for ContextForgeTS tasks and bugs based on:
 | TASK-009 | Feature | Unsaved brainstorm warning | High | Medium | ✅ **Completed** |
 | TASK-010 | Feature | Compression system | Medium | High | ✅ **Completed** |
 | TASK-011 | Design | Interface design enhancement | Low | High | Documented |
-| TASK-012 | Feature | SKILL.md import system | **High** | Medium | ✅ **Completed** |
+| TASK-012 | Feature | Stop generation button | **High** | Medium | ✅ **Completed** |
+| TASK-013 | Feature | Draft blocks | Medium | Low | ✅ **Completed** |
 
 ### Design Documents (Not Implementation Tasks)
 
@@ -231,24 +232,39 @@ Tasks requiring careful implementation:
 6. ~~BUG-004: Save dropdown positioning~~ ✅
 7. ~~TASK-008: Brainstorm input sizing~~ ✅
 8. ~~TASK-010: Compression system~~ ✅
-9. ~~TASK-012: SKILL.md import system~~ ✅
+9. ~~TASK-012: Stop generation button~~ ✅
 10. ~~Context-map import/export~~ ✅
+11. ~~TASK-013: Draft blocks~~ ✅
+12. ~~TASK-003: Session deletion~~ ✅
+13. ~~Clipboard copy/paste fix~~ ✅
+14. ~~Skeleton loading states~~ ✅
+15. ~~Animated nav indicator~~ ✅
+16. ~~Micro delights animation system~~ ✅
 
-### Next Up: Sprint 4 (Feature Completeness)
-11. Item 29: Generator missing OpenRouter
-12. TASK-005: Block title extraction
-13. TASK-006: Zone move from editor
-14. TASK-003: Session deletion
-15. BUG-003: Test connection before save
+### Current: Linked Blocks (Anchor Feature)
+See [plans/2026-02-19-linked-blocks-shaping.md](./plans/2026-02-19-linked-blocks-shaping.md) for full design.
+- V1: Schema + manual link + visual + edit resolution (2-3 days)
+- V2: Content hash + auto-suggest linking (1-2 days)
+- V3: Session delete safety + workflow integration (1 day)
+- V4: Template/snapshot resolution (half day)
 
-### Then: Sprint 6 (Polish & Design)
-16. TASK-011: Interface design enhancement
-17. TASK-007: Keyboard shortcuts system
-18. TASK-004: Remaining editor improvements (split-pane, keyboard shortcuts)
+### Next Up: Quick Wins + Feature Completeness
+11. BUG-003: Test connection before save
+12. Item 29: Generator missing OpenRouter
+13. TASK-005: Block title extraction
+14. TASK-006: Zone move from editor
+15. Polish: theme toggle animation, empty states, auth loading
+
+### Then: Next Planned
+16. Ephemeral skills for brainstorming
+17. Token budgets: make configurable and useful
+18. Templates save only PERMANENT+STABLE
+19. TASK-007: Keyboard shortcuts system
+20. TASK-004: Remaining editor improvements (split-pane)
 
 ### Total Documented Work
 - **4 Bugs** documented (BUG-001 to BUG-004) — 3 completed, 1 remaining
-- **12 Tasks** documented (TASK-001 to TASK-012) — 5 completed, 1 partial (TASK-004), 6 remaining
+- **13 Tasks** documented (TASK-001 to TASK-013) — 8 completed, 1 partial (TASK-004), 4 remaining
 - **2 Pending bugs** from report (Items 28 ✅, 29)
 - **5 Pending features** from report (Items 23-27)
 

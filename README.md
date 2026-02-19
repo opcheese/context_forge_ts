@@ -43,7 +43,12 @@ ContextForge helps you manage the context window when working with Large Languag
 | Templates & workflows | ✅ Complete |
 | Projects & organization | ✅ Complete |
 | LangFuse observability | ✅ Complete |
-| Token counting & budgets | 🔜 Planned |
+| Token counting & budgets | ✅ Complete |
+| SKILL.md import & context-map export | ✅ Complete |
+| Compression system | ✅ Complete |
+| Draft blocks | ✅ Complete |
+| Animation system (framer-motion) | ✅ Complete |
+| Linked blocks (cross-session references) | 🔜 In Progress |
 
 ## Quick Start
 

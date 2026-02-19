@@ -24,7 +24,7 @@
 |----------|-------------|
 | [API_REFERENCE.md](./API_REFERENCE.md) | All Convex functions with args and returns |
 | [DATA_MODEL.md](./DATA_MODEL.md) | Database schema and relationships |
-| [STRUCTURE.md](./STRUCTURE.md) | Repository file layout |
+| [archive/STRUCTURE.md](./archive/STRUCTURE.md) | Repository file layout (outdated) |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Technical design and LLM integration patterns |
 | [REFERENCES.md](./REFERENCES.md) | External resources and links |
 
@@ -37,7 +37,7 @@
 ### Tasks & Bugs
 | Directory | Description |
 |-----------|-------------|
-| [tasks/](./tasks/) | Open tasks and bug reports (8 remaining) |
+| [tasks/](./tasks/) | Open tasks and bug reports (6 remaining) |
 | [BugReports/](./BugReports/) | Bug analysis documents |
 | [completed/tasks/](./completed/tasks/) | Completed task documentation |
 
@@ -47,11 +47,25 @@
 | Compression | ✅ Completed | [features/compression/](./features/compression/) |
 | SKILL.md Import | ✅ Completed | [completed/2026-02-11-skill-import-design.md](./completed/2026-02-11-skill-import-design.md) |
 | Context-Map Import/Export | ✅ Completed | [completed/2026-02-12-context-map-import-export-design.md](./completed/2026-02-12-context-map-import-export-design.md) |
+| Stop Generation | ✅ Completed | [completed/tasks/TASK-012-stop-generation.md](./completed/tasks/TASK-012-stop-generation.md) |
+| Draft Blocks | ✅ Completed | [completed/tasks/TASK-013-draft-blocks.md](./completed/tasks/TASK-013-draft-blocks.md) |
+| Linked Blocks | 🔨 In Progress | [plans/2026-02-19-linked-blocks-shaping.md](./plans/2026-02-19-linked-blocks-shaping.md) |
+
+### Active Plans
+| Document | Description |
+|----------|-------------|
+| [plans/2026-02-19-linked-blocks-shaping.md](./plans/2026-02-19-linked-blocks-shaping.md) | Linked blocks — cross-session block references (anchor feature) |
+| [plans/2026-02-18-frontend-polish-ideas.md](./plans/2026-02-18-frontend-polish-ideas.md) | Frontend polish ideas ranked by impact |
+| [plans/2026-02-18-micro-delights-design.md](./plans/2026-02-18-micro-delights-design.md) | Motion design system (partially implemented) |
+| [plans/2026-02-16-ephemeral-skills-design.md](./plans/2026-02-16-ephemeral-skills-design.md) | Ephemeral skills for brainstorming (approved, not started) |
 
 ### Research
 | Document | Description |
 |----------|-------------|
-| [research/skilleco.md](./research/skilleco.md) | Skills ecosystem research |
+| [research/claude-code-skills-pm-pipeline.md](./research/claude-code-skills-pm-pipeline.md) | Claude Code PM skills evaluation |
+| [research/claude-code-pm-skills-evaluation.md](./research/claude-code-pm-skills-evaluation.md) | PM skills stack recommendations |
+| [research/convex-full-text-search.md](./research/convex-full-text-search.md) | Convex search capabilities |
+| [research/N_PLUS_ONE.md](./research/N_PLUS_ONE.md) | N+1 prevention patterns in Convex |
 
 ### Design
 | Document | Description |

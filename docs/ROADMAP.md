@@ -1,461 +1,166 @@
 # Development Roadmap
 
-## Approach: Vertical Slices
+**Last updated:** 2026-02-19
 
-We're building feature-by-feature, not layer-by-layer. Each slice delivers working functionality: schema → Convex functions → UI → tests.
+## Now / Next / Later
 
-**Why vertical:**
-- See working features fast
-- Validate decisions early
-- Natural fit for Convex's reactive model
-- We have the Python version as reference for domain knowledge
+### Now — Active Work
 
----
+The anchor feature for this cycle is **Linked Blocks** — the ability to place a block in multiple sessions, with edits syncing everywhere. See [linked-blocks-shaping.md](./plans/2026-02-19-linked-blocks-shaping.md) for the full design.
 
-## Slice 1: Basic Blocks
+| Item | Type | Description | Effort |
+|------|------|-------------|--------|
+| `[feature]` Linked blocks V1 | Anchor | Schema + manual link flow + visual treatment + edit resolution + unlink | 2-3 days |
+| `[feature]` Linked blocks V2 | Anchor | Content hash + auto-suggest linking on create/edit | 1-2 days |
+| `[feature]` Linked blocks V3 | Anchor | Session delete safety + workflow carry-forward integration | 1 day |
+| `[feature]` Linked blocks V4 | Anchor | Template/snapshot resolution (self-contained saves) | Half day |
+| `[polish]` Theme toggle animation | Quick win | Rotate+scale transition on Sun/Moon icon swap | 1 hour |
+| `[polish]` Auth loading state | Quick win | Replace "Loading..." with branded Anvil pulse animation | 1 hour |
+| `[polish]` Empty state illustrations | Quick win | Anvil-themed illustrations for "No session", "No projects", etc. | 2-3 hours |
+| `[bug]` BUG-003: Test LLM connection before save | Quick win | Validate provider config before saving to prevent silent failures | 1-2 hours |
 
-**Goal:** Create, list, and delete blocks. Minimal viable block management.
+### Next — Planned
 
-### Schema
-```typescript
-blocks: defineTable({
-  content: v.string(),
-  type: v.string(),
-  createdAt: v.number(),
-  updatedAt: v.number(),
-})
-```
+Scoped and prioritized, not yet started. Will pick from these after linked blocks ships.
 
-### Convex Functions
-- [x] `blocks.list` - Get all blocks
-- [x] `blocks.get` - Get single block by ID
-- [x] `blocks.create` - Create new block
-- [x] `blocks.remove` - Delete block
+| Item | Type | Description | Effort |
+|------|------|-------------|--------|
+| `[feature]` Ephemeral skills for brainstorming | Feature | Inject skill context into brainstorm dialog. [Design approved](./plans/2026-02-16-ephemeral-skills-design.md) | 3-4 days |
+| `[feature]` Token budgets: make useful | Feature | Configurable per-session budgets, budget warnings that guide action, smart defaults based on model | 2-3 days |
+| `[feature]` Templates save only PERMANENT+STABLE | Feature | PM-requested — avoid saving WORKING zone junk into templates | 1 day |
+| `[feature]` TASK-006: Zone move from editor | Feature | Change block zone without navigating back to home | 1 hour |
+| `[feature]` TASK-005: Block title extraction | Feature | Auto-extract title from first line of block content | 1-2 hours |
+| `[polish]` Replace raw select dropdowns | Polish | Use shadcn Select instead of native `<select>` elements | 2-3 hours |
+| `[polish]` Focus-visible rings | Polish | Branded keyboard focus indicators for accessibility | 1-2 hours |
+| `[polish]` Block card hover elevation | Polish | Subtle `translateY(-1px)` lift on hover | 30 min |
+| `[polish]` Drop-zone empty state icon | Polish | Subtle icon in empty drop zones to invite action | 1 hour |
+| `[polish]` Toast icon differentiation | Polish | Colored icons for success/error toasts | 1 hour |
+| `[bug]` Item 29: Generator missing OpenRouter | Bug | Add OpenRouter to Generate panel (already in Brainstorm) | 1-2 hours |
 
-### UI
-- [x] Block list component
-- [x] Add block form (content + type)
-- [x] Delete button on blocks
-- [x] Replace counter demo with blocks demo
+### Later — Directional
 
-### Tests
-- [x] E2E tests with test data isolation
-- [x] HTTP endpoints for test reset/create
+Strategic bets. Scope and timing are flexible.
 
-**No zones yet. No tokens yet. Just blocks.**
+| Item | Type | Description |
+|------|------|-------------|
+| `[feature]` Keyboard shortcuts system (TASK-007) | Feature | Global shortcuts for power users — needs design |
+| `[feature]` Block editor split-pane (TASK-004) | Feature | Side-by-side markdown preview + edit |
+| `[feature]` Brainstorm questioning modes | Feature | AI asks clarifying questions before generating. [Design doc](./design/DESIGN-brainstorm-questioning.md) |
+| `[feature]` Community marketplace (TASK-001) | Feature | Publish/discover templates and workflows. [Full design exists](./plans/2025-02-15-marketplace-design.md) |
+| `[feature]` Access files in dialog mode | Feature | Browse blocks while brainstorm dialog is open |
+| `[feature]` Shared files across workflow levels | Feature | Common reference files inherited by all workflow steps |
+| `[polish]` Staggered page transitions | Polish | Content slide-up animation on route change |
+| `[polish]` Login page atmosphere | Polish | Gradient mesh or noise texture for premium feel |
+| `[design]` Interface design enhancement (TASK-011) | Design | Design system overhaul — cherry-pick phases as needed |
 
----
+### Won't Do
 
-## Slice 2: Zones
+Explicitly out of scope. Removed or indefinitely deferred.
 
-**Goal:** Organize blocks into three zones.
-
-### Schema Changes
-```typescript
-blocks: defineTable({
-  // ... existing fields
-  zone: v.union(
-    v.literal("PERMANENT"),
-    v.literal("STABLE"),
-    v.literal("WORKING")
-  ),
-  position: v.number(),  // Order within zone
-})
-```
-
-### Convex Functions
-- [x] `blocks.listByZone` - Get blocks for a zone
-- [x] `blocks.move` - Move block to different zone
-- [x] `blocks.reorder` - Change position within zone
-- [x] Update `create` to accept zone
-
-### UI
-- [x] Three-column zone layout
-- [x] Zone headers (name only, no token count yet)
-- [x] Blocks grouped by zone
-- [x] Move block dropdown/buttons
-
-### Tests
-- [x] Zone filtering tests
-- [x] Move/reorder tests
+| Item | Reason |
+|------|--------|
+| Full 8-phase design system overhaul (TASK-011 as monolith) | Too large for 2-person team. Cherry-pick individual improvements instead. |
+| Claude Code exit-1 debugging | Intermittent, unclear root cause. Investigate when it reproduces. |
 
 ---
 
-## Slice 3: Drag and Drop
+## Contributing
 
-**Goal:** Drag blocks between zones and reorder within zones.
+**Want to help?** Items in the **Now** and **Next** sections are the best places to start.
 
-**Status:** ✅ Complete (stabilized 2026-02-12)
+- **Quick wins** in the Now section are self-contained and well-scoped — good first contributions.
+- **Next** items have clear descriptions but may need a design discussion first — open an issue to discuss before starting.
+- **Later** items need design work — great for people who want to shape features, not just implement.
 
-### Dependencies
-- Install `@dnd-kit/core` and `@dnd-kit/sortable`
-- Reference: [Trellaux example](https://tanstack.com/start/latest/docs/framework/react/examples/start-convex-trellaux)
-
-### UI
-- [x] Make blocks draggable
-- [x] Make zones drop targets
-- [x] Visual drag feedback (DragOverlay)
-- [x] Call `move` mutation on cross-zone drop
-- [x] Call `reorder` mutation on same-zone drop
-- [x] File drop support (.txt, .md, .zip)
-
-### Stabilization (2026-02-12)
-- [x] Ref-stabilized callbacks to prevent mid-drag re-renders from Convex live queries
-- [x] Switched `closestCenter` → `closestCorners` collision detection
-- [x] Added dedicated drag handle (GripVertical) — prevents conflicts with interactive elements
-- [x] Optimistic zone ordering via React context — eliminates flash-of-old-order
-- [x] File-drop handlers guarded for file-only drags — no interference with @dnd-kit
-- [x] Disabled DragOverlay drop animation
-- [x] Blur active element on drag end — prevents stuck keyboard drags
-
-### Tests
-- [x] E2E drag-drop tests
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for setup instructions and code style guidelines.
 
 ---
 
-## Slice 4: Block Editor
-
-**Goal:** Edit block content and metadata.
-
-### Router
-- [x] Configure TanStack Router (file-based routing)
-- [x] Route: `/` (zone view)
-- [x] Route: `/blocks/:id` (editor)
-
-### UI
-- [x] Block editor page
-- [x] Edit content textarea
-- [x] Change block type
-- [x] Save/cancel buttons
-- [x] Navigate back to zones
-
-### Convex Functions
-- [x] `blocks.update` - Update content/type
-
----
-
-## Slice 4.5: Sessions
-
-**Goal:** Isolated workspaces for context management and LLM testing.
-
-### Schema
-```typescript
-sessions: defineTable({
-  name: v.optional(v.string()),
-  createdAt: v.number(),
-  updatedAt: v.number(),
-})
-
-// Update blocks to require session
-blocks: defineTable({
-  sessionId: v.id("sessions"),  // Required
-  // ... existing fields
-}).index("by_session", ["sessionId"])
-  .index("by_session_zone", ["sessionId", "zone", "position"])
-
-// Snapshots for save/restore
-snapshots: defineTable({
-  sessionId: v.id("sessions"),
-  name: v.string(),
-  createdAt: v.number(),
-  blocks: v.array(v.object({...})),  // Serialized blocks
-}).index("by_session", ["sessionId"])
-```
-
-### Convex Functions
-- [x] `sessions.create` - Create new session
-- [x] `sessions.list` - List all sessions
-- [x] `sessions.get` - Get session by ID
-- [x] `sessions.update` - Rename session
-- [x] `sessions.remove` - Delete session (cascade blocks/snapshots)
-- [x] `snapshots.create` - Save current state
-- [x] `snapshots.list` - List session snapshots
-- [x] `snapshots.restore` - Restore from snapshot
-- [x] `snapshots.remove` - Delete snapshot
-- [x] Update all block functions to require sessionId
-
-### UI
-- [x] Session selector in header
-- [x] Create new session button
-- [x] Session context provider
-- [x] All block queries/mutations use current session
-
-### Tests
-- [x] E2E tests updated for sessions
-- [x] Session switching tests
-- [x] HTTP endpoints for test session creation
-
----
-
-## Slice 5: LLM Integration (Basic Generation)
-
-**Goal:** Connect to LLM providers with streaming generation.
-
-**Status:** ✅ Complete
-
-### LLM Providers
-- [x] Ollama (local) - HTTP streaming via `/api/chat`
-- [x] Claude Code (subscription) - Convex reactive queries with `stream_event` handling
-
-### Architecture
-- [x] Context assembly function (`convex/lib/context.ts`)
-- [x] Zone ordering: PERMANENT → STABLE → WORKING → prompt
-- [x] HTTP action for Ollama streaming
-- [x] Node.js action for Claude Code streaming
-- [x] Convex reactive queries for real-time UI updates
-
-### UI
-- [x] Generate panel with prompt input
-- [x] Provider selection (Ollama/Claude Code)
-- [x] Real-time streaming display
-- [x] Auto-save to WORKING zone
-- [x] Provider health indicators
-
-### Files
-- `convex/lib/ollama.ts` - Ollama streaming client
-- `convex/lib/context.ts` - Context assembly
-- `convex/claudeNode.ts` - Claude Code SDK integration
-- `convex/generations.ts` - Generation tracking
-- `convex/http.ts` - HTTP endpoints
-- `src/hooks/useGenerate.ts` - Ollama streaming hook
-- `src/hooks/useClaudeGenerate.ts` - Claude reactive hook
-- `src/components/GeneratePanel.tsx` - Generation UI
-
----
-
-## Slice 5.5: Brainstorming & Advanced Generation
-
-**Goal:** Multi-turn conversations with context, multiple providers, observability.
-
-**Status:** ✅ Complete
-
-### Features
-- [x] Multi-turn brainstorming with conversation history
-- [x] OpenRouter provider (100+ models via API)
-- [x] LangFuse integration for LLM observability
-- [x] System prompt blocks (extracted from PERMANENT zone)
-- [x] Save brainstorm messages to blocks
-
-### LLM Providers
-- Ollama (local) - `/api/brainstorm` endpoint
-- Claude Code (subscription) - Convex reactive streaming
-- OpenRouter (API) - `/api/openrouter/brainstorm` endpoint
-
-### Files
-- `convex/lib/openrouter.ts` - OpenRouter API client
-- `convex/lib/langfuse.ts` - LangFuse tracing integration
-- `src/hooks/useBrainstorm.ts` - Unified brainstorm hook
-- `src/components/BrainstormPanel.tsx` - Brainstorm UI
-- `src/components/BrainstormDialog.tsx` - Conversation dialog
-
----
-
-## Slice 5.6: Workflows, Templates & Projects
-
-**Goal:** Reusable session configurations and multi-step document pipelines.
-
-**Status:** ✅ Complete
-
-**Details:** See [completed/WORKFLOW_SYSTEM_PLAN.md](./completed/WORKFLOW_SYSTEM_PLAN.md)
-
-### Features
-- [x] Templates - Save/apply session configurations
-- [x] Projects - Organize related sessions
-- [x] Workflows - Multi-step document creation pipelines
-- [x] Context carry-forward between workflow steps
-- [x] Block type rationalization (12 semantic types)
-
-### Files
-- `convex/templates.ts` - Template CRUD
-- `convex/projects.ts` - Project management
-- `convex/workflows.ts` - Workflow management
-- `src/routes/templates.tsx` - Template library
-- `src/routes/projects.*.tsx` - Project pages
-- `src/routes/workflows.*.tsx` - Workflow pages
-- `src/lib/blockTypes.ts` - Block type definitions
-
----
-
-## Slice 5.7: Token Counting & Zone Budgets
-
-**Goal:** Add accurate token counting, zone budgets, and usage tracking.
-
-**Status:** ✅ Complete
-
-**Details:** See [completed/TOKEN_BUDGETS_PLAN.md](./completed/TOKEN_BUDGETS_PLAN.md)
-
-### Features
-- [x] Per-block token counting with `js-tiktoken`
-- [x] Zone budgets (PERMANENT: 50K, STABLE: 100K, WORKING: 100K, Total: 500K)
-- [x] Generation usage tracking (input/output tokens, cost)
-- [x] Budget validation queries (`checkBudget`, `getBudgetStatus`)
-- [x] UI components (ZoneHeader, BlockTokenBadge, SessionMetrics)
-- [x] Warning/danger status at 80%/95% thresholds
-
-### Files
-- `convex/lib/tokenizer.ts` - Token counting with js-tiktoken
-- `convex/metrics.ts` - Budget queries (getZoneMetrics, checkBudget, getBudgetStatus)
-- `src/components/metrics/ZoneHeader.tsx` - Zone header with token display
-- `src/components/metrics/BlockTokenBadge.tsx` - Per-block token badge
-- `src/components/metrics/SessionMetrics.tsx` - Session metrics panel
-- `src/hooks/useBudgetCheck.ts` - Budget checking hook
-
----
-
-## Slice 5.8: SKILL.md Import System
-
-**Goal:** Import Agent Skills (SKILL.md) as first-class blocks for compatibility with the skills ecosystem.
-
-**Status:** ✅ Complete
-
-**Design:** See [completed/2026-02-11-skill-import-design.md](./completed/2026-02-11-skill-import-design.md)
-
-### Features
-- [x] New `skill` block type with metadata (name, description, source, provenance)
-- [x] SKILL.md parser — pure function, zero deps, shared across client/server
-- [x] Local folder scan — read `~/.claude/skills/` (local deployment only, feature-flagged)
-- [x] File upload — drag-and-drop .md/.zip in the UI
-- [x] URL import — paste GitHub URLs to fetch SKILL.md
-- [x] Skill block rendering — distinct icon, skill name as title, description subtitle
-- [x] Template-based persistence — skills bundled into templates for reuse
-- [x] ZIP support with reference files
-
-### Files
-- `src/lib/skills/parser.ts` - SKILL.md parser
-- `src/lib/skills/directoryParser.ts` - ZIP/directory parsing
-- `convex/skills.ts` - Import mutation
-- `convex/skillsNode.ts` - Local folder scan Node action
-- `src/components/ImportSkillModal.tsx` - Import UI
-- `src/lib/blockTypes.ts` - Updated with `skill` type
-
----
-
-## Slice 5.9: Context-Map Import/Export
-
-**Goal:** Bidirectional skill import/export via `context-map.yaml` for multi-context project management.
-
-**Status:** ✅ Complete
-
-**Design:** See [completed/2026-02-12-context-map-import-export-design.md](./completed/2026-02-12-context-map-import-export-design.md)
-
-### Features
-- [x] `context-map.yaml` specification for mapping workflow steps to reference files
-- [x] Multi-context ZIP import — creates project with multiple sessions from context-map
-- [x] Single-session skill export with ZIP download
-- [x] Project export with context-map.yaml generation
-- [x] Title extraction and filename utilities for export
-- [x] Drag-and-drop import for multi-context ZIPs
-- [x] Block metadata preservation during session transitions
-
-### Files
-- `src/lib/skills/contextMapParser.ts` - Context-map YAML parser
-- `src/lib/skills/titleExtractor.ts` - Block title extraction for export filenames
-
----
-
-## Slice 6: Polish & Advanced
-
-**Goal:** Refinements based on usage.
-
-**Status:** 🔨 In Progress
-
-- [ ] Theme system (proper provider)
-- [x] Markdown preview in editor (PR #1: view/edit toggle with react-markdown)
-- [x] Markdown rendering in BrainstormDialog (PR #1: replaced regex parser)
-- [ ] Search/filter blocks
-- [ ] Block type icons
-- [x] Import/export (SKILL.md import via Slice 5.8; context-map via Slice 5.9)
-- [x] Compression system (TASK-010: multi-provider compression)
-- [x] Save dropdown positioning (BUG-004: Radix DropdownMenu with collision detection)
-- [x] Auto-expanding brainstorm input (TASK-008)
-- [x] Drag-and-drop stabilization (BUG-001: 8 fixes applied)
-
----
-
-## Current Status
-
-| Slice | Status | Notes |
-|-------|--------|-------|
-| 0. Project Setup | ✅ Done | Counter demo working |
-| 1. Basic Blocks | ✅ Done | CRUD + E2E test isolation |
-| 2. Zones | ✅ Done | Three-column layout + move |
-| 3. Drag and Drop | ✅ Done | @dnd-kit + file drop + stabilization (8 fixes) |
-| 4. Block Editor | ✅ Done | TanStack Router + edit page |
-| 4.5. Sessions | ✅ Done | Session isolation + snapshots |
-| 5. LLM Integration | ✅ Done | Ollama + Claude Code streaming |
-| 5.5. Brainstorming | ✅ Done | Multi-turn, OpenRouter, LangFuse |
-| 5.6. Workflows | ✅ Done | Templates, projects, workflows |
-| 5.7. Token Budgets | ✅ Done | js-tiktoken, zone budgets, UI |
-| 5.8. Skill Import | ✅ Done | SKILL.md + ZIP import, three intake mechanisms |
-| 5.9. Context-Map | ✅ Done | Bidirectional import/export, multi-context projects |
-| 6. Polish | 🔨 In Progress | Markdown ✅, Compression ✅, DnD ✅, Save dropdown ✅, Input sizing ✅. Remaining: theme, search, block type icons |
-
----
-
-## Dependency Graph
+## Completed
+
+All core feature slices (1-5.9) are shipped. Slice 6 (Polish) is ongoing.
+
+### Slice Summary
+
+| Slice | Status | Shipped |
+|-------|--------|---------|
+| 1. Basic Blocks | Done | CRUD + E2E test isolation |
+| 2. Zones | Done | Three-column layout + zone moves |
+| 3. Drag and Drop | Done | @dnd-kit + file drop + stabilization (8 root causes fixed) |
+| 4. Block Editor | Done | TanStack Router + edit page + markdown preview |
+| 5. LLM Integration | Done | Ollama + Claude Code streaming |
+| 5.5. Brainstorming | Done | Multi-turn, OpenRouter, LangFuse observability |
+| 5.6. Workflows | Done | Templates, projects, workflows, context carry-forward |
+| 5.7. Token Budgets | Done | js-tiktoken, zone budgets, UI components |
+| 5.8. Skill Import | Done | SKILL.md parser + ZIP + file upload + URL import |
+| 5.9. Context-Map | Done | Bidirectional import/export, multi-context projects |
+| 6. Polish | In Progress | See below |
+
+### Slice 6: Polish (In Progress)
+
+Completed:
+- [x] Markdown preview in editor and BrainstormDialog
+- [x] Compression system (multi-provider)
+- [x] DnD stabilization (8 root causes)
+- [x] Save dropdown positioning (Radix DropdownMenu)
+- [x] Auto-expanding brainstorm input
+- [x] Stop generation button + cleanup on close (TASK-012)
+- [x] Draft blocks — exclude from context without deleting (TASK-013)
+- [x] Delete confirmation dialogs + unsaved brainstorm warnings
+- [x] Skeleton loading states for budget panel and zone columns
+- [x] Animated sliding nav indicator (framer-motion layoutId)
+- [x] Micro delights animation system (dialogs, toasts, buttons, AnimatedNumber)
+- [x] Session deletion from UI (TASK-003)
+- [x] Clipboard copy/paste fix for HTTP
+
+Remaining: see Now/Next sections above.
+
+### Dependency Graph
 
 ```
-Slice 1: Basic Blocks ✅
+Slice 1: Basic Blocks
         │
         ▼
-Slice 2: Zones ✅
+Slice 2: Zones
         │
         ├────────────────┐
         ▼                ▼
-Slice 3: DnD ✅  Slice 4: Editor ✅
+Slice 3: DnD      Slice 4: Editor
         │                │
         └───────┬────────┘
                 ▼
-     Slice 4.5: Sessions ✅
+     Slice 4.5: Sessions
                 │
                 ▼
-    Slice 5: LLM Integration ✅
+    Slice 5: LLM Integration
                 │
         ┌───────┴───────┐
         ▼               ▼
  Slice 5.5:       Slice 5.6:
- Brainstorming ✅  Workflows ✅
+ Brainstorming    Workflows
         │               │
         └───────┬───────┘
                 ▼
-   Slice 5.7: Token Budgets ✅
+   Slice 5.7: Token Budgets
                 │
         ┌───────┼───────┐
         ▼       ▼       ▼
  Slice 5.8: Slice 5.9: Slice 6:
- Skill ✅   CtxMap ✅   Polish 🔨
+ Skill      CtxMap      Polish
+    All ✅       ▼
+          Linked Blocks ← YOU ARE HERE
 ```
 
 ---
 
-## Notes
+## Technical Notes
 
-### Starting Small
-- Slice 1 has no zones, no tokens, no routing
-- Just blocks: create, list, delete
-- Proves the Convex model works for our domain
+### LLM Streaming Architecture
+- Convex actions cannot stream directly to clients
+- Pattern: mutation creates generation → action streams to DB → client subscribes via reactive query
+- Claude Code uses subprocess protocol, not HTTP (Vercel AI SDK evaluated but not used)
 
-### LLM Integration Findings
-
-**Claude Code Streaming:**
-- The Claude Agent SDK wraps Anthropic's raw events in `SDKPartialAssistantMessage`
-- Events have `type: 'stream_event'` with actual event in `message.event`
-- Need to check `event.type === 'content_block_delta'` and `event.delta.type === 'text_delta'`
-- `includePartialMessages: true` must be set in options
-- Convex actions cannot stream directly - use reactive queries with database writes
-
-**Convex Streaming Pattern:**
-1. Mutation creates generation record, returns ID, schedules action
-2. Action streams to database via `ctx.runMutation(internal.appendChunk, ...)`
-3. Client subscribes via `useQuery(api.generations.get, { generationId })`
-4. React effect detects text changes and calls `onChunk` callbacks
-
-### Token Counting Implementation
-Token counting is implemented with `js-tiktoken`:
-- Pure JS implementation (no WASM required)
-- Compatible with Convex actions and mutations
-- Matches Python's `tiktoken` accuracy
-- ~100KB bundle size
-- Cached encoding instances for performance
-
-See [completed/TOKEN_BUDGETS_PLAN.md](./completed/TOKEN_BUDGETS_PLAN.md) for implementation details.
+### Token Counting
+- `js-tiktoken` — pure JS, no WASM, matches Python tiktoken accuracy
+- ~100KB bundle, cached encoding instances
+- See [completed/TOKEN_BUDGETS_PLAN.md](./completed/TOKEN_BUDGETS_PLAN.md)
