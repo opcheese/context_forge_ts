@@ -27,7 +27,7 @@ import {
 import { useNavigate } from "@tanstack/react-router"
 import { useCompression } from "@/hooks/useCompression"
 import { useConfirmDelete } from "@/hooks/useConfirmDelete"
-import { Minimize2, Puzzle, Upload, Link as LinkIcon, FolderSearch, Download } from "lucide-react"
+import { Minimize2, Puzzle, Upload, Link as LinkIcon, FolderSearch, Download, Link2, Unlink2 } from "lucide-react"
 import { CompressionDialog } from "@/components/compression/CompressionDialog"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { DebouncedButton } from "@/components/ui/debounced-button"
@@ -211,6 +211,7 @@ function BlockCard({
   isSelected,
   onSelect,
   metadata,
+  refBlockId,
 }: {
   id: Id<"blocks">
   content: string
@@ -231,12 +232,14 @@ function BlockCard({
     sourceRef?: string
     parentSkillName?: string
   }
+  refBlockId?: string
 }) {
   const [showActions, setShowActions] = useState(false)
   const [copied, setCopied] = useState(false)
   const removeBlock = useMutation(api.blocks.remove)
   const moveBlock = useMutation(api.blocks.move)
   const toggleDraft = useMutation(api.blocks.toggleDraft)
+  const unlinkBlock = useMutation(api.blocks.unlink)
   const { toast } = useToast()
 
   // Delete confirmation
@@ -329,7 +332,8 @@ function BlockCard({
         "rounded-lg border bg-card p-2.5 select-none transition-all duration-150",
         "hover:shadow-sm hover:border-border/80",
         isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border",
-        isDraft && "opacity-50"
+        isDraft && "opacity-50",
+        refBlockId ? "border-l-2 border-l-[oklch(0.65_0.08_220)]" : ""
       )}
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
@@ -359,6 +363,11 @@ function BlockCard({
             <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center gap-0.5">
               <Minimize2 className="w-2.5 h-2.5" />
               {compressionRatio.toFixed(1)}x
+            </span>
+          )}
+          {refBlockId && (
+            <span title="Linked block — used in multiple sessions" className="inline-flex items-center">
+              <Link2 className="w-2.5 h-2.5 text-muted-foreground" />
             </span>
           )}
         </div>
@@ -394,6 +403,17 @@ function BlockCard({
             >
               Edit
             </Link>
+            {refBlockId && (
+              <DebouncedButton
+                variant="ghost"
+                size="sm"
+                className="h-5 px-1 text-[10px]"
+                onClick={() => unlinkBlock({ id })}
+                title="Unlink — make independent copy"
+              >
+                <Unlink2 className="w-3 h-3" />
+              </DebouncedButton>
+            )}
             <button onClick={handleDelete} className="px-1.5 py-0.5 text-[10px] rounded hover:bg-destructive/10 text-destructive">Del</button>
           </div>
         )}
@@ -616,6 +636,7 @@ function ZoneColumn({
                   isSelected={selectedBlockIds.has(block._id)}
                   onSelect={(selected) => onBlockSelect(block._id, selected)}
                   metadata={block.metadata ?? undefined}
+                  refBlockId={block.refBlockId}
                 />
               </SortableBlock>
             ))
