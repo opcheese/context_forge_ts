@@ -36,6 +36,7 @@ import { ImportSkillDialog } from "@/components/skills/ImportSkillDialog"
 import { ImportProjectConfirmDialog } from "@/components/skills/ImportProjectConfirmDialog"
 import { ExportSkillDialog } from "@/components/skills/ExportSkillDialog"
 import { useSkillImport } from "@/hooks/useSkillImport"
+import { LinkBlockPopover } from "@/components/LinkBlockPopover"
 
 // Zone display info with subtle color tints
 const ZONE_INFO: Record<Zone, { label: string; description: string; tint: string }> = {
@@ -575,18 +576,30 @@ function ZoneColumn({
   return (
     <div className="flex flex-col h-full relative" {...dropProps}>
       <div className="mb-2">
-        {zoneMetrics ? (
-          <ZoneHeader
-            zone={info.label}
-            blockCount={zoneMetrics.blocks}
-            tokens={zoneMetrics.tokens}
-            budget={zoneMetrics.budget}
-            onCompress={handleZoneCompress}
-            isCompressing={isZoneCompressing}
-          />
-        ) : (
-          <ZoneHeaderSkeleton />
-        )}
+        <div className="flex items-center gap-1">
+          <div className="flex-1 min-w-0">
+            {zoneMetrics ? (
+              <ZoneHeader
+                zone={info.label}
+                blockCount={zoneMetrics.blocks}
+                tokens={zoneMetrics.tokens}
+                budget={zoneMetrics.budget}
+                onCompress={handleZoneCompress}
+                isCompressing={isZoneCompressing}
+              />
+            ) : (
+              <ZoneHeaderSkeleton />
+            )}
+          </div>
+          <LinkBlockPopover sessionId={sessionId} zone={zone}>
+            <button
+              className="w-5 h-5 rounded border border-dashed border-border hover:border-foreground/30 flex items-center justify-center transition-colors shrink-0"
+              title="Link a block from another session"
+            >
+              <Link2 className="w-3 h-3 text-muted-foreground" />
+            </button>
+          </LinkBlockPopover>
+        </div>
         {isDanger && (
           <div className="mt-1 p-1 rounded bg-destructive/10 text-destructive text-[10px]">
             {zoneMetrics?.percentUsed}% - consider archiving
