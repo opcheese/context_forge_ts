@@ -213,6 +213,7 @@ function BlockCard({
   onSelect,
   metadata,
   refBlockId,
+  contentHash,
 }: {
   id: Id<"blocks">
   content: string
@@ -234,6 +235,7 @@ function BlockCard({
     parentSkillName?: string
   }
   refBlockId?: string
+  contentHash?: string
 }) {
   const [showActions, setShowActions] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -241,7 +243,14 @@ function BlockCard({
   const moveBlock = useMutation(api.blocks.move)
   const toggleDraft = useMutation(api.blocks.toggleDraft)
   const unlinkBlock = useMutation(api.blocks.unlink)
+  const createLinkedBlock = useMutation(api.blocks.createLinked)
   const { toast } = useToast()
+
+  // Duplicate detection for non-linked blocks
+  const duplicate = useQuery(
+    api.blocks.findDuplicate,
+    contentHash && !refBlockId ? { contentHash, excludeSessionId: sessionId } : "skip"
+  )
 
   // Delete confirmation
   const deleteConfirm = useConfirmDelete({
@@ -453,6 +462,23 @@ function BlockCard({
         </div>
       )}
 
+      {duplicate && !refBlockId && (
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-accent/50 text-[10px] text-muted-foreground mt-1">
+          <Link2 className="w-3 h-3 shrink-0" />
+          <span className="truncate">Same as block in {duplicate.sessionName}.</span>
+          <button
+            className="text-primary hover:underline font-medium shrink-0"
+            onClick={async () => {
+              // Replace this block with a linked reference
+              await createLinkedBlock({ sessionId, refBlockId: duplicate.blockId, zone })
+              await removeBlock({ id })
+            }}
+          >
+            Link?
+          </button>
+        </div>
+      )}
+
       {/* Delete confirmation dialog */}
       <ConfirmDialog
         open={deleteConfirm.isOpen}
@@ -650,6 +676,7 @@ function ZoneColumn({
                   onSelect={(selected) => onBlockSelect(block._id, selected)}
                   metadata={block.metadata ?? undefined}
                   refBlockId={block.refBlockId}
+                  contentHash={block.contentHash}
                 />
               </SortableBlock>
             ))
