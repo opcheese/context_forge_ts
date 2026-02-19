@@ -189,6 +189,44 @@ export const create = mutation({
   },
 })
 
+// Create a linked reference to an existing block in another session
+export const createLinked = mutation({
+  args: {
+    sessionId: v.id("sessions"),
+    refBlockId: v.id("blocks"),
+    zone: v.optional(zoneValidator),
+  },
+  handler: async (ctx, args) => {
+    await requireSessionAccess(ctx, args.sessionId)
+    const session = await ctx.db.get(args.sessionId)
+    if (!session) throw new Error("Session not found")
+
+    // Fetch canonical block to get type, tokens, metadata
+    const canonical = await ctx.db.get(args.refBlockId)
+    if (!canonical) throw new Error("Referenced block not found")
+
+    const zone = args.zone ?? (canonical.zone as Zone)
+    const position = await getNextPosition(ctx, args.sessionId, zone)
+    const now = Date.now()
+
+    await ctx.db.patch(args.sessionId, { updatedAt: now })
+
+    return await ctx.db.insert("blocks", {
+      sessionId: args.sessionId,
+      content: "", // Empty — content comes from canonical
+      type: canonical.type,
+      zone,
+      position,
+      createdAt: now,
+      updatedAt: now,
+      refBlockId: args.refBlockId,
+      tokens: canonical.tokens,
+      originalTokens: canonical.originalTokens,
+      tokenModel: canonical.tokenModel,
+    })
+  },
+})
+
 // Move a block to a different zone
 export const move = mutation({
   args: {
@@ -294,6 +332,15 @@ export const update = mutation({
     await requireSessionAccess(ctx, block.sessionId)
 
     const now = Date.now()
+
+    // If this is a linked block, update the canonical instead
+    let targetId = args.id
+    if (block.refBlockId) {
+      const canonical = await ctx.db.get(block.refBlockId)
+      if (!canonical) throw new Error("Canonical block not found")
+      targetId = canonical._id
+    }
+
     const updates: {
       content?: string
       type?: string
@@ -314,7 +361,22 @@ export const update = mutation({
       updates.type = args.type
     }
 
-    await ctx.db.patch(args.id, updates)
+    await ctx.db.patch(targetId, updates)
+
+    // If we updated a canonical block through a ref, also update all referencing blocks' tokens
+    if (block.refBlockId && args.content !== undefined) {
+      const refs = await ctx.db
+        .query("blocks")
+        .filter((q) => q.eq(q.field("refBlockId"), block.refBlockId))
+        .collect()
+      for (const ref of refs) {
+        await ctx.db.patch(ref._id, {
+          tokens: updates.tokens,
+          tokenModel: updates.tokenModel,
+          updatedAt: now,
+        })
+      }
+    }
 
     // Update session's updatedAt
     await ctx.db.patch(block.sessionId, { updatedAt: now })
@@ -331,6 +393,22 @@ export const remove = mutation({
     if (block) {
       // Check session access
       await requireSessionAccess(ctx, block.sessionId)
+
+      // Promote any blocks that reference this one (prevent dangling refs)
+      const referencingBlocks = await ctx.db
+        .query("blocks")
+        .filter((q) => q.eq(q.field("refBlockId"), args.id))
+        .collect()
+      for (const ref of referencingBlocks) {
+        await ctx.db.patch(ref._id, {
+          content: block.content,
+          refBlockId: undefined,
+          tokens: block.tokens,
+          originalTokens: block.originalTokens,
+          tokenModel: block.tokenModel,
+        })
+      }
+
       // Update session's updatedAt before deleting
       await ctx.db.patch(block.sessionId, { updatedAt: Date.now() })
     }
@@ -358,6 +436,31 @@ export const toggleDraft = mutation({
   },
 })
 
+// Unlink a referenced block — copy canonical content and make it a regular block
+export const unlink = mutation({
+  args: { id: v.id("blocks") },
+  handler: async (ctx, args) => {
+    const block = await ctx.db.get(args.id)
+    if (!block) throw new Error("Block not found")
+    if (!block.refBlockId) throw new Error("Block is not linked")
+
+    await requireSessionAccess(ctx, block.sessionId)
+
+    const canonical = await ctx.db.get(block.refBlockId)
+    const content = canonical?.content ?? ""
+    const tokens = canonical?.tokens ?? countTokens(content)
+
+    await ctx.db.patch(args.id, {
+      content,
+      refBlockId: undefined,
+      tokens,
+      originalTokens: tokens,
+      tokenModel: DEFAULT_TOKEN_MODEL,
+      updatedAt: Date.now(),
+    })
+  },
+})
+
 // ============ Compression mutations ============
 
 /**
@@ -376,6 +479,7 @@ export const compress = mutation({
   handler: async (ctx, args) => {
     const block = await ctx.db.get(args.blockId)
     if (!block) throw new Error("Block not found")
+    if (block.refBlockId) throw new Error("Cannot compress a linked block — unlink first")
 
     // Check session access
     await requireSessionAccess(ctx, block.sessionId)
