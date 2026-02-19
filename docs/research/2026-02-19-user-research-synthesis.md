@@ -107,8 +107,9 @@ MCP is about giving LLMs access to external tools. ContextForge is about giving 
 | 3 | Template zone filtering | P2 direct | Every template save | Medium | Strong — PM request | **Build soon** (1 day) |
 | 4 | Onboarding / guided flows | P2, P3 | First-use | High | Strong — 5/7 items | **Plan carefully** |
 | 5 | Direct OpenAI provider | P3 only | One-time | Low | Weak — hypothetical | **Later** |
-| 6 | MCP integration | None | N/A | N/A | None | **Don't build** |
-| 7 | Agent/autonomous features | None | N/A | N/A | None | **Don't build** |
+| 6 | Marketplace improvements | P3 | Occasional | Low | Weak — no user base yet | **Later** — backend exists, grow users first |
+| 7 | MCP integration | None | N/A | N/A | None | **Don't build** |
+| 8 | Agent/autonomous features | None | N/A | N/A | None | **Don't build** |
 
 ---
 
@@ -118,4 +119,4 @@ MCP is about giving LLMs access to external tools. ContextForge is about giving 
 2. **Linked blocks is the right anchor** — with the caveat that Persona 2 benefits should come through automatic workflow carry-forward, not manual linking.
 3. **Deepen the core, don't chase trends.** MCP, agents, and direct OpenAI add complexity without serving current users.
 4. **Next after linked blocks:** make token budgets actionable, then template zone filtering.
-5. **Explicitly won't build:** MCP integration, agent features, direct OpenAI/Anthropic providers, full design system overhaul, marketplace.
+5. **Explicitly won't build:** MCP integration, agent features, direct OpenAI/Anthropic providers, full design system overhaul. Marketplace backend exists — defer UI polish until user base grows.

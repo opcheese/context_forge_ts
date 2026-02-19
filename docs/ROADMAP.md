@@ -46,7 +46,7 @@ Strategic bets. Scope and timing are flexible.
 | `[feature]` Keyboard shortcuts system (TASK-007) | Feature | Global shortcuts for power users — needs design |
 | `[feature]` Block editor split-pane (TASK-004) | Feature | Side-by-side markdown preview + edit |
 | `[feature]` Brainstorm questioning modes | Feature | AI asks clarifying questions before generating. [Design doc](./design/DESIGN-brainstorm-questioning.md) |
-| `[feature]` Community marketplace (TASK-001) | Feature | Publish/discover templates and workflows. [Full design exists](./plans/2025-02-15-marketplace-design.md) |
+| `[feature]` Marketplace UI polish | Feature | Backend exists. Improve discovery and publishing UX when user base grows. |
 | `[feature]` Access files in dialog mode | Feature | Browse blocks while brainstorm dialog is open |
 | `[feature]` Shared files across workflow levels | Feature | Common reference files inherited by all workflow steps |
 | `[polish]` Staggered page transitions | Polish | Content slide-up animation on route change |
