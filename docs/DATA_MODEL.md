@@ -29,9 +29,10 @@ ContextForgeTS uses Convex as its database. The schema is defined in `convex/sch
 │                              │             ▼             ▼                    │
 │                              │      ┌─────────────┐ ┌─────────────┐          │
 │                              └──1:N─│   blocks    │ │  snapshots  │          │
-│                                     │             │ │             │          │
+│                                     │      ↺      │ │             │          │
 │                                     │  (content)  │ │  (backup)   │          │
 │                                     └─────────────┘ └─────────────┘          │
+│                                        ↺ = linked ref (refBlockId)           │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -46,6 +47,7 @@ ContextForgeTS uses Convex as its database. The schema is defined in `convex/sch
 ```typescript
 {
   _id: Id<"sessions">        // Auto-generated Convex ID
+  userId?: Id<"users">       // Owner (optional for migration)
   name?: string              // Display name (e.g., "Project Alpha Docs")
   createdAt: number          // Unix timestamp (ms)
   updatedAt: number          // Unix timestamp (ms)
@@ -73,6 +75,7 @@ ContextForgeTS uses Convex as its database. The schema is defined in `convex/sch
 
 **Indexes:**
 - `by_project` - Query sessions by project ID
+- `by_user` - Query sessions by user ID
 
 ---
 
@@ -91,27 +94,54 @@ ContextForgeTS uses Convex as its database. The schema is defined in `convex/sch
   createdAt: number          // Unix timestamp (ms)
   updatedAt: number          // Unix timestamp (ms)
   testData?: boolean         // Flag for test cleanup
+  isDraft?: boolean          // Draft blocks visible but excluded from LLM context
   // Token tracking
   tokens?: number            // Current token count
   originalTokens?: number    // Original token count (before compression)
   tokenModel?: string        // Model used for counting (e.g., "cl100k_base")
+  // Compression state
+  isCompressed?: boolean     // Whether this block has been compressed
+  compressionStrategy?: string  // "semantic" | "structural" | "statistical"
+  compressionRatio?: number  // e.g., 2.5 means 2.5x smaller
+  compressedAt?: number      // Timestamp when compressed
+  mergedFromCount?: number   // Number of blocks merged into this one
+  // Skill metadata
+  metadata?: {
+    skillName: string
+    skillDescription?: string
+    sourceType: "local" | "upload" | "url"
+    sourceRef?: string
+    parentSkillName?: string   // Links reference blocks to parent skill
+  }
+  // Linked blocks
+  refBlockId?: Id<"blocks">  // Points to canonical block in another session
+  contentHash?: string       // DJB2 hex hash for duplicate detection
 }
 ```
 
 **Indexes:**
 - `by_session` - Query all blocks for a session
 - `by_session_zone` - Query blocks by session + zone (most common)
+- `by_content_hash` - Find blocks by content hash (duplicate detection)
 - `by_zone` - Legacy, may be removed
 
 #### Block Types
 
-| Type | Purpose | Example |
-|------|---------|---------|
-| `SYSTEM` | System prompts, core instructions | "You are a helpful assistant..." |
-| `NOTE` | Reference material, documentation | API docs, code snippets |
-| `ASSISTANT` | LLM-generated responses | Previous brainstorming output |
-| `USER` | User input history | Past prompts |
-| Custom | Any string for future extensibility | "CODE", "IMAGE_DESCRIPTION" |
+| Type | Category | Purpose | Default Zone |
+|------|----------|---------|-------------|
+| `system_prompt` | Core | LLM behavior instructions | PERMANENT |
+| `note` | Core | General-purpose notes | WORKING |
+| `code` | Core | Source code, scripts, config | WORKING |
+| `guideline` | Document | Instructions for creating outputs | PERMANENT |
+| `template` | Document | Reusable document templates | STABLE |
+| `reference` | Document | External references and sources | STABLE |
+| `document` | Document | Standalone documents | WORKING |
+| `user_message` | Conversation | User input in dialog | WORKING |
+| `assistant_message` | Conversation | LLM-generated responses | WORKING |
+| `instruction` | Behavioral | Task-specific instructions | PERMANENT |
+| `persona` | Behavioral | Character/persona definitions | PERMANENT |
+| `framework` | Behavioral | Reasoning frameworks | STABLE |
+| `skill` | Behavioral | Imported skill definitions | PERMANENT |
 
 #### Zones
 
@@ -153,6 +183,33 @@ Benefits:
 - O(1) insert (just calculate midpoint)
 - No cascading position updates
 - Works well with drag-and-drop
+
+#### Linked Blocks
+
+Blocks can reference a canonical block in another session via `refBlockId`:
+
+```
+Session A (canonical)          Session B (reference)
+┌──────────────────┐          ┌──────────────────┐
+│ Block #123       │          │ Block #456       │
+│ content: "..."   │◄─────── │ refBlockId: #123 │
+│ zone: PERMANENT  │          │ content: ""      │
+│ tokens: 500      │          │ zone: STABLE     │
+└──────────────────┘          └──────────────────┘
+```
+
+**Resolution:** All queries resolve linked blocks server-side — clients always see the canonical content. Each session controls its own zone, position, and draft status independently.
+
+**Lifecycle rules:**
+- **Edit:** Updates to a reference block redirect to the canonical. Token counts sync across all references.
+- **Delete canonical:** All referencing blocks are promoted — content copied, `refBlockId` cleared.
+- **Session delete/clear:** References in other sessions are promoted before blocks are deleted.
+- **Unlink:** Copies canonical content into the reference block and clears `refBlockId`.
+- **Compress guard:** Linked blocks cannot be compressed — must unlink first.
+- **Templates/snapshots:** Content is resolved before saving — no references in serialized data.
+- **Workflow carry-forward:** PERMANENT/STABLE blocks create linked references. WORKING blocks create independent copies.
+
+**Duplicate detection:** `contentHash` (DJB2 hex) is computed on create and edit. The `by_content_hash` index enables fast lookup for suggesting links to identical content in other sessions.
 
 ---
 
@@ -223,10 +280,11 @@ Benefits:
     type: string
     zone: Zone
     position: number
-    // Token tracking (optional for backwards compatibility)
     tokens?: number
     originalTokens?: number
     tokenModel?: string
+    metadata?: SkillMetadata  // Skill block metadata
+    isDraft?: boolean         // Draft status preserved
   }>
 }
 ```
@@ -260,6 +318,7 @@ Benefits:
     type: string
     zone: Zone
     position: number
+    metadata?: SkillMetadata  // Skill block metadata
   }>
   // Workflow linkage
   workflowId?: Id<"workflows">
@@ -327,13 +386,13 @@ Benefits:
 **Indexes:** None (small table)
 
 **Step Carry-Forward:**
-When advancing to the next step, blocks from specified zones are copied:
+When advancing to the next step, blocks from specified zones are carried forward:
 ```
 Step 1 Session                    Step 2 Session
 ┌──────────────────┐             ┌──────────────────┐
-│ PERMANENT blocks │ ─copy─────► │ PERMANENT blocks │ (if in carryForwardZones)
-│ STABLE blocks    │ ─copy─────► │ STABLE blocks    │ (if in carryForwardZones)
-│ WORKING blocks   │ ─────×───── │                  │ (typically not carried)
+│ PERMANENT blocks │ ─link─────► │ PERMANENT refs   │ (linked — edits propagate)
+│ STABLE blocks    │ ─link─────► │ STABLE refs      │ (linked — edits propagate)
+│ WORKING blocks   │ ─copy─────► │ WORKING copies   │ (independent copies)
 └──────────────────┘             │ + Template blocks│
                                  └──────────────────┘
 ```
@@ -435,6 +494,30 @@ await ctx.db.patch(sessionId, {
   templateId: args.templateId,
   updatedAt: Date.now(),
 })
+```
+
+### Block → Block (Linked Reference)
+
+```typescript
+// Resolve a linked block
+if (block.refBlockId) {
+  const canonical = await ctx.db.get(block.refBlockId)
+  return { ...block, content: canonical?.content ?? "" }
+}
+
+// Find all blocks referencing a canonical block
+const refs = await ctx.db
+  .query("blocks")
+  .filter((q) => q.eq(q.field("refBlockId"), canonicalBlockId))
+  .collect()
+
+// Promote references before deleting canonical
+for (const ref of refs) {
+  await ctx.db.patch(ref._id, {
+    content: canonical.content,
+    refBlockId: undefined,
+  })
+}
 ```
 
 ---

@@ -8,7 +8,7 @@ Complete reference for all Convex functions in ContextForgeTS.
 
 | Module | Queries | Mutations | Actions |
 |--------|---------|-----------|---------|
-| [blocks](#blocks) | 3 | 5 | - |
+| [blocks](#blocks) | 4 | 11 | - |
 | [sessions](#sessions) | 2 | 6 | - |
 | [generations](#generations) | 2 | 3 | - |
 | [snapshots](#snapshots) | 2 | 4 | - |
@@ -90,6 +90,23 @@ npx convex run blocks:get '{"id": "BLOCK_ID"}'
 
 ---
 
+#### `blocks.findDuplicate`
+
+Find a block with matching content hash in a different session (for duplicate detection).
+
+```typescript
+const match = useQuery(api.blocks.findDuplicate, { contentHash, excludeSessionId })
+```
+
+| Arg | Type | Required | Description |
+|-----|------|----------|-------------|
+| `contentHash` | `string` | Yes | Content hash to search for |
+| `excludeSessionId` | `Id<"sessions">` | Yes | Session to exclude from search |
+
+**Returns:** `{ blockId: Id<"blocks">, sessionId: Id<"sessions">, sessionName: string } | null`
+
+---
+
 ### Mutations
 
 #### `blocks.create`
@@ -122,6 +139,30 @@ npx convex run blocks:create '{"sessionId": "SESSION_ID", "content": "System pro
 
 ---
 
+#### `blocks.createLinked`
+
+Create a linked reference to an existing block in another session.
+
+```typescript
+const blockId = await createLinked({
+  sessionId,
+  refBlockId: canonicalBlockId,
+  zone: "PERMANENT",  // optional, defaults to canonical block's zone
+})
+```
+
+| Arg | Type | Required | Default | Description |
+|-----|------|----------|---------|-------------|
+| `sessionId` | `Id<"sessions">` | Yes | - | Target session |
+| `refBlockId` | `Id<"blocks">` | Yes | - | Canonical block to reference |
+| `zone` | `Zone` | No | Canonical's zone | Target zone |
+
+**Returns:** `Id<"blocks">`
+
+**Note:** Reference blocks store `content: ""` — content is resolved from the canonical block at query time.
+
+---
+
 #### `blocks.move`
 
 Move a block to a different zone.
@@ -142,6 +183,24 @@ npx convex run blocks:move '{"id": "BLOCK_ID", "zone": "STABLE"}'
 **Returns:** `Id<"blocks">`
 
 **Note:** Block is appended to end of target zone.
+
+---
+
+#### `blocks.moveAndReorder`
+
+Move a block to a different zone AND set its position in one mutation (avoids intermediate renders).
+
+```typescript
+await moveAndReorder({ id: blockId, zone: "STABLE", newPosition: 1.5 })
+```
+
+| Arg | Type | Required | Description |
+|-----|------|----------|-------------|
+| `id` | `Id<"blocks">` | Yes | Block to move |
+| `zone` | `Zone` | Yes | Target zone |
+| `newPosition` | `number` | Yes | New position in target zone |
+
+**Returns:** `Id<"blocks">`
 
 ---
 
@@ -187,11 +246,13 @@ npx convex run blocks:update '{"id": "BLOCK_ID", "type": "SYSTEM"}'
 
 **Returns:** `Id<"blocks">`
 
+**Linked block behavior:** If the block has a `refBlockId`, the update is redirected to the canonical block. All referencing blocks have their token counts synced automatically.
+
 ---
 
 #### `blocks.remove`
 
-Delete a block.
+Delete a block. If other blocks reference this one, they are promoted to regular blocks first (content copied, reference cleared).
 
 ```typescript
 await removeBlock({ id: blockId })
@@ -206,6 +267,104 @@ npx convex run blocks:remove '{"id": "BLOCK_ID"}'
 | `id` | `Id<"blocks">` | Yes | Block to delete |
 
 **Returns:** `void`
+
+---
+
+#### `blocks.toggleDraft`
+
+Toggle a block's draft status. Draft blocks are visible but excluded from LLM context.
+
+```typescript
+await toggleDraft({ id: blockId })
+```
+
+| Arg | Type | Required | Description |
+|-----|------|----------|-------------|
+| `id` | `Id<"blocks">` | Yes | Block to toggle |
+
+**Returns:** `Id<"blocks">`
+
+---
+
+#### `blocks.unlink`
+
+Unlink a referenced block — copies canonical content and makes it a regular independent block.
+
+```typescript
+await unlink({ id: blockId })
+```
+
+| Arg | Type | Required | Description |
+|-----|------|----------|-------------|
+| `id` | `Id<"blocks">` | Yes | Linked block to unlink |
+
+**Returns:** `void`
+
+**Note:** Throws if the block is not linked.
+
+---
+
+#### `blocks.compress`
+
+Compress a single block in-place with LLM-generated compressed content.
+
+```typescript
+await compress({
+  blockId,
+  compressedContent: "...",
+  originalTokens: 1000,
+  compressedTokens: 400,
+  compressionRatio: 2.5,
+  strategy: "semantic",
+})
+```
+
+| Arg | Type | Required | Description |
+|-----|------|----------|-------------|
+| `blockId` | `Id<"blocks">` | Yes | Block to compress |
+| `compressedContent` | `string` | Yes | Compressed content |
+| `originalTokens` | `number` | Yes | Original token count |
+| `compressedTokens` | `number` | Yes | Compressed token count |
+| `compressionRatio` | `number` | Yes | Compression ratio |
+| `strategy` | `string` | Yes | "semantic", "structural", or "statistical" |
+
+**Returns:** `{ success: boolean, blockId: Id<"blocks"> }`
+
+**Note:** Cannot compress linked blocks — unlink first.
+
+---
+
+#### `blocks.compressAndMerge`
+
+Compress and merge multiple blocks into a single compressed block.
+
+```typescript
+await compressAndMerge({
+  blockIds: [block1Id, block2Id],
+  compressedContent: "...",
+  originalTokens: 2000,
+  compressedTokens: 600,
+  compressionRatio: 3.3,
+  strategy: "structural",
+  targetZone: "STABLE",
+  targetType: "note",
+  targetPosition: 1.5,
+})
+```
+
+| Arg | Type | Required | Description |
+|-----|------|----------|-------------|
+| `blockIds` | `Id<"blocks">[]` | Yes | Blocks to merge |
+| `compressedContent` | `string` | Yes | Merged compressed content |
+| `originalTokens` | `number` | Yes | Combined original token count |
+| `compressedTokens` | `number` | Yes | Compressed token count |
+| `compressionRatio` | `number` | Yes | Compression ratio |
+| `strategy` | `string` | Yes | Compression strategy |
+| `targetZone` | `Zone` | Yes | Zone for new block |
+| `targetType` | `string` | Yes | Type for new block |
+| `targetPosition` | `number` | Yes | Position for new block |
+
+**Returns:** `{ success: boolean, newBlockId: Id<"blocks">, blocksDeleted: number }`
 
 ---
 
@@ -316,6 +475,8 @@ npx convex run sessions:remove '{"id": "SESSION_ID"}'
 
 **Warning:** This cascade deletes all blocks, snapshots, and generations in the session.
 
+**Linked block safety:** Before deleting blocks, all blocks in other sessions that reference this session's blocks are promoted to regular blocks (content copied, reference cleared). No data loss.
+
 ---
 
 #### `sessions.removeAll`
@@ -378,6 +539,8 @@ npx convex run sessions:clear '{"id": "SESSION_ID"}'
 | `id` | `Id<"sessions">` | Yes | Session to clear |
 
 **Returns:** `{ deletedBlocks: number }`
+
+**Linked block safety:** Before deleting blocks, all blocks in other sessions that reference this session's blocks are promoted to regular blocks (content copied, reference cleared). No data loss.
 
 ---
 
@@ -590,6 +753,8 @@ npx convex run snapshots:create '{"sessionId": "SESSION_ID", "name": "before-exp
 | `name` | `string` | Yes | Snapshot name |
 
 **Returns:** `Id<"snapshots">`
+
+**Linked blocks:** Content is resolved before saving — snapshots are self-contained with no linked references.
 
 ---
 
@@ -866,6 +1031,8 @@ await createFromSession({
 | `overwriteTemplateId` | `Id<"templates">` | No | Template to overwrite (updates instead of creates) |
 
 **Returns:** `Id<"templates">`
+
+**Linked blocks:** Content is resolved before saving — templates are self-contained with no linked references.
 
 ---
 
@@ -1311,7 +1478,8 @@ const { sessionId, stepIndex } = await advanceStep({
 **Returns:** `{ sessionId: Id<"sessions">, stepIndex: number }`
 
 Creates a new session with:
-- Blocks carried forward from specified zones
+- PERMANENT/STABLE blocks carried forward as **linked references** (edits propagate back)
+- WORKING blocks carried forward as **independent copies** (no link)
 - Template blocks applied (if step has template)
 
 ---
@@ -1619,16 +1787,34 @@ interface Block {
   _creationTime: number
   sessionId: Id<"sessions">
   content: string
-  type: string
+  type: string                    // See block types in DATA_MODEL.md
   zone: "PERMANENT" | "STABLE" | "WORKING"
   position: number
   createdAt: number
   updatedAt: number
   testData?: boolean
+  isDraft?: boolean               // Draft blocks excluded from LLM context
   // Token tracking
-  tokens?: number           // Current token count
-  originalTokens?: number   // Original token count (before compression)
-  tokenModel?: string       // Model used for counting (e.g., "cl100k_base")
+  tokens?: number
+  originalTokens?: number
+  tokenModel?: string
+  // Compression state
+  isCompressed?: boolean
+  compressionStrategy?: string    // "semantic" | "structural" | "statistical"
+  compressionRatio?: number
+  compressedAt?: number
+  mergedFromCount?: number        // Number of blocks merged into this one
+  // Skill metadata
+  metadata?: {
+    skillName: string
+    skillDescription?: string
+    sourceType: "local" | "upload" | "url"
+    sourceRef?: string
+    parentSkillName?: string
+  }
+  // Linked blocks
+  refBlockId?: Id<"blocks">       // Points to canonical block in another session
+  contentHash?: string            // DJB2 hex hash for duplicate detection
 }
 ```
 
@@ -1638,6 +1824,7 @@ interface Block {
 interface Session {
   _id: Id<"sessions">
   _creationTime: number
+  userId?: Id<"users">           // Owner (optional for migration)
   name?: string
   createdAt: number
   updatedAt: number

@@ -2,8 +2,8 @@
 
 ## Quick Start
 
-- **[IMPLEMENTATION-ORDER.md](./IMPLEMENTATION-ORDER.md)** - Prioritized task list and sprint planning
-- **[PROGRESS.md](./PROGRESS.md)** - Development log and decisions
+- **[ROADMAP.md](./ROADMAP.md)** — Current priorities and feature status
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** — Technical design and LLM integration patterns
 
 ## Active Documentation
 
@@ -24,7 +24,7 @@
 |----------|-------------|
 | [API_REFERENCE.md](./API_REFERENCE.md) | All Convex functions with args and returns |
 | [DATA_MODEL.md](./DATA_MODEL.md) | Database schema and relationships |
-| [archive/STRUCTURE.md](./archive/STRUCTURE.md) | Repository file layout (outdated) |
+| [CONTEXT_OPTIMIZATION_AND_CACHING.md](./CONTEXT_OPTIMIZATION_AND_CACHING.md) | Zone optimization and LLM caching strategies |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Technical design and LLM integration patterns |
 | [REFERENCES.md](./REFERENCES.md) | External resources and links |
 
@@ -32,32 +32,27 @@
 | Document | Description |
 |----------|-------------|
 | [ROADMAP.md](./ROADMAP.md) | Feature slices and development status |
-| [CONTEXT_OPTIMIZATION_AND_CACHING.md](./CONTEXT_OPTIMIZATION_AND_CACHING.md) | LLM caching strategies |
 
 ### Tasks & Bugs
 | Directory | Description |
 |-----------|-------------|
-| [tasks/](./tasks/) | Open tasks and bug reports (6 remaining) |
-| [BugReports/](./BugReports/) | Bug analysis documents |
-| [completed/tasks/](./completed/tasks/) | Completed task documentation |
+| [tasks/](./tasks/) | Open tasks and bug reports |
+| [archive/completed/tasks/](./archive/completed/tasks/) | Completed task documentation |
 
 ### Features
 | Feature | Status | Documentation |
 |---------|--------|---------------|
 | Compression | ✅ Completed | [features/compression/](./features/compression/) |
-| SKILL.md Import | ✅ Completed | [completed/2026-02-11-skill-import-design.md](./completed/2026-02-11-skill-import-design.md) |
-| Context-Map Import/Export | ✅ Completed | [completed/2026-02-12-context-map-import-export-design.md](./completed/2026-02-12-context-map-import-export-design.md) |
-| Stop Generation | ✅ Completed | [completed/tasks/TASK-012-stop-generation.md](./completed/tasks/TASK-012-stop-generation.md) |
-| Draft Blocks | ✅ Completed | [completed/tasks/TASK-013-draft-blocks.md](./completed/tasks/TASK-013-draft-blocks.md) |
-| Linked Blocks | 🔨 In Progress | [plans/2026-02-19-linked-blocks-shaping.md](./plans/2026-02-19-linked-blocks-shaping.md) |
+| SKILL.md Import | ✅ Completed | [design doc](./archive/completed/2026-02-11-skill-import-design.md) |
+| Context-Map Import/Export | ✅ Completed | [design doc](./archive/completed/2026-02-12-context-map-import-export-design.md) |
+| Stop Generation | ✅ Completed | [task](./archive/completed/tasks/TASK-012-stop-generation.md) |
+| Draft Blocks | ✅ Completed | [task](./archive/completed/tasks/TASK-013-draft-blocks.md) |
+| Linked Blocks | ✅ Completed | [plans/2026-02-19-linked-blocks-shaping.md](./plans/2026-02-19-linked-blocks-shaping.md) |
 
 ### Active Plans
 | Document | Description |
 |----------|-------------|
-| [plans/2026-02-19-linked-blocks-shaping.md](./plans/2026-02-19-linked-blocks-shaping.md) | Linked blocks — cross-session block references (anchor feature) |
-| [plans/2026-02-18-frontend-polish-ideas.md](./plans/2026-02-18-frontend-polish-ideas.md) | Frontend polish ideas ranked by impact |
-| [plans/2026-02-18-micro-delights-design.md](./plans/2026-02-18-micro-delights-design.md) | Motion design system (partially implemented) |
-| [plans/2026-02-16-ephemeral-skills-design.md](./plans/2026-02-16-ephemeral-skills-design.md) | Ephemeral skills for brainstorming (approved, not started) |
+| [plans/2026-02-16-ephemeral-skills-design.md](./archive/2026-02-16-ephemeral-skills-design.md) | Ephemeral skills for brainstorming (approved, not started) |
 
 ### Research
 | Document | Description |
@@ -78,7 +73,8 @@
 ### Verification Guides
 | Document | Description |
 |----------|-------------|
-| [VERIFICATION-context-map-import-export.md](./VERIFICATION-context-map-import-export.md) | Manual verification for context-map import/export |
+| [VERIFICATION-linked-blocks.md](./VERIFICATION-linked-blocks.md) | Manual verification for linked blocks |
+| [archive/VERIFICATION-context-map-import-export.md](./archive/VERIFICATION-context-map-import-export.md) | Manual verification for context-map import/export |
 
 ---
 
@@ -88,13 +84,17 @@ Documents for features that have been fully implemented. Kept for historical ref
 
 | Document | Description |
 |----------|-------------|
-| [TOKEN_BUDGETS_PLAN.md](./completed/TOKEN_BUDGETS_PLAN.md) | Token counting and zone budgets (implemented) |
-| [WORKFLOW_SYSTEM_PLAN.md](./completed/WORKFLOW_SYSTEM_PLAN.md) | Templates, projects, workflows (implemented) |
-| [LLM_IMPLEMENTATION_PLAN.md](./completed/LLM_IMPLEMENTATION_PLAN.md) | Original LLM integration plan (implemented) |
-| [PROMPT_ASSEMBLY_REFACTOR.md](./completed/PROMPT_ASSEMBLY_REFACTOR.md) | System prompt extraction (implemented) |
-| [CONVEX_VERCEL_AI_ARCHITECTURE.md](./completed/CONVEX_VERCEL_AI_ARCHITECTURE.md) | Vercel AI evaluation (decided not to use) |
-| [2026-02-11-skill-import-design.md](./completed/2026-02-11-skill-import-design.md) | SKILL.md import system (implemented) |
-| [2026-02-12-context-map-import-export-design.md](./completed/2026-02-12-context-map-import-export-design.md) | Context-map bidirectional import/export (implemented) |
+| [TOKEN_BUDGETS_PLAN.md](./archive/completed/TOKEN_BUDGETS_PLAN.md) | Token counting and zone budgets (implemented) |
+| [WORKFLOW_SYSTEM_PLAN.md](./archive/completed/WORKFLOW_SYSTEM_PLAN.md) | Templates, projects, workflows (implemented) |
+| [LLM_IMPLEMENTATION_PLAN.md](./archive/completed/LLM_IMPLEMENTATION_PLAN.md) | Original LLM integration plan (implemented) |
+| [PROMPT_ASSEMBLY_REFACTOR.md](./archive/completed/PROMPT_ASSEMBLY_REFACTOR.md) | System prompt extraction (implemented) |
+| [CONVEX_VERCEL_AI_ARCHITECTURE.md](./archive/completed/CONVEX_VERCEL_AI_ARCHITECTURE.md) | Vercel AI evaluation (decided not to use) |
+| [2026-02-11-skill-import-design.md](./archive/completed/2026-02-11-skill-import-design.md) | SKILL.md import system (implemented) |
+| [2026-02-12-context-map-import-export-design.md](./archive/completed/2026-02-12-context-map-import-export-design.md) | Context-map bidirectional import/export (implemented) |
+| [2026-02-19-linked-blocks-plan.md](./plans/2026-02-19-linked-blocks-plan.md) | Linked blocks implementation plan (implemented) |
+| [2026-02-19-linked-blocks-shaping.md](./plans/2026-02-19-linked-blocks-shaping.md) | Linked blocks Shape Up shaping doc (implemented) |
+| [2026-02-18-frontend-polish-ideas.md](./archive/2026-02-18-frontend-polish-ideas.md) | Frontend polish ideas (partially implemented) |
+| [2026-02-18-micro-delights-design.md](./archive/2026-02-18-micro-delights-design.md) | Motion design system (partially implemented) |
 
 ---
 

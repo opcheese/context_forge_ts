@@ -1,3 +1,5 @@
+> **Status: Exploratory — not yet implemented (see ROADMAP.md item 25)**
+
 # Design: Effective Brainstorm Questioning
 
 ## Problem

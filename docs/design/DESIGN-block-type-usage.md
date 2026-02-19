@@ -1,3 +1,5 @@
+> **Status: Exploratory — not yet implemented**
+
 # Design: Block Type Usage in Context Assembly
 
 ## Current State
