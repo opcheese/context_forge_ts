@@ -7,6 +7,36 @@ import { getOptionalUserId, requireSessionAccess } from "./lib/auth"
 // ============ Helper Functions ============
 
 /**
+ * Before deleting a session's blocks, promote any references to them.
+ * Copies canonical content into referencing blocks and clears their refBlockId.
+ */
+async function promoteReferencesForSession(
+  ctx: MutationCtx,
+  sessionId: Id<"sessions">
+) {
+  const sessionBlocks = await ctx.db
+    .query("blocks")
+    .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+    .collect()
+
+  for (const block of sessionBlocks) {
+    const refs = await ctx.db
+      .query("blocks")
+      .filter((q) => q.eq(q.field("refBlockId"), block._id))
+      .collect()
+    for (const ref of refs) {
+      await ctx.db.patch(ref._id, {
+        content: block.content,
+        refBlockId: undefined,
+        tokens: block.tokens,
+        originalTokens: block.originalTokens,
+        tokenModel: block.tokenModel,
+      })
+    }
+  }
+}
+
+/**
  * Cascade delete all data for given session IDs.
  * Uses bulk fetches to avoid N+1 queries.
  *
@@ -20,6 +50,11 @@ async function cascadeDeleteSessions(
   let deletedBlocks = 0
   let deletedSnapshots = 0
   let deletedGenerations = 0
+
+  // Promote references for all sessions being deleted
+  for (const sessionId of sessionIds) {
+    await promoteReferencesForSession(ctx, sessionId)
+  }
 
   // Bulk fetch all related data (3 queries total, regardless of session count)
   const allBlocks = await ctx.db.query("blocks").collect()
@@ -138,6 +173,9 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     await requireSessionAccess(ctx, args.id)
 
+    // Promote references to blocks in this session before deleting them
+    await promoteReferencesForSession(ctx, args.id)
+
     // Delete all blocks in this session
     const blocks = await ctx.db
       .query("blocks")
@@ -251,6 +289,9 @@ export const clear = mutation({
 
     const session = await ctx.db.get(args.id)
     if (!session) throw new Error("Session not found")
+
+    // Promote references to blocks in this session before clearing them
+    await promoteReferencesForSession(ctx, args.id)
 
     const blocks = await ctx.db
       .query("blocks")
