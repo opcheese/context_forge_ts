@@ -1,6 +1,8 @@
 import { query, mutation } from "./_generated/server"
 import { v } from "convex/values"
+import type { Doc, Id } from "./_generated/dataModel"
 import { canAccessSession, requireSessionAccess } from "./lib/auth"
+import { resolveBlocks } from "./lib/resolve"
 
 // ============ Queries ============
 
@@ -55,10 +57,19 @@ export const create = mutation({
     if (!session) throw new Error("Session not found")
 
     // Get all blocks for this session
-    const blocks = await ctx.db
+    const rawBlocks = await ctx.db
       .query("blocks")
       .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
       .collect()
+
+    // Resolve linked block content so snapshots are self-contained
+    const refIds = [...new Set(rawBlocks.filter((b) => b.refBlockId).map((b) => String(b.refBlockId)))]
+    const canonicalLookup = new Map<string, Pick<Doc<"blocks">, "content">>()
+    await Promise.all(refIds.map(async (id) => {
+      const canonical = await ctx.db.get(id as Id<"blocks">)
+      if (canonical) canonicalLookup.set(id, { content: canonical.content })
+    }))
+    const blocks = resolveBlocks(rawBlocks, canonicalLookup)
 
     // Serialize blocks (without session-specific fields)
     const serializedBlocks = blocks.map((block) => ({
