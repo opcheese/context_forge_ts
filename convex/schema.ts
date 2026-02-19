@@ -132,10 +132,15 @@ export default defineSchema({
     mergedFromCount: v.optional(v.number()), // Number of blocks that were merged into this one
     // Skill metadata (for skill blocks)
     metadata: v.optional(skillMetadataValidator),
+    // Linked block reference — points to canonical block in another session
+    refBlockId: v.optional(v.id("blocks")),
+    // Content hash for duplicate detection (DJB2 hex, first 16 chars)
+    contentHash: v.optional(v.string()),
   })
     .index("by_zone", ["zone", "position"]) // Legacy index
     .index("by_session", ["sessionId"])
-    .index("by_session_zone", ["sessionId", "zone", "position"]),
+    .index("by_session_zone", ["sessionId", "zone", "position"])
+    .index("by_content_hash", ["contentHash"]),
 
   // Snapshots - saved copies of session state for testing/restore
   snapshots: defineTable({
