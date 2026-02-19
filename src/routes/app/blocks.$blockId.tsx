@@ -18,7 +18,7 @@ import ReactMarkdown from "react-markdown"
 import gfm from "remark-gfm"
 import breaks from "remark-breaks"
 import { MarkdownComponents } from "@/components/MarkdownComponents"
-import { Puzzle, Upload, Link as LinkIcon, FolderSearch } from "lucide-react"
+import { Puzzle, Upload, Link as LinkIcon, FolderSearch, Link2 } from "lucide-react"
 
 // Format date for display
 function formatDate(timestamp: number): string {
@@ -201,6 +201,14 @@ function BlockEditor({ blockId }: { blockId: Id<"blocks"> }) {
           {block.metadata.sourceRef && (
             <p className="text-xs text-muted-foreground font-mono truncate">{block.metadata.sourceRef}</p>
           )}
+        </div>
+      )}
+
+      {/* Linked block indicator */}
+      {block.refBlockId && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-[oklch(0.65_0.08_220_/_10%)] border border-[oklch(0.65_0.08_220_/_20%)] text-sm">
+          <Link2 className="w-4 h-4 text-[oklch(0.65_0.08_220)]" />
+          <span>Linked block — edits will update all sessions using this block.</span>
         </div>
       )}
 
