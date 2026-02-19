@@ -60,7 +60,7 @@ export function extractSystemPromptFromBlocks(
  * - WORKING zone as current context (dynamic, not cached)
  * - User prompt always last
  *
- * @param blocks - All blocks for the session
+ * @param blocks - All blocks for the session. Must have resolved content (refBlockId blocks hydrated via resolveBlocks).
  * @param userPrompt - The current user message
  */
 export function assembleContext(
@@ -177,7 +177,7 @@ export function getContextStats(blocks: Doc<"blocks">[]): {
  * Active skills are injected after WORKING to preserve prompt caching
  * (toggling a skill only invalidates the conversation suffix).
  *
- * @param blocks - All blocks for the session
+ * @param blocks - All blocks for the session. Must have resolved content (refBlockId blocks hydrated via resolveBlocks).
  * @param conversationHistory - Previous messages in the conversation
  * @param newMessage - The new user message
  * @param activeSkillsContent - Optional formatted skill text to inject
