@@ -50,7 +50,7 @@ function RootLayout() {
       <div className="min-h-screen bg-background">
         <Outlet />
       </div>
-      <TanStackRouterDevtools />
+      {import.meta.env.DEV && <TanStackRouterDevtools />}
     </ToastProvider>
   )
 }
