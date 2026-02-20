@@ -30,6 +30,7 @@ function useTheme() {
     } else {
       document.documentElement.classList.remove("dark")
     }
+    localStorage.setItem("theme", isDark ? "dark" : "light")
   }, [isDark])
 
   return { isDark, toggle: () => setIsDark(!isDark) }
@@ -66,7 +67,7 @@ function AuthRedirect() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    navigate({ to: "/login", replace: true })
+    navigate({ to: "/app/login", replace: true })
   }, [navigate])
 
   return null
@@ -297,8 +298,15 @@ function AuthenticatedLayout() {
   )
 }
 
-// Unauthenticated user layout
+// Unauthenticated user layout — renders login page directly, redirects otherwise
 function UnauthenticatedLayout() {
+  const { location } = useRouterState()
+  const isLoginPage = location.pathname === "/app/login"
+
+  if (isLoginPage) {
+    return <Outlet />
+  }
+
   return (
     <>
       <Header rightContent={<span className="text-muted-foreground text-sm">Redirecting...</span>} />

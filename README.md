@@ -48,7 +48,8 @@ ContextForge helps you manage the context window when working with Large Languag
 | Compression system | ✅ Complete |
 | Draft blocks | ✅ Complete |
 | Animation system (framer-motion) | ✅ Complete |
-| Linked blocks (cross-session references) | 🔜 In Progress |
+| Linked blocks (cross-session references) | ✅ Complete |
+| Astro public site + blog + SEO | ✅ Complete |
 
 ## Quick Start
 
@@ -62,23 +63,32 @@ ContextForge helps you manage the context window when working with Large Languag
 
 ```bash
 # Clone the repository
-git clone https://github.com/OWNER/contextforge.git
-cd contextforge
+git clone https://github.com/opcheese/context_forge_ts.git
+cd context_forge_ts
 
 # Install dependencies
 pnpm install
+cd site && pnpm install && cd ..
 
 # Copy environment file
 cp .env.example .env.local
 
-# Start Convex backend (terminal 1)
-pnpm exec convex dev
-
-# Start frontend (terminal 2)
-pnpm dev
+# Start everything (SPA + Astro site + Convex)
+pnpm dev:all
 ```
 
-Visit `http://localhost:5173`
+- **Landing page / blog:** `http://localhost:4321/`
+- **App (SPA):** `http://localhost:5173/app/`
+
+### Other Commands
+
+```bash
+# Preview production build locally (builds + serves with SPA rewrites)
+pnpm preview
+
+# Build everything (same as Vercel deploy)
+pnpm build:all
+```
 
 ## LLM Providers
 
@@ -152,9 +162,11 @@ Copy `.env.example` to `.env.local` and configure:
 | Layer | Technology | Purpose |
 |-------|------------|---------|
 | Backend | [Convex](https://convex.dev) | Real-time database, serverless functions |
-| Frontend | React 19 + TypeScript | UI components |
-| Routing | TanStack Router | Type-safe client-side routing |
+| App Frontend | React 19 + TypeScript | SPA served at `/app/` |
+| Public Site | [Astro 5](https://astro.build) | Landing page, blog, legal (static HTML for SEO) |
+| Routing | TanStack Router | Type-safe client-side routing (app) |
 | Styling | Tailwind CSS v4 + shadcn/ui | Utility-first CSS + components |
+| Blog | Astro Content Collections + MDX | Static blog with RSS and sitemap |
 | Drag-and-Drop | @dnd-kit | Accessible drag-and-drop |
 | Testing | Vitest + Playwright | Unit + E2E tests |
 
@@ -172,18 +184,20 @@ contextforge/
 │   ├── generations.ts      # LLM generation tracking
 │   ├── claudeNode.ts       # Claude Code integration
 │   ├── http.ts             # HTTP endpoints (Ollama, OpenRouter)
-│   └── lib/
-│       ├── context.ts      # Context assembly
-│       ├── ollama.ts       # Ollama client
-│       ├── openrouter.ts   # OpenRouter client
-│       └── langfuse.ts     # LangFuse integration
+│   └── lib/                # Shared backend utilities
 │
-├── src/
-│   ├── routes/             # Pages (TanStack Router)
+├── src/                    # App SPA (React 19 + TanStack Router)
+│   ├── routes/             # Pages (file-based routing)
 │   ├── components/         # React components
 │   ├── hooks/              # Custom hooks
 │   ├── contexts/           # React contexts
 │   └── lib/                # Utilities
+│
+├── site/                   # Public site (Astro 5)
+│   ├── src/pages/          # Landing, blog, legal pages
+│   ├── src/content/blog/   # MDX blog posts
+│   ├── src/components/     # Astro + React island components
+│   └── src/layouts/        # Page layouts (Base, BlogPost)
 │
 ├── docs/                   # Documentation
 └── e2e/                    # Playwright tests
@@ -192,8 +206,11 @@ contextforge/
 ## Development
 
 ```bash
+# Start everything concurrently
+pnpm dev:all
+
 # Run all checks
-pnpm lint && pnpm test:run && pnpm build
+pnpm lint && pnpm test:run && pnpm build:all
 
 # Format code
 pnpm format
@@ -204,6 +221,12 @@ pnpm test:e2e
 # Type check
 pnpm exec tsc --noEmit
 ```
+
+### Deployment
+
+The app deploys to Vercel as a single project. Vite builds the SPA into `site/public/app/`,
+then Astro builds all static pages into `site/dist/`. Vercel serves `site/dist/` with a
+rewrite rule for `/app/*` to enable SPA client-side routing.
 
 ## Key Concepts
 

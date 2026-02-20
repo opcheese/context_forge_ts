@@ -6,7 +6,7 @@ import { useState, useEffect } from "react"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useQuery, useConvexAuth } from "convex/react"
 import { useAuthActions } from "@convex-dev/auth/react"
-import { api } from "../../convex/_generated/api"
+import { api } from "../../../convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -210,6 +210,6 @@ function LoginPage() {
   )
 }
 
-export const Route = createFileRoute("/login")({
+export const Route = createFileRoute("/app/login")({
   component: LoginPage,
 })

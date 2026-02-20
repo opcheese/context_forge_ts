@@ -59,6 +59,8 @@
 
   toggle.addEventListener("click", () => {
     document.documentElement.classList.toggle("dark")
+    var isDark = document.documentElement.classList.contains("dark")
+    localStorage.setItem("theme", isDark ? "dark" : "light")
     updateIcons()
   })
 </script>

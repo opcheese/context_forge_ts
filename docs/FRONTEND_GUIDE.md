@@ -39,8 +39,8 @@ src/routes/
 ├── app.tsx              # "/app" - App layout (auth guard, session context)
 ├── app/
 │   ├── index.tsx        # "/app/" - Home page with zones
+│   ├── login.tsx        # "/app/login" - Auth page
 │   └── ...              # Other app routes
-├── login.tsx            # "/login" - Auth page
 └── ...
 ```
 

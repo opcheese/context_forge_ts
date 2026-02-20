@@ -9,34 +9,23 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
-import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppWorkflowsRouteImport } from './routes/app/workflows'
 import { Route as AppTemplatesRouteImport } from './routes/app/templates'
 import { Route as AppSettingsRouteImport } from './routes/app/settings'
 import { Route as AppProjectsRouteImport } from './routes/app/projects'
 import { Route as AppMarketplaceRouteImport } from './routes/app/marketplace'
+import { Route as AppLoginRouteImport } from './routes/app/login'
 import { Route as AppWorkflowsIndexRouteImport } from './routes/app/workflows.index'
 import { Route as AppProjectsIndexRouteImport } from './routes/app/projects.index'
 import { Route as AppWorkflowsWorkflowIdRouteImport } from './routes/app/workflows.$workflowId'
 import { Route as AppProjectsProjectIdRouteImport } from './routes/app/projects.$projectId'
 import { Route as AppBlocksBlockIdRouteImport } from './routes/app/blocks.$blockId'
 
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AppRoute = AppRouteImport.update({
   id: '/app',
   path: '/app',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -69,6 +58,11 @@ const AppMarketplaceRoute = AppMarketplaceRouteImport.update({
   path: '/marketplace',
   getParentRoute: () => AppRoute,
 } as any)
+const AppLoginRoute = AppLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppWorkflowsIndexRoute = AppWorkflowsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -96,9 +90,8 @@ const AppBlocksBlockIdRoute = AppBlocksBlockIdRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
-  '/login': typeof LoginRoute
+  '/app/login': typeof AppLoginRoute
   '/app/marketplace': typeof AppMarketplaceRoute
   '/app/projects': typeof AppProjectsRouteWithChildren
   '/app/settings': typeof AppSettingsRoute
@@ -112,8 +105,7 @@ export interface FileRoutesByFullPath {
   '/app/workflows/': typeof AppWorkflowsIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/login': typeof LoginRoute
+  '/app/login': typeof AppLoginRoute
   '/app/marketplace': typeof AppMarketplaceRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/templates': typeof AppTemplatesRoute
@@ -126,9 +118,8 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
-  '/login': typeof LoginRoute
+  '/app/login': typeof AppLoginRoute
   '/app/marketplace': typeof AppMarketplaceRoute
   '/app/projects': typeof AppProjectsRouteWithChildren
   '/app/settings': typeof AppSettingsRoute
@@ -144,9 +135,8 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/app'
-    | '/login'
+    | '/app/login'
     | '/app/marketplace'
     | '/app/projects'
     | '/app/settings'
@@ -160,8 +150,7 @@ export interface FileRouteTypes {
     | '/app/workflows/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
-    | '/login'
+    | '/app/login'
     | '/app/marketplace'
     | '/app/settings'
     | '/app/templates'
@@ -173,9 +162,8 @@ export interface FileRouteTypes {
     | '/app/workflows'
   id:
     | '__root__'
-    | '/'
     | '/app'
-    | '/login'
+    | '/app/login'
     | '/app/marketplace'
     | '/app/projects'
     | '/app/settings'
@@ -190,32 +178,16 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
-  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/app': {
       id: '/app'
       path: '/app'
       fullPath: '/app'
       preLoaderRoute: typeof AppRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app/': {
@@ -258,6 +230,13 @@ declare module '@tanstack/react-router' {
       path: '/marketplace'
       fullPath: '/app/marketplace'
       preLoaderRoute: typeof AppMarketplaceRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/login': {
+      id: '/app/login'
+      path: '/login'
+      fullPath: '/app/login'
+      preLoaderRoute: typeof AppLoginRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/workflows/': {
@@ -327,6 +306,7 @@ const AppWorkflowsRouteWithChildren = AppWorkflowsRoute._addFileChildren(
 )
 
 interface AppRouteChildren {
+  AppLoginRoute: typeof AppLoginRoute
   AppMarketplaceRoute: typeof AppMarketplaceRoute
   AppProjectsRoute: typeof AppProjectsRouteWithChildren
   AppSettingsRoute: typeof AppSettingsRoute
@@ -337,6 +317,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppLoginRoute: AppLoginRoute,
   AppMarketplaceRoute: AppMarketplaceRoute,
   AppProjectsRoute: AppProjectsRouteWithChildren,
   AppSettingsRoute: AppSettingsRoute,
@@ -349,9 +330,7 @@ const AppRouteChildren: AppRouteChildren = {
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
-  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

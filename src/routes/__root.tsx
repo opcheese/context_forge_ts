@@ -15,7 +15,7 @@ function NotFound() {
         <p className="text-sm text-muted-foreground mb-6">
           The page you're looking for doesn't exist.
         </p>
-        <Link to="/" className="text-sm text-primary hover:underline">
+        <Link to="/app" className="text-sm text-primary hover:underline">
           Back to home
         </Link>
       </div>
@@ -36,7 +36,7 @@ function RootErrorComponent({ error }: { error: Error }) {
             {error.message}
           </pre>
         )}
-        <Link to="/" className="text-sm text-primary hover:underline">
+        <Link to="/app" className="text-sm text-primary hover:underline">
           Back to home
         </Link>
       </div>

@@ -19,9 +19,12 @@ const fullTitle = title === "ContextForge" ? title : `${title} | ContextForge`
 <html lang="en" class="">
   <head>
     <script is:inline>
-      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        document.documentElement.classList.add("dark")
-      }
+      ;(function() {
+        var stored = localStorage.getItem("theme")
+        if (stored === "dark" || (!stored && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+          document.documentElement.classList.add("dark")
+        }
+      })()
     </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

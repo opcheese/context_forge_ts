@@ -5,6 +5,16 @@
 - **[ROADMAP.md](./ROADMAP.md)** — Current priorities and feature status
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** — Technical design and LLM integration patterns
 
+### Development Commands
+
+| Command | What it does |
+|---------|-------------|
+| `pnpm dev:all` | Run SPA + Astro site + Convex dev concurrently |
+| `pnpm dev` | Run only the SPA (Vite) at `localhost:5173/app/` |
+| `cd site && pnpm dev` | Run only the Astro site at `localhost:4321/` |
+| `pnpm preview` | Build everything and serve locally (production-like) at `localhost:3000/` |
+| `pnpm build:all` | Build SPA then Astro site (same as Vercel build) |
+
 ## Active Documentation
 
 ### Getting Started
