@@ -51,7 +51,7 @@ export function HeroAnimated() {
 
       <motion.div variants={heroStaggerItem} className="flex flex-wrap items-center gap-4">
         <motion.a
-          href="/app/login"
+          href="/app/"
           className="inline-flex items-center justify-center rounded-xl text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-8 shadow-lg shadow-primary/10 gap-2.5 transition-colors"
           initial="rest"
           whileHover="hover"

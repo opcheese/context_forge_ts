@@ -33,6 +33,24 @@ function LoginPage() {
     }
   }, [isAuthenticated, isAuthLoading, navigate])
 
+  // Show loading state while auth is resolving to avoid flashing the login form
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground text-sm">Loading...</div>
+      </div>
+    )
+  }
+
+  // If authenticated, don't render the form (useEffect will redirect)
+  if (isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground text-sm">Redirecting...</div>
+      </div>
+    )
+  }
+
   const handlePasswordAuth = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
