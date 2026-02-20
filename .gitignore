@@ -4,6 +4,7 @@ node_modules
 # Build
 dist
 dist-ssr
+site/public/app/
 
 # Environment (contains secrets)
 *.local
