@@ -1,4 +1,8 @@
 {
+  "buildCommand": "pnpm build && cd site && pnpm build",
+  "outputDirectory": "site/dist",
+  "installCommand": "pnpm install && cd site && pnpm install",
+  "framework": null,
   "headers": [
     {
       "source": "/(.*)",
@@ -11,6 +15,6 @@
     }
   ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
+    { "source": "/app/(.*)", "destination": "/app/index.html" }
   ]
 }
