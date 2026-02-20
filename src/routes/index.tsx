@@ -277,9 +277,12 @@ function LandingPage() {
             <Anvil className="w-3.5 h-3.5" />
             <span>ContextForge</span>
           </div>
-          <span className="text-xs text-muted-foreground/60">
-            &copy; {new Date().getFullYear()} ContextForge
-          </span>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground/60">
+            <a href="https://github.com/opcheese/context_forge_ts/blob/main/PRIVACY.md" target="_blank" rel="noopener noreferrer" className="hover:text-muted-foreground transition-colors">Privacy</a>
+            <a href="https://github.com/opcheese/context_forge_ts/blob/main/TERMS.md" target="_blank" rel="noopener noreferrer" className="hover:text-muted-foreground transition-colors">Terms</a>
+            <a href="https://github.com/opcheese/context_forge_ts/blob/main/DISCLAIMER.md" target="_blank" rel="noopener noreferrer" className="hover:text-muted-foreground transition-colors">AI Disclaimer</a>
+            <span>&copy; {new Date().getFullYear()} ContextForge</span>
+          </div>
         </div>
       </footer>
     </div>

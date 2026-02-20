@@ -1,0 +1,24 @@
+name: Data Deletion Request
+description: Request deletion of your account and associated data
+title: "[Data Deletion] "
+labels: ["data-deletion"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We'll delete your account and all associated data. This action is irreversible.
+  - type: input
+    id: email
+    attributes:
+      label: Account email
+      description: The email address you registered with
+      placeholder: your@email.com
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I understand this will permanently delete my account and all my data (context blocks, templates, sessions, projects, workflows, and marketplace submissions)
+          required: true

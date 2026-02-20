@@ -606,6 +606,9 @@ export function BrainstormDialog({
                 <br />
                 Messages you save will become blocks.
               </p>
+              <p className="text-xs text-muted-foreground/60 mt-2">
+                AI responses may be inaccurate. Verify before relying on them.
+              </p>
             </div>
           )}
 
@@ -666,7 +669,7 @@ export function BrainstormDialog({
             )}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Ctrl+Enter to send, Esc to close
+            Ctrl+Enter to send, Esc to close · AI responses may be inaccurate
           </p>
         </div>
       </motion.div>
