@@ -27,6 +27,7 @@
     "dev": "vite",
     "dev:all": "concurrently -n spa,site,convex -c blue,green,yellow \"vite\" \"cd site && pnpm dev\" \"npx convex dev\"",
     "build": "vite build",
+    "build:standalone": "VITE_STANDALONE=true vite build && cp standalone-serve.json dist/serve.json",
     "build:all": "vite build && cd site && pnpm build",
     "typecheck": "tsc -b",
     "lint": "eslint .",
