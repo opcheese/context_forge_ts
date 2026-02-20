@@ -5,7 +5,17 @@
 import { useState, useEffect } from "react"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useConvexAuth } from "convex/react"
+import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
+import { HeroZoneDemo } from "@/components/HeroZoneDemo"
+import {
+  heroStagger,
+  heroStaggerItem,
+  sectionStagger,
+  sectionStaggerItem,
+  lineDrawVariants,
+  springs,
+} from "@/lib/motion"
 import { Layers, LayoutTemplate, GitBranch, ArrowRight, Anvil, Sparkles, Package, Sun, Moon } from "lucide-react"
 
 // Theme toggle hook (duplicated from app layout since landing is independent)
@@ -24,6 +34,39 @@ function useTheme() {
 
   return { isDark, toggle: () => setIsDark(!isDark) }
 }
+
+// CTA button with arrow nudge on hover
+function CTAButton({ to, text }: { to: string; text: string }) {
+  return (
+    <motion.div
+      className="inline-flex"
+      initial="rest"
+      whileHover="hover"
+      whileTap={{ scale: 0.97 }}
+      transition={springs.snappy}
+    >
+      <Link to={to}>
+        <Button size="lg" className="h-12 px-8 text-base font-semibold gap-2.5 rounded-xl shadow-lg shadow-primary/10">
+          {text}
+          <motion.span
+            variants={{ rest: { x: 0 }, hover: { x: 3 } }}
+            transition={springs.snappy}
+            className="inline-flex items-center"
+          >
+            <ArrowRight className="w-4 h-4" />
+          </motion.span>
+        </Button>
+      </Link>
+    </motion.div>
+  )
+}
+
+const BEFORE_TEXT = `You are an expert TypeScript developer.
+I'm building a SaaS product. The tech stack is React,
+Convex, TanStack Router, Tailwind. My coding style
+prefers small pure functions, no classes, conventional
+commits. Current task: add drag-and-drop reordering to
+the block list. Reference the existing DnD setup.`
 
 function LandingPage() {
   const { isAuthenticated } = useConvexAuth()
@@ -79,72 +122,67 @@ function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="relative z-10 pt-24 pb-20 sm:pt-32 sm:pb-28">
+      <section className="relative z-10 pt-14 pb-14 sm:pt-20 sm:pb-20">
         {/* Decorative elements */}
         <div className="absolute top-12 left-1/4 w-64 h-64 bg-orange-500/5 dark:bg-orange-400/5 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-amber-500/5 dark:bg-amber-400/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="mx-auto max-w-6xl px-6 sm:px-8">
-          <div className="max-w-3xl">
+          <motion.div
+            className="max-w-3xl"
+            variants={heroStagger}
+            initial="hidden"
+            animate="visible"
+          >
             {/* Eyebrow */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card/50 mb-8 text-sm text-muted-foreground">
+            <motion.div
+              variants={heroStaggerItem}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card/50 mb-8 text-sm text-muted-foreground"
+            >
               <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
               <span>Shape your AI conversations</span>
-            </div>
+            </motion.div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] mb-6">
+            <motion.h1
+              variants={heroStaggerItem}
+              className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] mb-6"
+            >
               Forge better context.{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-orange-500 to-red-500 dark:from-amber-400 dark:via-orange-400 dark:to-red-400">
                 Get better answers.
               </span>
-            </h1>
+            </motion.h1>
 
-            <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed mb-10 max-w-2xl">
+            <motion.p
+              variants={heroStaggerItem}
+              className="text-lg sm:text-xl text-muted-foreground leading-relaxed mb-10 max-w-2xl"
+            >
               ContextForge helps you organize, structure, and manage context for LLM conversations.
               Stop losing track of what matters. Build reusable context that makes every prompt count.
-            </p>
+            </motion.p>
 
-            <div className="flex flex-wrap items-center gap-4">
-              <Link to={ctaTo}>
-                <Button size="lg" className="h-12 px-8 text-base font-semibold gap-2.5 rounded-xl shadow-lg shadow-primary/10">
-                  {ctaText}
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
+            <motion.div variants={heroStaggerItem} className="flex flex-wrap items-center gap-4">
+              <CTAButton to={ctaTo} text={ctaText} />
               <span className="text-sm text-muted-foreground">Free to use. No credit card.</span>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
 
-          {/* Hero visual — abstract zone diagram */}
-          <div className="mt-16 sm:mt-20 grid grid-cols-3 gap-3 max-w-2xl">
-            {[
-              { label: "Permanent", desc: "Always included", color: "border-blue-500/30 bg-blue-500/5 dark:bg-blue-400/5" },
-              { label: "Stable", desc: "Reference material", color: "border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-400/5" },
-              { label: "Working", desc: "Draft content", color: "border-amber-500/30 bg-amber-500/5 dark:bg-amber-400/5" },
-            ].map((zone) => (
-              <div
-                key={zone.label}
-                className={`rounded-xl border-2 border-dashed p-4 sm:p-5 ${zone.color} transition-colors`}
-              >
-                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                  {zone.label}
-                </div>
-                <div className="text-sm text-muted-foreground/80">{zone.desc}</div>
-                <div className="mt-3 space-y-1.5">
-                  {[1, 2].map((i) => (
-                    <div key={i} className="h-2 rounded-full bg-foreground/[0.06] dark:bg-foreground/[0.08]" style={{ width: `${65 + i * 15}%` }} />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          {/* Interactive zone demo */}
+          <motion.div
+            className="mt-16 sm:mt-20 max-w-2xl"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...springs.smooth, delay: 0.45 }}
+          >
+            <HeroZoneDemo />
+          </motion.div>
         </div>
       </section>
 
       {/* Features */}
-      <section className="relative z-10 py-20 sm:py-28 border-t border-border/50">
+      <section className="relative z-10 py-14 sm:py-20 border-t border-border/50">
         <div className="mx-auto max-w-6xl px-6 sm:px-8">
-          <div className="text-center mb-14 sm:mb-18">
+          <div className="text-center mb-10 sm:mb-14">
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
               Everything you need to manage context
             </h2>
@@ -153,7 +191,13 @@ function LandingPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <motion.div
+            className="grid md:grid-cols-3 gap-6"
+            variants={sectionStagger}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-80px" }}
+          >
             {[
               {
                 icon: Layers,
@@ -177,8 +221,9 @@ function LandingPage() {
                 bg: "bg-amber-500/5 dark:bg-amber-400/5",
               },
             ].map((feature) => (
-              <div
+              <motion.div
                 key={feature.title}
+                variants={sectionStaggerItem}
                 className="group rounded-2xl border border-border bg-card/50 p-7 sm:p-8 hover:border-border/80 hover:bg-card transition-all duration-300"
               >
                 <div className={`w-11 h-11 rounded-xl ${feature.bg} flex items-center justify-center mb-5`}>
@@ -188,16 +233,91 @@ function LandingPage() {
                 <p className="text-muted-foreground leading-relaxed text-[15px]">
                   {feature.description}
                 </p>
-              </div>
+              </motion.div>
             ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Before / After */}
+      <section className="relative z-10 py-14 sm:py-20 border-t border-border/50">
+        <div className="mx-auto max-w-6xl px-6 sm:px-8">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+              From chaos to clarity
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+              The same information. Radically different results.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {/* Before */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={springs.smooth}
+              className="rounded-2xl border border-border bg-card/50 p-6"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-2 h-2 rounded-full bg-red-400" />
+                <span className="text-sm font-medium text-muted-foreground">Without ContextForge</span>
+              </div>
+              <pre className="text-[13px] text-muted-foreground/70 leading-relaxed font-mono whitespace-pre-wrap">
+                {BEFORE_TEXT}
+              </pre>
+            </motion.div>
+
+            {/* After */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={springs.smooth}
+              className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.03] dark:bg-emerald-400/[0.03] p-6"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                <span className="text-sm font-medium text-muted-foreground">With ContextForge</span>
+              </div>
+              <div className="space-y-3 text-[13px] font-mono">
+                <div>
+                  <span className="inline-block px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider bg-blue-500/10 text-blue-600 dark:text-blue-400 mb-1">
+                    Permanent
+                  </span>
+                  <div className="text-muted-foreground/70 leading-relaxed">
+                    Role: Senior TypeScript engineer<br />
+                    Style: Pure functions · No classes · Conventional commits
+                  </div>
+                </div>
+                <div>
+                  <span className="inline-block px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 mb-1">
+                    Stable
+                  </span>
+                  <div className="text-muted-foreground/70 leading-relaxed">
+                    Stack: React · Convex · TanStack Router · Tailwind<br />
+                    Reference: /src/components/dnd/ (existing DnD setup)
+                  </div>
+                </div>
+                <div>
+                  <span className="inline-block px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 mb-1">
+                    Working
+                  </span>
+                  <div className="text-muted-foreground/70 leading-relaxed">
+                    Task: Add drag-and-drop block reordering
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
       {/* How It Works */}
-      <section className="relative z-10 py-20 sm:py-28 border-t border-border/50">
+      <section className="relative z-10 py-14 sm:py-20 border-t border-border/50">
         <div className="mx-auto max-w-6xl px-6 sm:px-8">
-          <div className="text-center mb-14 sm:mb-18">
+          <div className="text-center mb-10 sm:mb-14">
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
               Three steps to better AI conversations
             </h2>
@@ -207,8 +327,15 @@ function LandingPage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 md:gap-6 relative">
-            {/* Connector line (desktop) */}
-            <div className="hidden md:block absolute top-10 left-[calc(16.67%+24px)] right-[calc(16.67%+24px)] h-px bg-border" />
+            {/* Connector line (desktop) — draws left to right on scroll */}
+            <motion.div
+              className="hidden md:block absolute top-10 left-[calc(16.67%+24px)] right-[calc(16.67%+24px)] h-px bg-border"
+              style={{ transformOrigin: "left" }}
+              variants={lineDrawVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+            />
 
             {[
               {
@@ -242,7 +369,7 @@ function LandingPage() {
       </section>
 
       {/* Bottom CTA */}
-      <section className="relative z-10 py-20 sm:py-28 border-t border-border/50">
+      <section className="relative z-10 py-14 sm:py-20 border-t border-border/50">
         <div className="mx-auto max-w-6xl px-6 sm:px-8">
           <div className="relative rounded-3xl border border-border bg-card/50 overflow-hidden">
             {/* Glow effect */}
@@ -259,12 +386,7 @@ function LandingPage() {
               <p className="text-muted-foreground text-lg mb-8 max-w-lg mx-auto">
                 Stop pasting raw text into chat windows. Start building structured context that compounds.
               </p>
-              <Link to={ctaTo}>
-                <Button size="lg" className="h-12 px-8 text-base font-semibold gap-2.5 rounded-xl shadow-lg shadow-primary/10">
-                  {ctaText}
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
+              <CTAButton to={ctaTo} text={ctaText} />
             </div>
           </div>
         </div>

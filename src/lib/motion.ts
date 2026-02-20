@@ -72,6 +72,36 @@ export const listItemVariants: Variants = {
   },
 }
 
+// --- Landing page variants ---
+
+/** Hero stagger — sequential fade-up on page load */
+export const heroStagger: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.09 } },
+}
+
+export const heroStaggerItem: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: springs.smooth },
+}
+
+/** Section-level scroll-triggered stagger */
+export const sectionStagger: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.12 } },
+}
+
+export const sectionStaggerItem: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: springs.smooth },
+}
+
+/** Step connector line — scaleX draw from left */
+export const lineDrawVariants: Variants = {
+  hidden: { scaleX: 0 },
+  visible: { scaleX: 1, transition: { duration: 0.6, ease: "easeOut" } },
+}
+
 // --- Scale feedback presets ---
 
 export const scaleFeedback = {
