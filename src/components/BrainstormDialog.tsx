@@ -18,6 +18,8 @@ import { SKILLS } from "@/lib/llm/skills"
 import ReactMarkdown from 'react-markdown'
 import gfm from 'remark-gfm'
 import { MarkdownComponents } from '@/components/MarkdownComponents';
+import { SubscriptionUsage } from '@/components/SubscriptionUsage';
+import { OpenRouterCost } from '@/components/OpenRouterCost';
 import breaks from 'remark-breaks';
 
 
@@ -56,6 +58,8 @@ interface BrainstormDialogProps {
   // Ephemeral skills
   activeSkills?: Record<string, boolean>
   onToggleSkill?: (skillId: string) => void
+  // OpenRouter session cost
+  openrouterSessionCost?: number
 }
 
 // Message bubble component
@@ -290,6 +294,7 @@ export function BrainstormDialog({
   onModelChange,
   activeSkills,
   onToggleSkill,
+  openrouterSessionCost,
 }: BrainstormDialogProps) {
   const [inputValue, setInputValue] = useState("")
   const [showCloseWarning, setShowCloseWarning] = useState(false)
@@ -460,11 +465,19 @@ export function BrainstormDialog({
                 disabled={!canChangeProvider || isStreaming}
                 className="text-sm border border-input rounded-md px-2 py-1 bg-background disabled:opacity-50 max-w-[200px]"
               >
-                <option value="">Default model</option>
+                <option value="">Default (Opus)</option>
                 <option value="claude-sonnet-4-5-20250929">Sonnet 4.5</option>
                 <option value="claude-opus-4-6">Opus 4.6</option>
                 <option value="claude-haiku-4-5-20251001">Haiku 4.5</option>
               </select>
+            )}
+            {/* Claude subscription usage indicator */}
+            {provider === "claude" && !providerHealth?.claude?.disabled && (
+              <SubscriptionUsage enabled={provider === "claude"} />
+            )}
+            {/* OpenRouter session cost indicator */}
+            {provider === "openrouter" && openrouterSessionCost != null && (
+              <OpenRouterCost sessionCost={openrouterSessionCost} />
             )}
             {/* Claude: disable agent behavior toggle (only when Claude is enabled) */}
             {provider === "claude" && onDisableAgentBehaviorChange && !providerHealth?.claude?.disabled && (

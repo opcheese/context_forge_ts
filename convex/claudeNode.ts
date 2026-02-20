@@ -17,6 +17,7 @@ import { query as claudeQuery } from "@anthropic-ai/claude-agent-sdk"
 import { spawn, execSync } from "child_process"
 import * as fs from "fs"
 import * as os from "os"
+import * as path from "path"
 import {
   assembleContextWithConversation,
   extractSystemPromptFromBlocks,
@@ -407,6 +408,47 @@ export const streamBrainstormMessage = action({
       // Record error in LangFuse
       trace.error(fullError)
       await flushLangfuse()
+    }
+  },
+})
+
+/**
+ * Get Claude subscription usage (5-hour and 7-day windows).
+ * Reads OAuth token from ~/.claude/.credentials.json and calls the usage API.
+ */
+export const getSubscriptionUsage = action({
+  args: {},
+  handler: async () => {
+    try {
+      const credPath = path.join(os.homedir(), ".claude", ".credentials.json")
+      if (!fs.existsSync(credPath)) {
+        return { error: "No credentials file found" }
+      }
+      const creds = JSON.parse(fs.readFileSync(credPath, "utf-8"))
+      const token = creds.claudeAiOauth?.accessToken
+      if (!token) return { error: "No OAuth token found" }
+
+      const res = await fetch("https://api.anthropic.com/api/oauth/usage", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "anthropic-beta": "oauth-2025-04-20",
+          "Content-Type": "application/json",
+        },
+      })
+      if (!res.ok) return { error: `HTTP ${res.status}` }
+      const data = await res.json()
+      return {
+        fiveHour: {
+          utilization: data.five_hour?.utilization ?? 0,
+          resetsAt: data.five_hour?.resets_at ?? "",
+        },
+        sevenDay: {
+          utilization: data.seven_day?.utilization ?? 0,
+          resetsAt: data.seven_day?.resets_at ?? "",
+        },
+      }
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : String(e) }
     }
   },
 })

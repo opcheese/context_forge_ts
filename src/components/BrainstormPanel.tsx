@@ -207,6 +207,7 @@ export function BrainstormPanel({ sessionId, compact = false }: BrainstormPanelP
           onModelChange={brainstorm.setModel}
           activeSkills={brainstorm.activeSkills}
           onToggleSkill={brainstorm.toggleSkill}
+          openrouterSessionCost={brainstorm.openrouterSessionCost}
         />
       </>
     )
@@ -350,6 +351,7 @@ export function BrainstormPanel({ sessionId, compact = false }: BrainstormPanelP
         onModelChange={brainstorm.setModel}
         activeSkills={brainstorm.activeSkills}
         onToggleSkill={brainstorm.toggleSkill}
+        openrouterSessionCost={brainstorm.openrouterSessionCost}
       />
     </div>
   )

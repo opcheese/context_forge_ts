@@ -69,6 +69,9 @@ interface UseBrainstormResult {
   activeSkills: Record<string, boolean>
   toggleSkill: (skillId: string) => void
 
+  // OpenRouter session cost (USD)
+  openrouterSessionCost: number
+
   // State
   error: string | null
 }
@@ -111,6 +114,9 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
   const [streamingText, setStreamingText] = useState("")
   const streamingTextRef = useRef("")
   const [error, setError] = useState<string | null>(null)
+
+  // OpenRouter session cost tracking
+  const [openrouterSessionCost, setOpenrouterSessionCost] = useState(0)
 
   // Track previous text for Claude chunk detection
   const prevTextRef = useRef("")
@@ -267,6 +273,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
     setError(null)
     setGenerationId(null)
     setIsStreaming(false)
+    setOpenrouterSessionCost(0)
     prevTextRef.current = ""
     abortControllerRef.current?.abort()
   }, [])
@@ -381,9 +388,28 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
           signal: controller.signal,
         })
 
-        for await (const chunk of generator) {
-          fullText += chunk
-          setStreamingText(fullText)
+        // Manual iteration to capture the return value (token counts)
+        let result: IteratorResult<string, openrouterClient.StreamChatResult>
+        do {
+          result = await generator.next()
+          if (!result.done && result.value) {
+            fullText += result.value
+            setStreamingText(fullText)
+          }
+        } while (!result.done)
+
+        // Calculate cost from token counts
+        const streamResult = result.value
+        if (streamResult?.promptTokens && streamResult?.completionTokens && streamResult?.model) {
+          const pricing = await openrouterClient.getModelPricing(streamResult.model)
+          if (pricing) {
+            const cost = openrouterClient.calculateCost(
+              streamResult.promptTokens,
+              streamResult.completionTokens,
+              pricing
+            )
+            setOpenrouterSessionCost((prev) => prev + cost)
+          }
         }
 
         // Add assistant message to conversation
@@ -683,6 +709,9 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
     // Ephemeral skills
     activeSkills,
     toggleSkill,
+
+    // OpenRouter session cost
+    openrouterSessionCost,
 
     // Error
     error,

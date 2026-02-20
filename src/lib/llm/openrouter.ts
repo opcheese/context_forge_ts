@@ -60,6 +60,52 @@ export interface StreamChatResult {
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1"
 
+// Cached model pricing: modelId -> { prompt: $/token, completion: $/token }
+let pricingCache: Map<string, { prompt: number; completion: number }> | null = null
+let pricingFetchPromise: Promise<void> | null = null
+
+/**
+ * Get pricing for a model (fetches and caches on first call).
+ * Returns null if pricing unavailable.
+ */
+export async function getModelPricing(
+  modelId: string
+): Promise<{ prompt: number; completion: number } | null> {
+  if (!pricingCache) {
+    if (!pricingFetchPromise) {
+      pricingFetchPromise = fetchAndCachePricing()
+    }
+    await pricingFetchPromise
+  }
+  return pricingCache?.get(modelId) ?? null
+}
+
+async function fetchAndCachePricing(): Promise<void> {
+  try {
+    const models = await listModels()
+    pricingCache = new Map()
+    for (const model of models) {
+      pricingCache.set(model.id, {
+        prompt: parseFloat(model.pricing.prompt) || 0,
+        completion: parseFloat(model.pricing.completion) || 0,
+      })
+    }
+  } catch {
+    pricingCache = new Map()
+  }
+}
+
+/**
+ * Calculate cost from token counts and model pricing.
+ */
+export function calculateCost(
+  promptTokens: number,
+  completionTokens: number,
+  pricing: { prompt: number; completion: number }
+): number {
+  return promptTokens * pricing.prompt + completionTokens * pricing.completion
+}
+
 /**
  * Stream chat completion from OpenRouter.
  * Returns an async generator of text chunks.
