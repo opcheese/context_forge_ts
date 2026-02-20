@@ -6,9 +6,9 @@ import { canAccessSession } from "./lib/auth"
 // Default budgets (matches Python implementation)
 export const DEFAULT_BUDGETS = {
   permanent: 50_000,
-  stable: 100_000,
-  working: 100_000,
-  total: 500_000,
+  stable: 50_000,
+  working: 50_000,
+  total: 200_000,
 } as const
 
 export type Budgets = typeof DEFAULT_BUDGETS
