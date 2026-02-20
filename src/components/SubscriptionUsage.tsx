@@ -8,7 +8,26 @@ interface SubscriptionUsageProps {
 export function SubscriptionUsage({ enabled }: SubscriptionUsageProps) {
   const { fiveHour, sevenDay, loading, error } = useSubscriptionUsage(enabled)
 
-  if (!enabled || loading || error) return null
+  if (!enabled) return null
+
+  if (loading) {
+    return (
+      <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground animate-pulse">
+        5h: …
+      </span>
+    )
+  }
+
+  if (error) {
+    return (
+      <span
+        className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground"
+        title={`Usage unavailable: ${error}`}
+      >
+        5h: --
+      </span>
+    )
+  }
 
   const u5 = fiveHour.utilization
   const isWarning = u5 >= 70 && u5 < 90
