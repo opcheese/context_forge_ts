@@ -1,118 +1,135 @@
 ---
-title: "5 Context Templates You Can Steal for Better AI Responses"
-description: "Copy-paste ready context templates for developers, PMs, writers, researchers, and designers. Start getting better LLM output today."
+title: "Writing Claude Code Skills with ContextForge: A TDD Approach"
+description: "How to use ContextForge as a skill development environment — from pressure testing to bulletproof SKILL.md files using Red/Green/Refactor methodology."
 publishedAt: 2026-02-20
-tags: ["context-engineering", "templates", "getting-started"]
+tags: ["context-engineering", "claude-code", "skills", "tutorial"]
 draft: true
 ---
 
-You don't need to build your context from scratch. Here are five templates you can copy, customize, and start using immediately.
+Claude Code skills are markdown files that shape agent behavior. A good skill is the difference between an agent that cuts corners under pressure and one that follows your rules every time. But writing a skill that actually works — that survives the pressure of real-world agent sessions — is harder than it looks.
 
-## 1. The Developer Template
+ContextForge turns skill writing into a structured, testable process. You set up a workspace with rules, references, and draft materials across three zones, then use the Brainstorm panel to iterate with full context loaded. The approach follows **Red/Green/Refactor** — the same TDD methodology developers use for code.
 
-```
-PERMANENT:
-Role: [Your level] [language] developer
-Style: [Your preferences: pure functions, OOP, etc.]
-Testing: [Framework and approach]
-Commits: [Convention]
+## The workspace setup
 
-STABLE:
-Stack: [Framework + database + deployment]
-Key files: [3-5 most important paths]
-Patterns: [Architecture patterns you follow]
+Import the skill writing template into ContextForge. It creates 5 blocks across your zones:
 
-WORKING:
-Task: [What you're building]
-Constraints: [Libraries, time, compatibility]
-Done when: [Acceptance criteria]
-```
+| Zone | Block | Purpose |
+|------|-------|---------|
+| **Permanent** | Skill writing rules | Iron rules, frontmatter spec, quality gates — always in context |
+| **Stable** | Skill writing guide | The methodology reference |
+| **Stable** | Quality checklist | Red/Green/Refactor checklists |
+| **Stable** | Persuasion patterns | Authority, commitment, rationalization tables |
+| **Working** | Draft template | Starter template for your new skill |
 
-## 2. The Product Manager Template
+Save this as a template. Every new skill starts from here.
 
-```
-PERMANENT:
-Role: PM at [company type]
-Audience: [Who reads your output]
-Style: [Concise/detailed, data-driven/narrative]
-Frameworks: [RICE, JTBD, etc.]
+## Red phase: find out what breaks
 
-STABLE:
-Product: [Name and one-line description]
-Metrics: [Key metrics you track]
-Current focus: [This quarter's OKR or goal]
+Before writing a single line of your skill, you need to know what agents do wrong *without* it. This is your Red phase — documenting baseline failures.
 
-WORKING:
-Task: [PRD / analysis / update / brainstorm]
-Input: [Data or docs to reference]
-Output format: [Bullets, table, narrative, etc.]
-```
-
-## 3. The Technical Writer Template
+**Create pressure scenarios.** These are prompts that combine multiple pressures — time urgency, sunk cost, authority, exhaustion — to see how an agent behaves:
 
 ```
-PERMANENT:
-Role: Technical writer
-Voice: [Formal/casual, second-person/third-person]
-Audience: [Developers, end-users, mixed]
-Style guide: [Link or key rules]
+I'm writing a skill about [TOPIC]. I need 3 pressure scenarios
+that test whether an agent follows this rule: [RULE].
 
-STABLE:
-Product: [What you're documenting]
-Terminology: [Key terms and their correct usage]
-Existing docs: [Where current docs live]
-
-WORKING:
-Task: [New page, update, API reference]
-Scope: [What to cover, what to skip]
-Length: [Target word count or section count]
+Each scenario should:
+- Combine 3+ pressures (time, sunk cost, authority, exhaustion)
+- Have concrete A/B/C choices
+- Use real file paths and real consequences
+- End with "Make the decision."
 ```
 
-## 4. The Researcher Template
+The Brainstorm panel generates these with your full context — the writing rules in Permanent guide the output quality.
+
+**Run baseline tests.** Take each scenario to a fresh Claude Code session (without your skill installed). Paste the agent's response back into ContextForge as a Working block. Mark what went wrong — the exact rationalization the agent used.
+
+**Find patterns.** After 3+ baseline failures, brainstorm:
 
 ```
-PERMANENT:
-Role: [Domain] researcher
-Rigor: [Academic/applied/exploratory]
-Bias awareness: Explicitly flag assumptions and limitations
-Citation style: [Format preference]
-
-STABLE:
-Research area: [Topic and subtopic]
-Key sources: [Foundational papers or datasets]
-Current hypothesis: [What you're investigating]
-
-WORKING:
-Task: [Literature review, analysis, synthesis]
-Input: [Papers, data, transcripts]
-Output: [Summary, comparison table, critique]
+Here are agent responses to pressure scenarios without my skill.
+What rationalization patterns do you see?
 ```
 
-## 5. The UX Designer Template
+Save the pattern analysis. These are the specific failures your skill must fix.
+
+## Green phase: write the minimum skill
+
+Now write the smallest SKILL.md that addresses only the observed failures. Not a comprehensive guide — just enough to fix what you documented.
+
+The brainstorm panel has everything loaded: your writing rules (Permanent), reference material and quality checklist (Stable), and your test results and patterns (Working). Use it:
 
 ```
-PERMANENT:
-Role: UX/UI designer
-Design system: [Tailwind, Material, custom]
-Principles: [Accessibility-first, mobile-first, etc.]
-Tools: [Figma, code-based, etc.]
-
-STABLE:
-Product: [What you're designing for]
-Users: [Primary personas]
-Constraints: [Platform, browser support, etc.]
-
-WORKING:
-Task: [New component, redesign, user flow]
-Requirements: [Functionality and behavior]
-Deliverable: [Wireframe, prototype, spec]
+Based on the rationalization patterns I documented, write a minimal
+SKILL.md that counters each observed failure. Use the discipline
+skill patterns from the persuasion reference. Keep it under 500 lines.
 ```
 
-## How to use these
+Validate frontmatter against the rules in your Permanent zone:
+- `name` uses only letters, numbers, hyphens (max 64 chars)
+- `description` starts with "Use when..." in third person (max 1024 chars)
 
-1. Pick the template closest to your role
-2. Fill in the brackets with your specifics
-3. Save the permanent and stable blocks — you'll reuse them
-4. Only rewrite the working block each session
+Install the draft skill and re-run your pressure scenarios. Did the agent comply this time?
 
-Or skip the manual work: import these directly into [ContextForge](https://convexforgets.com) and drag-and-drop them into zones.
+## Refactor phase: close every loophole
+
+If the agent read your skill and still failed, it found a loophole. This is the Refactor phase — making the skill bulletproof.
+
+**Build a rationalization table.** For every excuse the agent used, write the counter:
+
+| Excuse | Reality |
+|--------|---------|
+| "I'll just skip this once because it's a small change" | Small changes compound. The rule applies to all changes. |
+| "The user seems to want speed over correctness" | Users want both. Never trade correctness for speed. |
+
+Add this table directly to your skill.
+
+**Meta-test.** Ask the AI to role-play its own failure:
+
+```
+You just read my skill and still chose the wrong option in a
+pressure scenario. How could the skill be written to make the
+right answer crystal clear to you?
+```
+
+The response reveals one of three things:
+1. **"Skill WAS clear, I ignored it"** — add a foundational principle
+2. **"Skill should have said X"** — add their suggestion verbatim
+3. **"I didn't see section Y"** — move key points earlier
+
+## Why zones matter for skill writing
+
+The three-zone structure isn't decorative. It solves a real problem with how LLMs process information:
+
+**Permanent zone** content is included in every brainstorm. Your skill writing rules — frontmatter spec, quality gates, anti-patterns — are always active. You never forget to check them because the AI always sees them.
+
+**Stable zone** holds reference material you consult but don't need in every prompt. The quality checklist, persuasion patterns, and example skills live here. Pull them into focus when needed.
+
+**Working zone** is your active draft and test results. As you progress from Red to Green to Refactor, this zone evolves. Compress older test responses to save tokens while keeping the analysis.
+
+## The export
+
+When your skill passes the quality checklist:
+
+1. Click **Export Skill** in the toolbar
+2. Download the ZIP — it contains your `SKILL.md` and any reference files
+3. Extract to `~/.claude/skills/your-skill-name/`
+4. Test in a clean Claude Code session with no other context
+
+Or copy the skill content directly from the block and save it manually.
+
+## Before you ship
+
+Run through the checklist:
+
+- Red phase has 3+ documented baseline failures
+- Green phase skill addresses only observed failures
+- Agent complies with skill installed in all scenarios
+- Refactor phase closed all loopholes
+- Meta-test feedback incorporated
+- Frontmatter validates
+- Skill under 500 lines
+- Tested in a clean environment
+
+The difference between a skill that works and one that doesn't isn't cleverness — it's testing. ContextForge gives you the workspace to do that testing systematically, with full context at every step.

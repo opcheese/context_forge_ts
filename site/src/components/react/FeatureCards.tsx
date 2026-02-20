@@ -53,13 +53,28 @@ const features = [
 
 export function FeatureCards() {
   return (
-    <motion.div
-      className="grid md:grid-cols-3 gap-6"
-      variants={sectionStagger}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-80px" }}
-    >
+    <div>
+      <motion.div
+        className="text-center mb-10 sm:mb-14"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      >
+        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+          Everything you need to manage context
+        </h2>
+        <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+          A complete toolkit for organizing the knowledge that powers your AI workflows.
+        </p>
+      </motion.div>
+      <motion.div
+        className="grid md:grid-cols-3 gap-6"
+        variants={sectionStagger}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-80px" }}
+      >
       {features.map((feature) => (
         <motion.div
           key={feature.title}
@@ -73,6 +88,7 @@ export function FeatureCards() {
           <p className="text-muted-foreground leading-relaxed text-[15px]">{feature.description}</p>
         </motion.div>
       ))}
-    </motion.div>
+      </motion.div>
+    </div>
   )
 }

@@ -1,66 +1,99 @@
 ---
-title: "Context Engineering for Product Managers"
-description: "Product managers can get dramatically better AI output by structuring their context. Here's a practical framework with real examples."
+title: "From Idea to User Stories: A PM Pipeline Powered by ContextForge"
+description: "An 8-step product management workflow — from problem brief to sprint-ready stories — using CIRCLES, EARS, and ContextForge's zone-based context management."
 publishedAt: 2026-02-20
-tags: ["context-engineering", "product-management", "tutorial"]
+tags: ["context-engineering", "product-management", "tutorial", "workflows"]
 draft: true
 ---
 
-Product managers use AI differently than developers. You're not writing code — you're drafting PRDs, analyzing user feedback, writing stakeholder updates, and brainstorming features. But the same principle applies: **structured context produces better output.**
+Most PMs use AI the same way: paste some notes, ask for a PRD, get generic output, manually fix it for an hour. The problem isn't the AI — it's that you're feeding it a blob of unstructured context and hoping for magic.
 
-## The PM permanent zone
+What if your AI assistant had the same structured methodology you use? What if it pushed back when you jumped to solutions, enforced requirement syntax, and carried forward every decision you made?
 
-Your permanent context should capture your communication style and role:
+That's what ContextForge's **Project Kickstart** workflow does. It's an 8-step PM pipeline that takes you from raw idea to sprint-ready user stories, with a built-in kill gate to prevent wasted effort.
 
-```
-Role: Product manager at an early-stage B2B SaaS company
-Audience: Technical founders, senior engineers, design leads
-Style: Concise, data-informed, bias toward action
-Format preferences: Bullet points over paragraphs. Tables for comparisons.
-Frameworks: RICE for prioritization, Jobs-to-be-Done for user research
-```
+## The pipeline at a glance
 
-## Project-level stable context
+| Step | Method | What you produce |
+|------|--------|-----------------|
+| L0: Brief | CIRCLES framework | Problem statement + appetite |
+| L1: IRD | EARS syntax | Testable requirements |
+| GATE | Decision framework | GO / PIVOT / KILL |
+| L2: Personas | Proto-personas | 2-3 behavioral archetypes |
+| L3: Scenarios | Journey mapping | User flows with pain scores |
+| L3.5: Mocks | Fat-marker sketches | Key screen layouts |
+| L4: Conceptual Model | Domain modeling | Glossary + relationships |
+| L5: Stories | Story mapping | Prioritized vertical slices |
 
-This changes per product or initiative:
+Each step has its own ContextForge session with pre-loaded templates and reference cards. A PM persona system prompt shapes every AI interaction — it enforces structured thinking and pushes back on feature-first reasoning.
 
-```
-Product: ContextForge — context management tool for LLM power users
-Stage: Pre-revenue, ~200 beta users
-Key metrics: DAU, sessions per user, context blocks created
-Current OKR: Increase weekly active sessions from 3.2 to 5.0
-Competitors: PromptLayer, LangSmith (different focus but adjacent)
-```
+## How the zones work
 
-## Working context examples
+Every session in the pipeline has three zones:
 
-**Writing a PRD:**
-```
-Task: Write a PRD for "Linked Blocks" feature
-Input: Design doc at docs/plans/linked-blocks-shaping.md
-Audience: Engineering team (3 devs)
-Include: Problem statement, user stories, success metrics, out of scope
-```
+**Permanent** contains the PM persona — a system prompt that enforces CIRCLES, EARS, and user-oriented thinking. It stays the same across all 8 steps. This is what prevents the AI from giving you generic MBA-speak.
 
-**Analyzing feedback:**
-```
-Task: Synthesize themes from 15 user interview transcripts
-Focus: What blocks adoption? What drives retention?
-Output: Top 5 themes with supporting quotes, recommended actions
-```
+**Stable** swaps with each step. At L0 you get the CIRCLES reference card and a brief template. At L1 you get EARS syntax patterns and an IRD template. Each step gets exactly the methodology it needs.
 
-**Stakeholder update:**
-```
-Task: Write weekly stakeholder update
-Audience: CEO + CTO
-Tone: Direct, highlight blockers and decisions needed
-Cover: Linked blocks progress, beta user growth, next week priorities
-```
+**Working** is where you create. It starts empty and accumulates your outputs as you advance through the pipeline. By L5, your Working zone contains the full chain: brief, requirements, gate decision, personas, scenarios, and conceptual model — everything needed to write stories.
 
-## Why this works for PMs
+## Walking through a step: L0 Brief
 
-Without context structure, you get generic MBA-speak from AI. The kind of output that sounds impressive but says nothing. With structured zones, you get output that sounds like *you* wrote it, because the AI knows your voice, your product, and your current focus.
+You open the first step. Your zones are ready:
 
-The permanent zone prevents style drift. The stable zone keeps the AI grounded in your product reality. The working zone focuses each session on exactly what you need.
+1. Paste raw materials into Working — meeting notes, client emails, product ideas, whatever you have
+2. Open Brainstorm and say: *"Walk me through CIRCLES for this project"*
+3. The PM persona guides you through each letter of CIRCLES — Comprehend, Identify, Report, Cut, List, Evaluate, Summarize
+4. It will push back if you jump to solutions too early. That's intentional.
+5. Set the **appetite** — a time budget, not an estimate. "This is worth 6 weeks" is a decision. "This will take 6 weeks" is a guess.
+6. Save the completed brief to Working
 
-*Coming soon: full walkthrough with ContextForge screenshots.*
+Before advancing, check:
+- Is the problem stated from the user's perspective (not as a feature request)?
+- Is the appetite a decision, not a guess?
+- Do you have at least one customer segment specific enough to find and interview?
+
+## The kill gate
+
+Step 3 is the hardest. After writing your brief and requirements, you run the GATE decision: **GO, PIVOT, or KILL**.
+
+The AI evaluates evidence, risks, and decision criteria. It's honest. If your evidence is weak, it says so. If your requirements are vague, it calls it out.
+
+This is where most PM workflows fail — they don't have a formal decision point. Without a gate, you invest weeks in personas and stories for a project that should have been killed at the brief stage.
+
+## Carry-forward: context that compounds
+
+The key mechanic is **carry-forward**. When you advance from one step to the next:
+
+- **Permanent carries** — the PM persona stays active
+- **Working carries** — your outputs accumulate
+- **Stable swaps** — each step loads fresh templates
+
+By L5 (Stories), the AI has your full context: the problem brief, testable requirements, gate decision, personas, and journey maps. When it writes user stories, every story traces back through the chain. No story exists in a vacuum.
+
+## Requirements that are actually testable
+
+The L1 step uses **EARS syntax** — a pattern system for writing requirements that can be turned directly into test cases:
+
+- **WHEN** [trigger], **THE SYSTEM SHALL** [response] — event-driven
+- **WHILE** [state], **THE SYSTEM SHALL** [behavior] — state-driven
+- **IF** [condition], **THEN THE SYSTEM SHALL** [response] — conditional
+- **THE SYSTEM SHALL** [behavior] — ubiquitous (always true)
+
+Every requirement follows one of these patterns. If you can't write a test case from the sentence alone, the requirement isn't specific enough.
+
+## Getting started
+
+1. Import `project-kickstart-workflow.zip` into ContextForge using **Import Skill**
+2. Name your project and start the workflow
+3. Walk through each step — the templates and reference cards guide you
+4. Use Brainstorm at each step with your full context loaded
+5. Advance when your quality checklist passes
+
+The entire pipeline exports as a Claude Code skill, so your team can run the same methodology outside of ContextForge too.
+
+## Why structure beats raw prompting
+
+Without this pipeline, a PM asking AI for a PRD gets a template filled with platitudes. With it, you get output grounded in your specific problem, your specific users, and your specific constraints — because every piece of context was built methodically through 8 steps of structured thinking.
+
+The AI doesn't replace your judgment. It amplifies it — by holding the full context while you focus on the current decision.

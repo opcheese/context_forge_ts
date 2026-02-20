@@ -14,7 +14,22 @@ the block list. Reference the existing DnD setup.`
 
 export function BeforeAfter() {
   return (
-    <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+    <div>
+      <motion.div
+        className="text-center mb-10"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      >
+        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+          Full control over every prompt
+        </h2>
+        <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+          Add or remove any piece of content at any point. Your context, your rules.
+        </p>
+      </motion.div>
+      <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
       {/* Before */}
       <motion.div
         initial={{ opacity: 0, x: -20 }}
@@ -75,6 +90,7 @@ export function BeforeAfter() {
           </div>
         </div>
       </motion.div>
+      </div>
     </div>
   )
 }

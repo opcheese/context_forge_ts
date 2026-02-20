@@ -28,7 +28,22 @@ const steps = [
 
 export function StepsSection() {
   return (
-    <div className="grid md:grid-cols-3 gap-8 md:gap-6 relative">
+    <div>
+      <motion.div
+        className="text-center mb-10 sm:mb-14"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      >
+        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+          Build context, brainstorm, keep what matters
+        </h2>
+        <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+          Use what you built to have an informed conversation. Then save to context only what you need.
+        </p>
+      </motion.div>
+      <div className="grid md:grid-cols-3 gap-8 md:gap-6 relative">
       {/* Connector line */}
       <motion.div
         className="hidden md:block absolute top-10 left-[calc(16.67%+24px)] right-[calc(16.67%+24px)] h-px bg-border"
@@ -48,6 +63,7 @@ export function StepsSection() {
           <p className="text-muted-foreground text-[15px] leading-relaxed">{item.description}</p>
         </div>
       ))}
+      </div>
     </div>
   )
 }
