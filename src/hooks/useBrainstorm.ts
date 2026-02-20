@@ -199,6 +199,10 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
     if (generation.status === "error" && isStreaming) {
       setIsStreaming(false)
       const errorMsg = generation.error || "Unknown error"
+      console.error("[Claude Brainstorm] Generation error:", errorMsg)
+      if (generation.text?.trim()) {
+        console.error("[Claude Brainstorm] Partial text before error:", generation.text)
+      }
       setError(errorMsg)
       onError?.(errorMsg)
       setStreamingText("")
@@ -498,6 +502,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
           return
         }
         const message = err instanceof Error ? err.message : "Unknown error"
+        console.error(`[Brainstorm] ${provider} error:`, err)
         setError(message)
         onError?.(message)
       } finally {
