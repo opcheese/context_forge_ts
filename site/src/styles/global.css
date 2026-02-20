@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@plugin "@tailwindcss/typography";
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: "Bricolage Grotesque", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(0.995 0.003 80);
+  --foreground: oklch(0.16 0.01 55);
+  --card: oklch(1 0.002 80);
+  --card-foreground: oklch(0.16 0.01 55);
+  --popover: oklch(1 0.002 80);
+  --popover-foreground: oklch(0.16 0.01 55);
+  --primary: oklch(0.22 0.012 55);
+  --primary-foreground: oklch(0.985 0.003 80);
+  --secondary: oklch(0.965 0.005 80);
+  --secondary-foreground: oklch(0.22 0.012 55);
+  --muted: oklch(0.96 0.005 80);
+  --muted-foreground: oklch(0.52 0.01 55);
+  --accent: oklch(0.96 0.005 80);
+  --accent-foreground: oklch(0.22 0.012 55);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.91 0.006 80);
+  --input: oklch(0.91 0.006 80);
+  --ring: oklch(0.68 0.02 55);
+}
+
+.dark {
+  --background: oklch(0.155 0.008 55);
+  --foreground: oklch(0.94 0.005 80);
+  --card: oklch(0.20 0.008 55);
+  --card-foreground: oklch(0.94 0.005 80);
+  --popover: oklch(0.20 0.008 55);
+  --popover-foreground: oklch(0.94 0.005 80);
+  --primary: oklch(0.90 0.008 80);
+  --primary-foreground: oklch(0.20 0.008 55);
+  --secondary: oklch(0.26 0.008 55);
+  --secondary-foreground: oklch(0.94 0.005 80);
+  --muted: oklch(0.26 0.008 55);
+  --muted-foreground: oklch(0.65 0.01 80);
+  --accent: oklch(0.26 0.008 55);
+  --accent-foreground: oklch(0.94 0.005 80);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0.005 80 / 12%);
+  --input: oklch(1 0.005 80 / 15%);
+  --ring: oklch(0.52 0.015 55);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "ss01", "ss02";
+    text-rendering: optimizeLegibility;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.7 0 0 / 25%);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.6 0 0 / 40%);
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    background: oklch(0.5 0 0 / 30%);
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.6 0 0 / 45%);
+  }
+}

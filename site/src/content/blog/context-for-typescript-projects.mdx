@@ -1,0 +1,77 @@
+---
+title: "How I Manage Context for a TypeScript SaaS Project"
+description: "A practical walkthrough of setting up context zones for a real TypeScript project — from system role to task-specific working context."
+publishedAt: 2026-02-20
+tags: ["context-engineering", "typescript", "tutorial"]
+---
+
+I build SaaS products with TypeScript, React, and Convex. Every day I'm in Claude or ChatGPT asking for help with components, database schemas, API design. Here's how I structure my context to get consistently good results.
+
+## My permanent zone
+
+This never changes, regardless of which project I'm working on:
+
+```
+Role: Senior TypeScript engineer
+Style: Pure functions, no classes, minimal abstractions
+Commits: Conventional commits (feat:, fix:, docs:)
+Testing: Vitest for unit tests, Playwright for E2E
+Opinions: YAGNI ruthlessly. Prefer composition over inheritance.
+```
+
+That's it — 5 lines. I set this once and it applies to every session.
+
+## Project-level stable context
+
+When I switch between projects, I swap this block:
+
+```
+Stack: React 19 + TanStack Router + Convex + Tailwind v4
+UI: shadcn/ui components, Bricolage Grotesque font
+State: Convex reactive queries (no Redux, no Zustand)
+Auth: Convex Auth with GitHub OAuth
+Deploy: Vercel (frontend) + Convex (backend)
+File conventions: kebab-case files, PascalCase components
+```
+
+I also keep a "reference" block with key file paths:
+
+```
+Key files:
+- src/routes/__root.tsx — root layout, auth guard
+- convex/schema.ts — database schema (source of truth)
+- src/components/ui/ — shadcn primitives
+- convex/functions/ — all backend mutations/queries
+```
+
+## Working context (changes every task)
+
+This is the only part I rewrite each session:
+
+```
+Task: Add drag-and-drop reordering to the block list
+Constraints: Use @dnd-kit/core (already installed). Must work on mobile.
+Relevant code: src/components/BlockList.tsx (current implementation)
+Acceptance: Blocks reorder on drop. Order persists to Convex. Undo supported.
+```
+
+## The difference this makes
+
+Without structured context, I'd paste my entire component file and say "add drag and drop." The LLM would guess my style, maybe use the wrong library, and produce code that doesn't match my patterns.
+
+With zones, the LLM knows:
+- To write pure functions (permanent)
+- That I'm using Convex, not REST APIs (stable)
+- Exactly what "done" looks like (working)
+
+The result: first-attempt code that actually fits my codebase.
+
+## Try it yourself
+
+1. Open [ContextForge](https://convexforgets.com)
+2. Create your permanent zone (5-10 lines about your style)
+3. Add a stable block for your current project's stack
+4. Write a working block for today's task
+5. Export and paste into your LLM of choice
+
+You'll notice the difference immediately.

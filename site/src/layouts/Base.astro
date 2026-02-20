@@ -1,0 +1,67 @@
+---
+import "../styles/global.css"
+import SEOHead from "../components/SEOHead.astro"
+
+interface Props {
+  title: string
+  description: string
+  ogImage?: string
+  ogType?: string
+  publishedAt?: Date
+  updatedAt?: Date
+}
+
+const { title, description, ogImage, ogType, publishedAt, updatedAt } = Astro.props
+const fullTitle = title === "ContextForge" ? title : `${title} | ContextForge`
+---
+
+<!doctype html>
+<html lang="en" class="">
+  <head>
+    <script is:inline>
+      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        document.documentElement.classList.add("dark")
+      }
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <meta name="description" content={description} />
+    <SEOHead
+      title={fullTitle}
+      description={description}
+      ogImage={ogImage}
+      ogType={ogType}
+      publishedAt={publishedAt}
+      updatedAt={updatedAt}
+    />
+    <title>{fullTitle}</title>
+
+    <!-- JSON-LD WebApplication -->
+    <script is:inline type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "ContextForge",
+        "url": "https://convexforgets.com",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Web",
+        "description": "Organize, structure, and manage context for LLM conversations. Build reusable context that makes every prompt count.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

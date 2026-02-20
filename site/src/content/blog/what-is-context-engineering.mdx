@@ -1,0 +1,45 @@
+---
+title: "What Is Context Engineering for LLMs?"
+description: "Context engineering is the practice of deliberately structuring what you feed to an LLM. Learn why it matters and how to get started."
+publishedAt: 2026-02-20
+tags: ["context-engineering", "getting-started"]
+---
+
+Every time you open ChatGPT, Claude, or any other LLM and paste a wall of text — you're doing context engineering. You're just doing it badly.
+
+**Context engineering** is the practice of deliberately structuring the information you provide to a language model so it can do its best work. Instead of dumping everything into a single prompt, you organize context into layers with different lifespans and purposes.
+
+## Why does it matter?
+
+LLMs don't remember. Every conversation starts from zero. The only thing that shapes their behavior is what you put in the context window — and that window has limits.
+
+Most people waste those limits:
+- Repeating the same system instructions every session
+- Mixing permanent rules with temporary tasks
+- Losing track of which context blocks are still relevant
+- Copy-pasting from documents without trimming irrelevant sections
+
+The result? Inconsistent answers, wasted tokens, and the frustrating feeling that the AI "forgot" what you told it.
+
+## The three-zone model
+
+ContextForge uses a simple mental model: **Permanent**, **Stable**, and **Working** zones.
+
+- **Permanent** — Things that never change: your role definition, coding style, communication preferences. Set once, reuse forever.
+- **Stable** — Project-level context: tech stack, architecture decisions, reference docs. Changes when you switch projects.
+- **Working** — The current task: what you're building right now, relevant code snippets, immediate constraints. Changes every session.
+
+This isn't just organization for organization's sake. When you separate context by lifespan, you can:
+1. Reuse permanent and stable blocks across sessions without re-typing
+2. Swap working context without losing your foundation
+3. Stay within token budgets by compressing or dropping the right layers
+
+## Getting started
+
+You don't need a tool to start context engineering (though [ContextForge](https://convexforgets.com) makes it much easier). Start by answering three questions before your next LLM session:
+
+1. **What never changes?** Write it down once. That's your permanent zone.
+2. **What's true for this project?** Tech stack, style guides, domain knowledge. That's stable.
+3. **What am I doing right now?** The specific task and its constraints. That's working.
+
+Even this simple separation will noticeably improve your results.

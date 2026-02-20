@@ -1,0 +1,74 @@
+---
+title: "From Messy Prompts to Structured Context: A Before/After Walkthrough"
+description: "See exactly how unstructured prompts become organized context zones — with real examples and side-by-side comparisons."
+publishedAt: 2026-02-20
+tags: ["context-engineering", "tutorial"]
+draft: true
+---
+
+Let's take a real prompt — the kind most people paste into ChatGPT — and transform it step by step into structured context.
+
+## The messy prompt
+
+Here's what most people type:
+
+> You are an expert TypeScript developer. I'm building a SaaS product. The tech stack is React, Convex, TanStack Router, Tailwind. My coding style prefers small pure functions, no classes, conventional commits. Current task: add drag-and-drop reordering to the block list. Reference the existing DnD setup.
+
+This works. Barely. The LLM gets some useful information, but everything is mixed together — permanent preferences, project details, and the current task are all in one paragraph.
+
+## Step 1: Identify what never changes
+
+Read through your prompt and highlight anything that's true regardless of project or task:
+
+- "Expert TypeScript developer" → **Permanent** (role)
+- "Small pure functions, no classes" → **Permanent** (style)
+- "Conventional commits" → **Permanent** (convention)
+
+```
+PERMANENT:
+Role: Senior TypeScript engineer
+Style: Pure functions · No classes · Minimal abstractions
+Commits: Conventional (feat:, fix:, docs:)
+```
+
+## Step 2: Separate project context
+
+What's specific to this project but stable across sessions?
+
+- "React, Convex, TanStack Router, Tailwind" → **Stable** (stack)
+- "Existing DnD setup" → **Stable** (reference)
+
+```
+STABLE:
+Stack: React 19 · Convex · TanStack Router · Tailwind v4
+DnD: @dnd-kit/core already installed
+Reference: src/components/dnd/ (existing implementation)
+```
+
+## Step 3: Isolate the current task
+
+What changes every session?
+
+- "Add drag-and-drop reordering to the block list" → **Working**
+
+```
+WORKING:
+Task: Add drag-and-drop block reordering
+Target: src/components/BlockList.tsx
+Must work on: Desktop + mobile touch
+Done when: Blocks reorder on drop, order persists
+```
+
+## The result
+
+**Before:** 3 sentences, everything mixed, no reusability.
+
+**After:** 3 zones, each reusable at its own pace. The permanent zone follows you everywhere. The stable zone follows you through this project. The working zone is fresh each session.
+
+Next session, you only rewrite the working block. Everything else stays.
+
+## Try it now
+
+Take your last LLM prompt and run it through these three steps. You'll be surprised how much of it is permanent or stable context you've been retyping every time.
+
+Or let [ContextForge](https://convexforgets.com) do the organizing for you — drag blocks between zones, track token counts, and export structured context in one click.

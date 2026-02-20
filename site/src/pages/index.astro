@@ -1,0 +1,122 @@
+---
+import Base from "../layouts/Base.astro"
+import Header from "../components/Header.astro"
+import Footer from "../components/Footer.astro"
+import { HeroAnimated } from "../components/react/HeroAnimated"
+import { HeroZoneDemo } from "../components/react/HeroZoneDemo"
+import { FeatureCards } from "../components/react/FeatureCards"
+import { BeforeAfter } from "../components/react/BeforeAfter"
+import { StepsSection } from "../components/react/StepsSection"
+---
+
+<Base
+  title="ContextForge"
+  description="Organize, structure, and manage context for LLM conversations. Build reusable context that makes every prompt count."
+>
+  <div class="min-h-screen bg-background text-foreground overflow-hidden">
+    <!-- Ambient background texture -->
+    <div
+      class="fixed inset-0 pointer-events-none opacity-[0.015] dark:opacity-[0.03]"
+      style="background-image: radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0); background-size: 32px 32px;"
+    />
+
+    <Header />
+
+    <!-- Hero -->
+    <section class="relative z-10 pt-14 pb-14 sm:pt-20 sm:pb-20">
+      <div class="absolute top-12 left-1/4 w-64 h-64 bg-orange-500/5 dark:bg-orange-400/5 rounded-full blur-3xl pointer-events-none" />
+      <div class="absolute bottom-0 right-1/4 w-80 h-80 bg-amber-500/5 dark:bg-amber-400/5 rounded-full blur-3xl pointer-events-none" />
+
+      <div class="mx-auto max-w-6xl px-6 sm:px-8">
+        <HeroAnimated client:load />
+
+        <div class="mt-16 sm:mt-20 max-w-2xl">
+          <HeroZoneDemo client:visible />
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="relative z-10 py-14 sm:py-20 border-t border-border/50">
+      <div class="mx-auto max-w-6xl px-6 sm:px-8">
+        <div class="text-center mb-10 sm:mb-14">
+          <h2 class="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+            Everything you need to manage context
+          </h2>
+          <p class="text-muted-foreground text-lg max-w-xl mx-auto">
+            A complete toolkit for organizing the knowledge that powers your AI workflows.
+          </p>
+        </div>
+
+        <FeatureCards client:visible />
+      </div>
+    </section>
+
+    <!-- Before / After -->
+    <section class="relative z-10 py-14 sm:py-20 border-t border-border/50">
+      <div class="mx-auto max-w-6xl px-6 sm:px-8">
+        <div class="text-center mb-10">
+          <h2 class="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+            From chaos to clarity
+          </h2>
+          <p class="text-muted-foreground text-lg max-w-xl mx-auto">
+            The same information. Radically different results.
+          </p>
+        </div>
+
+        <BeforeAfter client:visible />
+      </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="relative z-10 py-14 sm:py-20 border-t border-border/50">
+      <div class="mx-auto max-w-6xl px-6 sm:px-8">
+        <div class="text-center mb-10 sm:mb-14">
+          <h2 class="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+            Three steps to better AI conversations
+          </h2>
+          <p class="text-muted-foreground text-lg max-w-xl mx-auto">
+            Start small, build up. Your context library grows with every session.
+          </p>
+        </div>
+
+        <StepsSection client:visible />
+      </div>
+    </section>
+
+    <!-- Bottom CTA -->
+    <section class="relative z-10 py-14 sm:py-20 border-t border-border/50">
+      <div class="mx-auto max-w-6xl px-6 sm:px-8">
+        <div class="relative rounded-3xl border border-border bg-card/50 overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-orange-500/5 dark:from-amber-400/5 dark:to-orange-400/5 pointer-events-none" />
+
+          <div class="relative px-8 py-14 sm:px-14 sm:py-18 text-center">
+            <div class="inline-flex items-center gap-2 mb-5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-500 dark:text-amber-400">
+                <path d="m7.5 4.27 9 5.15" /><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" /><path d="m3.3 7 8.7 5 8.7-5" /><path d="M12 22V12" />
+              </svg>
+              <span class="text-sm font-medium text-muted-foreground">Open source, forever free</span>
+            </div>
+            <h2 class="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+              Ready to forge better context?
+            </h2>
+            <p class="text-muted-foreground text-lg mb-8 max-w-lg mx-auto">
+              Stop pasting raw text into chat windows. Start building structured context that compounds.
+            </p>
+            <a
+              href="/app/login"
+              class="inline-flex items-center justify-center rounded-xl text-base font-semibold bg-primary text-primary-foreground hover:bg-primary/90 h-12 px-8 shadow-lg shadow-primary/10 gap-2.5 transition-colors"
+            >
+              Get Started
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <Footer />
+  </div>
+</Base>

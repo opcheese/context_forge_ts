@@ -1,0 +1,93 @@
+<!DOCTYPE html><html lang="en" class=""> <head><script>
+      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        document.documentElement.classList.add("dark")
+      }
+    </script><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"><meta name="description" content="Context engineering is the practice of deliberately structuring what you feed to an LLM. Learn why it matters and how to get started."><link rel="canonical" href="https://convexforgets.com/blog/what-is-context-engineering/"><!-- Open Graph --><meta property="og:title" content="What Is Context Engineering for LLMs? | ContextForge"><meta property="og:description" content="Context engineering is the practice of deliberately structuring what you feed to an LLM. Learn why it matters and how to get started."><meta property="og:type" content="article"><meta property="og:url" content="https://convexforgets.com/blog/what-is-context-engineering/"><meta property="og:image" content="https://convexforgets.com/og-default.png"><meta property="og:site_name" content="ContextForge"><!-- Twitter --><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="What Is Context Engineering for LLMs? | ContextForge"><meta name="twitter:description" content="Context engineering is the practice of deliberately structuring what you feed to an LLM. Learn why it matters and how to get started."><meta name="twitter:image" content="https://convexforgets.com/og-default.png"><meta property="article:published_time" content="2026-02-20T00:00:00.000Z"><title>What Is Context Engineering for LLMs? | ContextForge</title><!-- JSON-LD WebApplication --><script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "ContextForge",
+        "url": "https://convexforgets.com",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Web",
+        "description": "Organize, structure, and manage context for LLM conversations. Build reusable context that makes every prompt count.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    </script><link rel="stylesheet" href="/_astro/_id_.BTMadzd5.css"></head> <body>  <div class="min-h-screen bg-background text-foreground flex flex-col"> <header class="relative z-10 border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0"> <div class="mx-auto max-w-6xl px-6 sm:px-8 py-3 flex items-center justify-between"> <a href="/" class="flex items-center gap-2.5"> <div class="w-7 h-7 rounded-lg bg-foreground/5 border border-border flex items-center justify-center"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-foreground/70"> <path d="M7 10H6a4 4 0 0 1-4-4 1 1 0 0 1 1-1h4"></path> <path d="M7 5a1 1 0 0 1 1-1h13a1 1 0 0 1 1 1 7 7 0 0 1-7 7H8a1 1 0 0 1-1-1z"></path> <path d="M9 12v5a1 1 0 0 0 1 1h1"></path> <path d="M15 12v5a1 1 0 0 1-1 1h-1"></path> <path d="M7 17h10"></path> <path d="M6 21h12"></path> </svg> </div> <span class="text-lg font-bold tracking-tight">ContextForge</span> </a> <div class="flex items-center gap-3"> <button id="theme-toggle" class="w-8 h-8 rounded-lg border border-border bg-background hover:bg-accent flex items-center justify-center transition-colors" aria-label="Toggle theme"> <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground hidden"> <circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path> </svg> <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground hidden"> <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path> </svg> </button> <a href="/app/login" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+Sign In
+</a> <a href="/app/login" class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 transition-colors">
+Get Started
+</a> </div> </div> </header> <script>
+  // Theme toggle
+  const toggle = document.getElementById("theme-toggle")
+  const sunIcon = document.getElementById("sun-icon")
+  const moonIcon = document.getElementById("moon-icon")
+
+  function updateIcons() {
+    const isDark = document.documentElement.classList.contains("dark")
+    sunIcon.classList.toggle("hidden", !isDark)
+    moonIcon.classList.toggle("hidden", isDark)
+  }
+
+  updateIcons()
+
+  toggle.addEventListener("click", () => {
+    document.documentElement.classList.toggle("dark")
+    updateIcons()
+  })
+</script> <main class="flex-1 mx-auto max-w-3xl px-6 sm:px-8 py-14 sm:py-20"> <article> <header class="mb-10"> <div class="flex flex-wrap gap-2 mb-4"> <span class="inline-block px-2 py-0.5 rounded-md text-xs font-medium bg-secondary text-secondary-foreground"> context-engineering </span><span class="inline-block px-2 py-0.5 rounded-md text-xs font-medium bg-secondary text-secondary-foreground"> getting-started </span> </div> <h1 class="text-3xl sm:text-4xl font-bold tracking-tight mb-4">What Is Context Engineering for LLMs?</h1> <div class="flex items-center gap-3 text-sm text-muted-foreground"> <span>ContextForge Team</span> <span>&middot;</span> <time datetime="2026-02-20T00:00:00.000Z">February 19, 2026</time> </div> </header> <div class="prose prose-neutral dark:prose-invert max-w-none prose-headings:font-semibold prose-a:text-primary prose-a:underline prose-a:underline-offset-2">  <p>Every time you open ChatGPT, Claude, or any other LLM and paste a wall of text — you’re doing context engineering. You’re just doing it badly.</p>
+<p><strong>Context engineering</strong> is the practice of deliberately structuring the information you provide to a language model so it can do its best work. Instead of dumping everything into a single prompt, you organize context into layers with different lifespans and purposes.</p>
+<h2 id="why-does-it-matter">Why does it matter?</h2>
+<p>LLMs don’t remember. Every conversation starts from zero. The only thing that shapes their behavior is what you put in the context window — and that window has limits.</p>
+<p>Most people waste those limits:</p>
+<ul>
+<li>Repeating the same system instructions every session</li>
+<li>Mixing permanent rules with temporary tasks</li>
+<li>Losing track of which context blocks are still relevant</li>
+<li>Copy-pasting from documents without trimming irrelevant sections</li>
+</ul>
+<p>The result? Inconsistent answers, wasted tokens, and the frustrating feeling that the AI “forgot” what you told it.</p>
+<h2 id="the-three-zone-model">The three-zone model</h2>
+<p>ContextForge uses a simple mental model: <strong>Permanent</strong>, <strong>Stable</strong>, and <strong>Working</strong> zones.</p>
+<ul>
+<li><strong>Permanent</strong> — Things that never change: your role definition, coding style, communication preferences. Set once, reuse forever.</li>
+<li><strong>Stable</strong> — Project-level context: tech stack, architecture decisions, reference docs. Changes when you switch projects.</li>
+<li><strong>Working</strong> — The current task: what you’re building right now, relevant code snippets, immediate constraints. Changes every session.</li>
+</ul>
+<p>This isn’t just organization for organization’s sake. When you separate context by lifespan, you can:</p>
+<ol>
+<li>Reuse permanent and stable blocks across sessions without re-typing</li>
+<li>Swap working context without losing your foundation</li>
+<li>Stay within token budgets by compressing or dropping the right layers</li>
+</ol>
+<h2 id="getting-started">Getting started</h2>
+<p>You don’t need a tool to start context engineering (though <a href="https://convexforgets.com">ContextForge</a> makes it much easier). Start by answering three questions before your next LLM session:</p>
+<ol>
+<li><strong>What never changes?</strong> Write it down once. That’s your permanent zone.</li>
+<li><strong>What’s true for this project?</strong> Tech stack, style guides, domain knowledge. That’s stable.</li>
+<li><strong>What am I doing right now?</strong> The specific task and its constraints. That’s working.</li>
+</ol>
+<p>Even this simple separation will noticeably improve your results.</p>  </div> </article> <nav class="mt-14 pt-8 border-t border-border/50"> <a href="/blog" class="text-sm text-muted-foreground hover:text-foreground transition-colors">
+&larr; Back to all posts
+</a> </nav> </main> <footer class="relative z-10 border-t border-border/50 py-8"> <div class="mx-auto max-w-6xl px-6 sm:px-8 flex items-center justify-between"> <div class="flex items-center gap-2 text-sm text-muted-foreground"> <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M7 10H6a4 4 0 0 1-4-4 1 1 0 0 1 1-1h4"></path> <path d="M7 5a1 1 0 0 1 1-1h13a1 1 0 0 1 1 1 7 7 0 0 1-7 7H8a1 1 0 0 1-1-1z"></path> <path d="M9 12v5a1 1 0 0 0 1 1h1"></path> <path d="M15 12v5a1 1 0 0 1-1 1h-1"></path> <path d="M7 17h10"></path> <path d="M6 21h12"></path> </svg> <span>ContextForge</span> </div> <div class="flex items-center gap-3 text-xs text-muted-foreground/60"> <a href="/privacy" class="hover:text-muted-foreground transition-colors">Privacy</a> <a href="/terms" class="hover:text-muted-foreground transition-colors">Terms</a> <a href="/blog" class="hover:text-muted-foreground transition-colors">Blog</a> <a href="https://github.com/opcheese/context_forge_ts" target="_blank" rel="noopener noreferrer" class="hover:text-muted-foreground transition-colors">GitHub</a> <span>&copy; 2026 ContextForge</span> </div> </div> </footer> </div>  <script>(function(){const title = "What Is Context Engineering for LLMs?";
+const description = "Context engineering is the practice of deliberately structuring what you feed to an LLM. Learn why it matters and how to get started.";
+const formattedDate = "February 19, 2026";
+const author = "ContextForge Team";
+
+    const script = document.createElement("script")
+    script.type = "application/ld+json"
+    script.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      headline: title,
+      description: description,
+      datePublished: formattedDate,
+      author: { "@type": "Person", name: author },
+      publisher: { "@type": "Organization", name: "ContextForge" },
+    })
+    document.head.appendChild(script)
+  })();</script>  </body></html>

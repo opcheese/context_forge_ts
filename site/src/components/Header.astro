@@ -1,0 +1,64 @@
+---
+// Static header — theme toggle is a client-side island
+---
+
+<header class="relative z-10 border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0">
+  <div class="mx-auto max-w-6xl px-6 sm:px-8 py-3 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2.5">
+      <div class="w-7 h-7 rounded-lg bg-foreground/5 border border-border flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-foreground/70">
+          <path d="M7 10H6a4 4 0 0 1-4-4 1 1 0 0 1 1-1h4" />
+          <path d="M7 5a1 1 0 0 1 1-1h13a1 1 0 0 1 1 1 7 7 0 0 1-7 7H8a1 1 0 0 1-1-1z" />
+          <path d="M9 12v5a1 1 0 0 0 1 1h1" />
+          <path d="M15 12v5a1 1 0 0 1-1 1h-1" />
+          <path d="M7 17h10" />
+          <path d="M6 21h12" />
+        </svg>
+      </div>
+      <span class="text-lg font-bold tracking-tight">ContextForge</span>
+    </a>
+    <div class="flex items-center gap-3">
+      <button
+        id="theme-toggle"
+        class="w-8 h-8 rounded-lg border border-border bg-background hover:bg-accent flex items-center justify-center transition-colors"
+        aria-label="Toggle theme"
+      >
+        <svg id="sun-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground hidden">
+          <circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" />
+        </svg>
+        <svg id="moon-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground hidden">
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+        </svg>
+      </button>
+      <a href="/app/login" class="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+        Sign In
+      </a>
+      <a
+        href="/app/login"
+        class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 transition-colors"
+      >
+        Get Started
+      </a>
+    </div>
+  </div>
+</header>
+
+<script is:inline>
+  // Theme toggle
+  const toggle = document.getElementById("theme-toggle")
+  const sunIcon = document.getElementById("sun-icon")
+  const moonIcon = document.getElementById("moon-icon")
+
+  function updateIcons() {
+    const isDark = document.documentElement.classList.contains("dark")
+    sunIcon.classList.toggle("hidden", !isDark)
+    moonIcon.classList.toggle("hidden", isDark)
+  }
+
+  updateIcons()
+
+  toggle.addEventListener("click", () => {
+    document.documentElement.classList.toggle("dark")
+    updateIcons()
+  })
+</script>

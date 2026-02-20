@@ -1,0 +1,60 @@
+---
+title: "How Game Designers Use Structured Context for AI World-Building"
+description: "Game designers are using LLMs to generate lore, dialogue, and quests. Here's how context zones keep your world consistent."
+publishedAt: 2026-02-20
+tags: ["context-engineering", "game-design", "tutorial"]
+draft: true
+---
+
+Game designers face a unique challenge with AI: **consistency across a massive creative space.** Your world has history, factions, rules of magic, character voices. Every AI-generated piece of content needs to respect all of it.
+
+Without structured context, you get generic fantasy. With it, you get content that feels like it belongs in *your* world.
+
+## The game designer permanent zone
+
+```
+Role: Narrative designer for a dark fantasy RPG
+Tone: Gritty, understated. No flowery prose. Characters speak in short sentences.
+World rules: Magic costs something physical (blood, memories, years of life)
+Taboos: No chosen-one narratives. No prophecies. History is messy and contested.
+Format: Dialogue in screenplay format. Lore entries under 200 words.
+```
+
+This is your creative bible. Set it once and every AI session respects your world's rules.
+
+## Project-level stable context
+
+```
+Current region: The Ashmark — a volcanic wasteland with three rival settlements
+Factions:
+- The Smelters (industrial, pragmatic, exploit volcanic heat for forging)
+- The Ashwalkers (nomadic, spiritual, believe the volcano is a sleeping god)
+- The Ledger (merchant guild, controls trade routes, politically neutral)
+Key NPCs: Voss (Smelter foreman, missing left hand), Enna (Ashwalker elder, blind)
+Recent events: Eruption destroyed the northern trade route 3 months ago
+```
+
+## Working context per session
+
+**Generating quest content:**
+```
+Task: Write 3 side quests for the Smelter settlement
+Requirements: Each quest should reveal faction tensions. One must involve Voss.
+Constraints: Player level 5-8. No fetch quests. Each takes 15-20 minutes.
+```
+
+**Writing NPC dialogue:**
+```
+Task: Write Enna's dialogue when the player first enters the Ashwalker camp
+Context: Player has already sided with the Smelters on a previous quest
+Enna knows this: she's disappointed but not hostile
+Length: 8-12 lines of dialogue with 2 player response options
+```
+
+## The consistency payoff
+
+Without zones, every AI session starts from scratch. You'd need to re-explain the entire world. Worse, the AI might contradict earlier content — giving magic a different cost system, changing a character's voice, or generating a chosen-one storyline you explicitly banned.
+
+With permanent and stable zones, the AI can't drift. Your world rules are always active. Your faction dynamics are always loaded. You only change the working zone to focus on today's content needs.
+
+*Coming soon: a full walkthrough using ContextForge for game narrative pipelines.*
