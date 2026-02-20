@@ -52,6 +52,7 @@
 ### Active Plans
 | Document | Description |
 |----------|-------------|
+| [plans/2026-02-20-astro-migration-blog-design.md](./plans/2026-02-20-astro-migration-blog-design.md) | Astro public site + blog + SEO (implemented) |
 | [plans/2026-02-16-ephemeral-skills-design.md](./archive/2026-02-16-ephemeral-skills-design.md) | Ephemeral skills for brainstorming (approved, not started) |
 
 ### Research

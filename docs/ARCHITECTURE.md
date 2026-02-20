@@ -16,12 +16,15 @@ Technical design and decisions for ContextForge TypeScript.
 | Layer | Technology | Purpose |
 |-------|------------|---------|
 | **Backend** | Convex | Database, real-time sync, server functions |
-| **Frontend** | React 19 | UI components |
-| **Routing** | TanStack Router | Type-safe client-side routing |
+| **App Frontend** | React 19 | UI components (served at `/app/`) |
+| **Public Site** | Astro 5 | Landing page, blog, legal pages (static HTML for SEO) |
+| **Routing** | TanStack Router | Type-safe client-side routing (app) |
 | **Drag-and-Drop** | @dnd-kit | Accessible DnD with keyboard support |
-| **Styling** | Tailwind CSS v4 | Utility-first CSS |
+| **Styling** | Tailwind CSS v4 | Utility-first CSS (shared tokens across app and site) |
 | **Components** | shadcn/ui | Copy-paste component library |
+| **Blog** | Astro Content Collections + MDX | Static blog with RSS and sitemap |
 | **Testing** | Vitest + Playwright | Unit + E2E |
+| **Hosting** | Vercel | Static site + SPA, single project |
 | **Package Manager** | pnpm | Fast, disk-efficient |
 
 ### What We're NOT Using
@@ -32,6 +35,27 @@ Technical design and decisions for ContextForge TypeScript.
 | React Query | Convex's `useQuery`/`useMutation` provide caching |
 | Vercel AI SDK | Claude Code uses subprocess protocol, not HTTP |
 | Redux | Overkill for our needs |
+
+---
+
+## Deployment Architecture
+
+```
+convexforgets.com/              → Astro static HTML (landing, blog, legal)
+convexforgets.com/blog/*        → Astro static HTML (MDX blog posts)
+convexforgets.com/privacy       → Astro static HTML
+convexforgets.com/terms         → Astro static HTML
+convexforgets.com/app/*         → Vite SPA (React 19 + TanStack Router)
+```
+
+**Build pipeline:** Vite builds the SPA into `site/public/app/`. Astro then builds all
+static pages and copies the SPA into `site/dist/`. Vercel serves `site/dist/` with a
+rewrite rule for `/app/*` → `/app/index.html` (SPA client-side routing).
+
+**Why two frameworks?** The landing page and blog need static HTML for SEO (Google
+indexes real HTML, not JS-rendered SPAs). The app needs client-side routing and
+Convex real-time subscriptions. Astro's island architecture lets us share React
+components (like the interactive zone demo) between both.
 
 ---
 

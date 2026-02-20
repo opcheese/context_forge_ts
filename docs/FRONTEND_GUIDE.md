@@ -31,13 +31,21 @@ We use **TanStack Router** instead of React Router.
 
 ### Route Structure
 
+The app is served at `/app/` (the landing page is a separate Astro site).
+
 ```
 src/routes/
 ├── __root.tsx           # Layout wrapper (header, providers)
-├── index.tsx            # "/" - Home page with zones
-└── blocks/
-    └── $blockId.tsx     # "/blocks/:blockId" - Block editor
+├── app.tsx              # "/app" - App layout (auth guard, session context)
+├── app/
+│   ├── index.tsx        # "/app/" - Home page with zones
+│   └── ...              # Other app routes
+├── login.tsx            # "/login" - Auth page
+└── ...
 ```
+
+> **Note:** The landing page (hero, features, blog) lives in `site/` as an Astro project,
+> NOT in `src/routes/`. See `site/src/pages/` for the public-facing pages.
 
 ### How Routes Work
 
@@ -548,32 +556,54 @@ const status = await checkHealth({})
 ## File Structure
 
 ```
-src/
-├── main.tsx                    # App entry, providers
-├── index.css                   # Tailwind + theme
-├── routes/                     # TanStack Router pages
-│   ├── __root.tsx              # Layout (header, DnD, session)
-│   ├── index.tsx               # Home page
-│   └── blocks/
-│       └── $blockId.tsx        # Block editor
-├── components/
-│   ├── ui/                     # shadcn components
-│   │   └── button.tsx
-│   ├── dnd/                    # Drag-and-drop
-│   │   ├── DndProvider.tsx
-│   │   ├── DroppableZone.tsx
-│   │   ├── SortableBlock.tsx
-│   │   └── BlockDragOverlay.tsx
-│   └── GeneratePanel.tsx       # LLM generation UI
-├── contexts/
-│   └── SessionContext.tsx      # Session state
-├── hooks/
-│   ├── useFileDrop.ts          # File drop handling
-│   ├── useGenerate.ts          # Ollama streaming
-│   └── useClaudeGenerate.ts    # Claude streaming
-└── lib/
-    ├── utils.ts                # cn() helper
-    └── positioning.ts          # Fractional positions
+ContextForgeTS/
+├── src/                        # Vite SPA (served at /app/)
+│   ├── main.tsx                # App entry, providers
+│   ├── index.css               # Tailwind + theme
+│   ├── routes/                 # TanStack Router pages
+│   │   ├── __root.tsx          # Layout (header, DnD, session)
+│   │   ├── app.tsx             # App layout with auth
+│   │   ├── app/
+│   │   │   └── index.tsx       # Home page with zones
+│   │   └── login.tsx           # Auth page
+│   ├── components/
+│   │   ├── ui/                 # shadcn components
+│   │   ├── dnd/                # Drag-and-drop
+│   │   └── GeneratePanel.tsx   # LLM generation UI
+│   ├── contexts/
+│   │   └── SessionContext.tsx   # Session state
+│   ├── hooks/
+│   │   ├── useFileDrop.ts      # File drop handling
+│   │   ├── useGenerate.ts      # Ollama streaming
+│   │   └── useClaudeGenerate.ts # Claude streaming
+│   └── lib/
+│       ├── utils.ts            # cn() helper
+│       ├── motion.ts           # Animation presets
+│       └── positioning.ts      # Fractional positions
+├── site/                       # Astro public site (landing, blog, legal)
+│   ├── astro.config.mjs
+│   ├── src/
+│   │   ├── pages/              # Astro pages (static HTML)
+│   │   │   ├── index.astro     # Landing page
+│   │   │   ├── blog/           # Blog listing + posts
+│   │   │   ├── privacy.astro   # Privacy policy
+│   │   │   ├── terms.astro     # Terms of use
+│   │   │   ├── 404.astro       # Not found
+│   │   │   └── rss.xml.ts      # RSS feed
+│   │   ├── content/blog/       # MDX blog posts
+│   │   ├── components/
+│   │   │   ├── react/          # React islands (client:visible)
+│   │   │   ├── Header.astro
+│   │   │   └── Footer.astro
+│   │   └── layouts/
+│   │       ├── Base.astro      # Base layout with SEO head
+│   │       └── BlogPost.astro  # Blog post layout
+│   └── public/
+│       ├── og-default.png      # Social card image
+│       └── robots.txt
+├── convex/                     # Convex backend
+├── vercel.json                 # Build + rewrite config
+└── vite.config.ts              # SPA config (base: /app/)
 ```
 
 ---
@@ -667,14 +697,25 @@ npx convex env set ANTHROPIC_API_KEY sk-...
 
 | Concern | Solution |
 |---------|----------|
-| Routing | TanStack Router (file-based, type-safe) |
+| App routing | TanStack Router (file-based, type-safe) at `/app/` |
+| Public pages | Astro 5 (static HTML) — landing, blog, legal |
 | Server state | Convex `useQuery` / `useMutation` |
 | UI state | React Context or component state |
 | Caching | Convex (automatic) |
 | Real-time | Convex (automatic) |
-| Styling | Tailwind CSS v4 |
+| Styling | Tailwind CSS v4 (shared tokens across app + site) |
 | Components | shadcn/ui (copy-paste, you own them) |
+| Blog | Astro Content Collections + MDX |
 | Drag-and-drop | dnd-kit |
 | LLM streaming | Custom hooks (HTTP for Ollama, Convex for Claude) |
+| SEO | Astro static HTML, sitemap, RSS, JSON-LD, OG tags |
 
 The key insight: **Convex replaces React Query, Redux, and WebSocket setup.** Your frontend becomes simpler because server state management is handled by the platform.
+
+### Two-Framework Architecture
+
+The app uses **two frameworks** in a monorepo:
+- **Astro** (`site/`) — Static public pages. Outputs real HTML that search engines can index. React components work as `client:visible` islands for interactivity.
+- **Vite SPA** (`src/`) — The actual app at `/app/*`. Client-side routing, Convex real-time, full React.
+
+Build pipeline: `pnpm build` (SPA → `site/public/app/`) then `cd site && pnpm build` (Astro → `site/dist/`). Vercel serves `site/dist/`.
