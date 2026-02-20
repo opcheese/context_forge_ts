@@ -7,6 +7,7 @@ import tailwindcss from "@tailwindcss/vite"
 export default defineConfig({
   site: "https://convexforgets.com",
   output: "static",
+  trailingSlash: "always",
   integrations: [
     react(),
     mdx(),

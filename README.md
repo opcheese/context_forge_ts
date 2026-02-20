@@ -170,6 +170,41 @@ Copy `.env.example` to `.env.local` and configure:
 | Drag-and-Drop | @dnd-kit | Accessible drag-and-drop |
 | Testing | Vitest + Playwright | Unit + E2E tests |
 
+## Architecture: Astro + Vite SPA
+
+ContextForge uses **two frameworks in one repo** to serve different needs:
+
+- **Astro 5** (`site/`) — static HTML for the landing page, blog, and legal pages. Search engines index real HTML, not JavaScript-rendered SPAs. Astro builds these as plain `.html` files.
+- **Vite + React** (`src/`) — SPA for the authenticated app at `/app/*`. Needs client-side routing, real-time Convex subscriptions, and drag-and-drop.
+
+### How They Fit Together
+
+```
+┌──────────────────────────────────────────────────────┐
+│                   Build Pipeline                      │
+│                                                      │
+│  Step 1: Vite builds SPA                             │
+│  src/ ──→ site/public/app/  (index.html + JS/CSS)   │
+│                                                      │
+│  Step 2: Astro builds everything                     │
+│  site/src/ + site/public/ ──→ site/dist/             │
+│                                                      │
+│  Final output: site/dist/                            │
+│  ├── index.html           (Astro landing page)       │
+│  ├── blog/*/index.html    (Astro blog posts)         │
+│  ├── privacy/index.html   (Astro legal)              │
+│  └── app/                 (Vite SPA, copied over)    │
+│      ├── index.html                                  │
+│      └── assets/*.js,css                             │
+└──────────────────────────────────────────────────────┘
+```
+
+Vercel deploys `site/dist/` with a rewrite rule: `/app/*` → `/app/index.html` (for SPA client-side routing). All other routes serve Astro's static HTML directly.
+
+Interactive elements on Astro pages (hero animations, zone demo) use React "islands" — components that render server-side during build and hydrate client-side when scrolled into view (`client:visible`).
+
+See [Architecture docs](docs/ARCHITECTURE.md#two-framework-architecture-astro--vite) for the full technical breakdown.
+
 ## Project Structure
 
 ```
@@ -187,17 +222,18 @@ contextforge/
 │   └── lib/                # Shared backend utilities
 │
 ├── src/                    # App SPA (React 19 + TanStack Router)
-│   ├── routes/             # Pages (file-based routing)
-│   ├── components/         # React components
+│   ├── routes/             # Pages (file-based routing, all under /app/)
+│   ├── components/         # React components (shadcn/ui)
 │   ├── hooks/              # Custom hooks
 │   ├── contexts/           # React contexts
 │   └── lib/                # Utilities
 │
 ├── site/                   # Public site (Astro 5)
-│   ├── src/pages/          # Landing, blog, legal pages
+│   ├── src/pages/          # Landing, blog, legal pages (.astro)
 │   ├── src/content/blog/   # MDX blog posts
-│   ├── src/components/     # Astro + React island components
-│   └── src/layouts/        # Page layouts (Base, BlogPost)
+│   ├── src/components/     # Astro components + React islands
+│   ├── src/layouts/        # Page layouts (Base, BlogPost)
+│   └── public/             # Static assets (favicon, OG image, robots.txt)
 │
 ├── docs/                   # Documentation
 └── e2e/                    # Playwright tests

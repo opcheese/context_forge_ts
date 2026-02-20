@@ -38,24 +38,138 @@ Technical design and decisions for ContextForge TypeScript.
 
 ---
 
-## Deployment Architecture
+## Two-Framework Architecture (Astro + Vite)
+
+### Why Two Frameworks?
+
+ContextForge has two distinct audiences with different technical requirements:
+
+| Audience | Content | Requirement |
+|----------|---------|-------------|
+| **Visitors** (landing, blog) | Marketing pages, blog posts | Static HTML for SEO — Google indexes real HTML, not JS-rendered SPAs |
+| **Users** (app) | Interactive workspace | Client-side routing, real-time Convex subscriptions, drag-and-drop |
+
+A single React SPA cannot serve both: SPAs render an empty `<div id="root"></div>` to crawlers, making them invisible to search engines. Astro generates static HTML at build time while supporting interactive React "islands" for components that need JavaScript (animations, drag demos).
+
+### URL Structure
 
 ```
-convexforgets.com/              → Astro static HTML (landing, blog, legal)
+convexforgets.com/              → Astro static HTML (landing page)
 convexforgets.com/blog/*        → Astro static HTML (MDX blog posts)
-convexforgets.com/privacy       → Astro static HTML
-convexforgets.com/terms         → Astro static HTML
+convexforgets.com/privacy/      → Astro static HTML
+convexforgets.com/terms/        → Astro static HTML
+convexforgets.com/rss.xml       → Astro RSS feed
 convexforgets.com/app/*         → Vite SPA (React 19 + TanStack Router)
 ```
 
-**Build pipeline:** Vite builds the SPA into `site/public/app/`. Astro then builds all
-static pages and copies the SPA into `site/dist/`. Vercel serves `site/dist/` with a
-rewrite rule for `/app/*` → `/app/index.html` (SPA client-side routing).
+### Build Pipeline
 
-**Why two frameworks?** The landing page and blog need static HTML for SEO (Google
-indexes real HTML, not JS-rendered SPAs). The app needs client-side routing and
-Convex real-time subscriptions. Astro's island architecture lets us share React
-components (like the interactive zone demo) between both.
+The build is a two-stage process. Vite builds first, Astro second:
+
+```
+Step 1: pnpm build (Vite)
+├── Compiles React SPA (src/) with base: "/app/"
+├── Outputs to site/public/app/
+│   ├── index.html          ← SPA entry point
+│   └── assets/             ← JS/CSS bundles (hashed filenames)
+│
+Step 2: cd site && pnpm build (Astro)
+├── Copies site/public/ (including app/) into site/dist/
+├── Builds all .astro pages into site/dist/
+│   ├── index.html          ← Landing page
+│   ├── blog/*/index.html   ← Blog posts
+│   ├── privacy/index.html
+│   ├── terms/index.html
+│   ├── 404.html
+│   └── app/                ← SPA files (copied from public/)
+│       ├── index.html
+│       └── assets/
+│
+Final output: site/dist/       ← Everything Vercel deploys
+```
+
+### How Vercel Serves It
+
+Vercel deploys `site/dist/` as a static site with one rewrite rule in `vercel.json`:
+
+```json
+{
+  "rewrites": [{ "source": "/app/(.*)", "destination": "/app/index.html" }]
+}
+```
+
+This means:
+- `/` → `index.html` (Astro landing page, static HTML)
+- `/blog/my-post/` → `blog/my-post/index.html` (Astro blog post, static HTML)
+- `/app/` → `app/index.html` (SPA loads, TanStack Router takes over)
+- `/app/settings` → `app/index.html` (rewrite rule, SPA handles client-side routing)
+- `/app/login` → `app/index.html` (rewrite rule, SPA renders login page)
+
+### Local Development
+
+In development, the SPA and Astro site run as separate servers:
+
+```bash
+pnpm dev:all    # Runs all three concurrently:
+                # ├── Vite SPA      → localhost:5173/app/
+                # ├── Astro site    → localhost:4321/
+                # └── Convex dev    → backend
+```
+
+This is different from production where everything is one domain. Links between the
+site and app (e.g., "Get Started" → `/app/login`) work in production but cross ports
+in development.
+
+For production-like local testing with proper SPA rewrites:
+
+```bash
+pnpm preview    # Builds everything, serves at localhost:3000
+                # Uses serve.json for /app/* → /app/index.html rewrite
+```
+
+### React Islands in Astro
+
+Astro pages are static HTML by default. Interactive React components are loaded as
+"islands" — only the JavaScript needed for that component is shipped to the browser:
+
+```astro
+<!-- site/src/pages/index.astro -->
+
+<!-- Loads immediately (above fold, needs animation on page load) -->
+<HeroAnimated client:load />
+
+<!-- Loads when scrolled into view (below fold, saves initial bundle) -->
+<FeatureCards client:visible />
+<BeforeAfter client:visible />
+<StepsSection client:visible />
+<HeroZoneDemo client:visible />
+```
+
+These React islands are server-rendered during build (HTML is in the static output)
+and then hydrated client-side when their load condition is met.
+
+### Shared Styling
+
+Both the SPA and Astro site use Tailwind CSS v4 with the same design tokens (oklch
+color space). The CSS config is duplicated between:
+
+- `src/index.css` — SPA styles (includes `tw-animate-css` for shadcn animations)
+- `site/src/styles/global.css` — Astro site styles (includes `@tailwindcss/typography` for blog prose)
+
+Both use `@theme inline` blocks with identical CSS custom properties (`:root` and `.dark`),
+so colors, fonts, and spacing are consistent across the landing page and app.
+
+### SEO Infrastructure
+
+The Astro site includes:
+
+- **Sitemap** — auto-generated by `@astrojs/sitemap`, excludes `/app/` routes
+- **RSS feed** — `/rss.xml` with blog post entries
+- **robots.txt** — allows crawling of public pages, blocks `/app/`
+- **JSON-LD** — `WebApplication` schema on all pages, `BlogPosting` schema on blog posts
+- **Open Graph / Twitter Cards** — meta tags for social sharing with OG image
+- **Canonical URLs** — prevents duplicate content issues
+- **Trailing slashes** — enforced via `trailingSlash: "always"` config
 
 ---
 
