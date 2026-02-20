@@ -8,21 +8,21 @@ import { lineDrawVariants } from "../../lib/motion"
 const steps = [
   {
     step: "01",
-    title: "Add your context",
+    title: "Build your context",
     description:
-      "Drop in system prompts, reference docs, examples, and constraints. Assign each block to its zone.",
+      "Drop in system prompts, reference docs, examples, and constraints. Organize blocks across zones.",
   },
   {
     step: "02",
-    title: "Organize & refine",
+    title: "Brainstorm with AI",
     description:
-      "Compress verbose blocks. Arrange by priority. Use templates to save configurations you'll reuse.",
+      "Use your assembled context for an informed conversation. Explore ideas with the full picture already loaded.",
   },
   {
     step: "03",
-    title: "Export & use",
+    title: "Keep what matters",
     description:
-      "Copy your assembled context. Paste into any LLM. Get dramatically better results from the same models.",
+      "Save useful outputs back to your context library. Discard the rest. Your knowledge compounds over time.",
   },
 ]
 

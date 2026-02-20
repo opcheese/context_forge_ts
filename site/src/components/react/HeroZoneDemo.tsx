@@ -56,7 +56,12 @@ export function HeroZoneDemo() {
   )
 
   return (
-    <div>
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={springs.smooth}
+    >
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {ZONES.map((zone) => (
           <div
@@ -98,6 +103,6 @@ export function HeroZoneDemo() {
       <p className="text-xs text-muted-foreground/40 mt-3 text-center">
         Drag blocks between zones to see how context is organized
       </p>
-    </div>
+    </motion.div>
   )
 }
