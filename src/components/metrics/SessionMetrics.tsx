@@ -15,18 +15,18 @@ interface SessionMetricsProps {
   className?: string
 }
 
-/** Skeleton matching ZoneHeader layout: "Zone N blocks | tokens / budget | bar | %" */
+/** Skeleton matching ZoneHeader two-row layout */
 export function ZoneHeaderSkeleton() {
   return (
-    <div className="flex items-center justify-between">
+    <div className="space-y-1.5">
       <div className="flex items-center gap-2">
         <Skeleton className="h-4 w-16" />
         <Skeleton className="h-3 w-14" />
       </div>
       <div className="flex items-center gap-2">
-        <Skeleton className="h-3 w-20 font-mono" />
-        <Skeleton className="h-2 w-16 rounded-full" />
-        <Skeleton className="h-3 w-10" />
+        <Skeleton className="h-1.5 flex-1 rounded-full" />
+        <Skeleton className="h-3 w-16" />
+        <Skeleton className="h-3 w-8" />
       </div>
     </div>
   )

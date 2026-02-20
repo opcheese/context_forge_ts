@@ -13,8 +13,6 @@ import type { Doc, Id } from "../../convex/_generated/dataModel"
 import { Button } from "@/components/ui/button"
 import { DndProvider } from "@/components/dnd"
 import { SessionProvider, useSession } from "@/contexts/SessionContext"
-import { SaveTemplateDialog, ApplyTemplateDialog } from "@/components/templates"
-import { AddToProjectDialog } from "@/components/projects"
 import { SessionDropdown } from "@/components/sessions/SessionDropdown"
 import { Anvil, Sun, Moon } from "lucide-react"
 
@@ -73,13 +71,10 @@ function AuthRedirect() {
   return null
 }
 
-// Session selector component with template actions
+// Session selector component (just the dropdown)
 function SessionSelector() {
   const { sessionId, switchSession, createSession, clearSession, isLoading } = useSession()
   const sessions = useQuery(api.sessions.list)
-  const [showSaveTemplate, setShowSaveTemplate] = useState(false)
-  const [showApplyTemplate, setShowApplyTemplate] = useState(false)
-  const [showAddToProject, setShowAddToProject] = useState(false)
 
   const handleCreateSession = async () => {
     const name = `Session ${(sessions?.length ?? 0) + 1}`
@@ -101,77 +96,14 @@ function SessionSelector() {
   }
 
   return (
-    <div className="flex items-center gap-1.5">
-      <SessionDropdown
-        sessions={sessions}
-        currentSessionId={sessionId}
-        onSelectSession={switchSession}
-        onCreateSession={handleCreateSession}
-        onSessionDeleted={handleSessionDeleted}
-        isLoading={isLoading}
-      />
-
-      {/* Template actions - only show when session is selected */}
-      {sessionId && (
-        <>
-          <div className="w-px h-5 bg-border mx-1" />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowSaveTemplate(true)}
-            title="Save current session as a reusable template"
-            className="text-xs h-7 px-2"
-          >
-            Save
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowApplyTemplate(true)}
-            title="Apply a template to this session"
-            className="text-xs h-7 px-2"
-          >
-            Apply
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowAddToProject(true)}
-            title="Add this session to a project"
-            className="text-xs h-7 px-2"
-          >
-            + Project
-          </Button>
-
-          <SaveTemplateDialog
-            isOpen={showSaveTemplate}
-            onClose={() => setShowSaveTemplate(false)}
-            sessionId={sessionId}
-            onSuccess={() => {
-              // Could show a toast notification here
-            }}
-          />
-
-          <ApplyTemplateDialog
-            isOpen={showApplyTemplate}
-            onClose={() => setShowApplyTemplate(false)}
-            sessionId={sessionId}
-            onSuccess={() => {
-              // Could show a toast notification here
-            }}
-          />
-
-          <AddToProjectDialog
-            isOpen={showAddToProject}
-            onClose={() => setShowAddToProject(false)}
-            sessionId={sessionId}
-            onSuccess={() => {
-              // Could show a toast notification here
-            }}
-          />
-        </>
-      )}
-    </div>
+    <SessionDropdown
+      sessions={sessions}
+      currentSessionId={sessionId}
+      onSelectSession={switchSession}
+      onCreateSession={handleCreateSession}
+      onSessionDeleted={handleSessionDeleted}
+      isLoading={isLoading}
+    />
   )
 }
 
@@ -181,9 +113,9 @@ function AuthenticatedHeader() {
   const { isDark, toggle } = useTheme()
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
       <SessionSelector />
-      <div className="w-px h-5 bg-border ml-1" />
+      <div className="w-px h-5 bg-border" />
       <button
         onClick={toggle}
         className="w-8 h-8 rounded-lg border border-border bg-background hover:bg-accent flex items-center justify-center transition-colors"

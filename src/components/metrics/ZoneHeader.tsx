@@ -15,6 +15,7 @@ interface ZoneHeaderProps {
   budget: number
   onCompress?: () => void
   isCompressing?: boolean
+  linkButton?: React.ReactNode
 }
 
 // Format large numbers with K suffix
@@ -32,41 +33,40 @@ export function ZoneHeader({
   budget,
   onCompress,
   isCompressing,
+  linkButton,
 }: ZoneHeaderProps) {
   const percentUsed = Math.round((tokens / budget) * 100)
   const isWarning = percentUsed > 80 && percentUsed <= 95
   const isDanger = percentUsed > 95
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <h3 className="font-semibold text-foreground">{zone}</h3>
-        <span className="text-xs text-muted-foreground">
-          {blockCount} {blockCount === 1 ? "block" : "blocks"}
-        </span>
-        {onCompress && blockCount > 1 && (
-          <button
-            onClick={onCompress}
-            disabled={isCompressing}
-            className="px-1.5 py-0.5 text-[10px] rounded border border-input hover:bg-muted disabled:opacity-50 flex items-center gap-1"
-            title="Compress all blocks in this zone"
-          >
-            <Minimize2 className="w-2.5 h-2.5" />
-            {isCompressing ? "..." : "Compress"}
-          </button>
-        )}
-      </div>
-      <div className="flex items-center gap-2">
-        <span
-          className={cn(
-            "text-xs font-mono",
-            isDanger && "text-destructive",
-            isWarning && "text-yellow-600 dark:text-yellow-500"
+    <div className="space-y-1.5">
+      {/* Row 1: Zone name + block count + compress */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold text-foreground">{zone}</h3>
+          <span className="text-xs text-muted-foreground">
+            {blockCount} {blockCount === 1 ? "block" : "blocks"}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          {onCompress && blockCount > 1 && (
+            <button
+              onClick={onCompress}
+              disabled={isCompressing}
+              className="px-1.5 py-0.5 text-[10px] rounded border border-input hover:bg-muted disabled:opacity-50 flex items-center gap-1"
+              title="Compress all blocks in this zone"
+            >
+              <Minimize2 className="w-2.5 h-2.5" />
+              {isCompressing ? "..." : "Compress"}
+            </button>
           )}
-        >
-          <AnimatedNumber value={tokens} format={formatTokens} /> / {formatTokens(budget)}
-        </span>
-        <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+          {linkButton}
+        </div>
+      </div>
+      {/* Row 2: Full-width progress bar + token stats */}
+      <div className="flex items-center gap-2">
+        <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
           <motion.div
             className={cn(
               "h-full",
@@ -82,7 +82,16 @@ export function ZoneHeader({
         </div>
         <span
           className={cn(
-            "text-xs font-mono w-10 text-right",
+            "text-[11px] font-mono text-muted-foreground whitespace-nowrap",
+            isDanger && "text-destructive",
+            isWarning && "text-yellow-600 dark:text-yellow-500"
+          )}
+        >
+          <AnimatedNumber value={tokens} format={formatTokens} /> / {formatTokens(budget)}
+        </span>
+        <span
+          className={cn(
+            "text-[11px] font-mono w-8 text-right tabular-nums",
             isDanger && "text-destructive",
             isWarning && "text-yellow-600 dark:text-yellow-500"
           )}

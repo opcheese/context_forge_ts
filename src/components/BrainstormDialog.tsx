@@ -434,52 +434,75 @@ export function BrainstormDialog({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold">Brainstorm</h2>
-            {/* Provider selector */}
-            <select
-              value={provider}
-              onChange={(e) => onProviderChange(e.target.value as Provider)}
-              disabled={!canChangeProvider || isStreaming}
-              className="text-sm border border-input rounded-md px-2 py-1 bg-background disabled:opacity-50"
-            >
-              {/* Only show Claude if not disabled */}
-              {!providerHealth?.claude?.disabled && (
-                <option value="claude" disabled={!providerHealth?.claude?.ok}>
-                  Claude {providerHealth?.claude?.ok ? "" : "(offline)"}
-                </option>
-              )}
-              <option value="ollama" disabled={!providerHealth?.ollama?.ok}>
-                Ollama {providerHealth?.ollama?.ok ? "" : "(offline)"}
-              </option>
-              <option value="openrouter" disabled={!providerHealth?.openrouter?.ok}>
-                OpenRouter {providerHealth?.openrouter?.ok ? "" : "(offline)"}
-              </option>
-            </select>
-            {/* Model selector (Claude provider only) */}
-            {provider === "claude" && onModelChange && !providerHealth?.claude?.disabled && (
+        <div className="p-4 border-b border-border space-y-2">
+          {/* Row 1: Title + provider + model + actions */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-semibold">Brainstorm</h2>
+              {/* Provider selector */}
               <select
-                value={model ?? ""}
-                onChange={(e) => onModelChange(e.target.value || null)}
+                value={provider}
+                onChange={(e) => onProviderChange(e.target.value as Provider)}
                 disabled={!canChangeProvider || isStreaming}
-                className="text-sm border border-input rounded-md px-2 py-1 bg-background disabled:opacity-50 max-w-[200px]"
+                className="text-sm border border-input rounded-md px-2 py-1 bg-background disabled:opacity-50"
               >
-                <option value="">Default (Opus)</option>
-                <option value="claude-sonnet-4-5-20250929">Sonnet 4.5</option>
-                <option value="claude-opus-4-6">Opus 4.6</option>
-                <option value="claude-haiku-4-5-20251001">Haiku 4.5</option>
+                {!providerHealth?.claude?.disabled && (
+                  <option value="claude" disabled={!providerHealth?.claude?.ok}>
+                    Claude {providerHealth?.claude?.ok ? "" : "(offline)"}
+                  </option>
+                )}
+                <option value="ollama" disabled={!providerHealth?.ollama?.ok}>
+                  Ollama {providerHealth?.ollama?.ok ? "" : "(offline)"}
+                </option>
+                <option value="openrouter" disabled={!providerHealth?.openrouter?.ok}>
+                  OpenRouter {providerHealth?.openrouter?.ok ? "" : "(offline)"}
+                </option>
               </select>
-            )}
-            {/* Claude subscription usage indicator */}
-            {provider === "claude" && !providerHealth?.claude?.disabled && (
-              <SubscriptionUsage enabled={provider === "claude"} />
-            )}
-            {/* OpenRouter session cost indicator */}
-            {provider === "openrouter" && openrouterSessionCost != null && (
-              <OpenRouterCost sessionCost={openrouterSessionCost} />
-            )}
-            {/* Claude: disable agent behavior toggle (only when Claude is enabled) */}
+              {/* Model selector (Claude provider only) */}
+              {provider === "claude" && onModelChange && !providerHealth?.claude?.disabled && (
+                <select
+                  value={model ?? ""}
+                  onChange={(e) => onModelChange(e.target.value || null)}
+                  disabled={!canChangeProvider || isStreaming}
+                  className="text-sm border border-input rounded-md px-2 py-1 bg-background disabled:opacity-50 max-w-[200px]"
+                >
+                  <option value="">Default (Opus)</option>
+                  <option value="claude-sonnet-4-5-20250929">Sonnet 4.5</option>
+                  <option value="claude-opus-4-6">Opus 4.6</option>
+                  <option value="claude-haiku-4-5-20251001">Haiku 4.5</option>
+                </select>
+              )}
+              {/* Claude subscription usage */}
+              {provider === "claude" && !providerHealth?.claude?.disabled && (
+                <SubscriptionUsage enabled={provider === "claude"} />
+              )}
+              {/* OpenRouter session cost */}
+              {provider === "openrouter" && openrouterSessionCost != null && (
+                <OpenRouterCost sessionCost={openrouterSessionCost} />
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClearConversation}
+                disabled={messages.length === 0 && !streamingText}
+              >
+                Clear
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => {
+                if (isStreaming) {
+                  onStopStreaming()
+                }
+                handleCloseRequest()
+              }}>
+                Close
+              </Button>
+            </div>
+          </div>
+          {/* Row 2: Toggles + context badges */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Claude toggles */}
             {provider === "claude" && onDisableAgentBehaviorChange && !providerHealth?.claude?.disabled && (
               <label
                 className="inline-flex items-center gap-1.5 text-xs cursor-pointer"
@@ -495,7 +518,6 @@ export function BrainstormDialog({
                 <span className="text-muted-foreground">No tools</span>
               </label>
             )}
-            {/* Claude: prevent self-talk toggle */}
             {provider === "claude" && onPreventSelfTalkChange && !providerHealth?.claude?.disabled && (
               <label
                 className="inline-flex items-center gap-1.5 text-xs cursor-pointer"
@@ -514,7 +536,7 @@ export function BrainstormDialog({
             {/* System prompt indicator */}
             {systemPrompt && (
               <span
-                className="text-xs px-2 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+                className="text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
                 title={systemPrompt}
               >
                 System Prompt Active
@@ -528,7 +550,7 @@ export function BrainstormDialog({
                 <span
                   key={skillId}
                   className={cn(
-                    "inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full cursor-pointer transition-colors",
+                    "inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full cursor-pointer transition-colors",
                     enabled
                       ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
                       : "bg-muted text-muted-foreground line-through"
@@ -549,24 +571,6 @@ export function BrainstormDialog({
                 </span>
               )
             })}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClearConversation}
-              disabled={messages.length === 0 && !streamingText}
-            >
-              Clear
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => {
-              if (isStreaming) {
-                onStopStreaming()
-              }
-              handleCloseRequest()
-            }}>
-              Close
-            </Button>
           </div>
         </div>
 

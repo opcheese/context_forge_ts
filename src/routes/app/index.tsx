@@ -37,6 +37,9 @@ import { ImportProjectConfirmDialog } from "@/components/skills/ImportProjectCon
 import { ExportSkillDialog } from "@/components/skills/ExportSkillDialog"
 import { useSkillImport } from "@/hooks/useSkillImport"
 import { LinkBlockPopover } from "@/components/LinkBlockPopover"
+import { SaveTemplateDialog, ApplyTemplateDialog } from "@/components/templates"
+import { AddToProjectDialog } from "@/components/projects"
+import { Save, FolderPlus, FileDown } from "lucide-react"
 
 // Zone display info with subtle color tints
 const ZONE_INFO: Record<Zone, { label: string; description: string; tint: string }> = {
@@ -90,10 +93,10 @@ function AddBlockForm({ sessionId }: { sessionId: Id<"sessions"> }) {
   if (!isExpanded) {
     return (
       <Button
-        variant="outline"
+        variant="ghost"
         size="sm"
         onClick={() => setIsExpanded(true)}
-        className="h-7 text-xs"
+        className="h-7 text-xs px-2"
       >
         + Add Block
       </Button>
@@ -601,31 +604,29 @@ function ZoneColumn({
 
   return (
     <div className="flex flex-col h-full relative" {...dropProps}>
-      <div className="mb-2">
-        <div className="flex items-center gap-1">
-          <div className="flex-1 min-w-0">
-            {zoneMetrics ? (
-              <ZoneHeader
-                zone={info.label}
-                blockCount={zoneMetrics.blocks}
-                tokens={zoneMetrics.tokens}
-                budget={zoneMetrics.budget}
-                onCompress={handleZoneCompress}
-                isCompressing={isZoneCompressing}
-              />
-            ) : (
-              <ZoneHeaderSkeleton />
-            )}
-          </div>
-          <LinkBlockPopover sessionId={sessionId} zone={zone}>
-            <button
-              className="w-5 h-5 rounded border border-dashed border-border hover:border-foreground/30 flex items-center justify-center transition-colors shrink-0"
-              title="Link a block from another session"
-            >
-              <Link2 className="w-3 h-3 text-muted-foreground" />
-            </button>
-          </LinkBlockPopover>
-        </div>
+      <div className="mb-3">
+        {zoneMetrics ? (
+          <ZoneHeader
+            zone={info.label}
+            blockCount={zoneMetrics.blocks}
+            tokens={zoneMetrics.tokens}
+            budget={zoneMetrics.budget}
+            onCompress={handleZoneCompress}
+            isCompressing={isZoneCompressing}
+            linkButton={
+              <LinkBlockPopover sessionId={sessionId} zone={zone}>
+                <button
+                  className="w-5 h-5 rounded border border-dashed border-border hover:border-foreground/30 flex items-center justify-center transition-colors shrink-0"
+                  title="Link a block from another session"
+                >
+                  <Link2 className="w-3 h-3 text-muted-foreground" />
+                </button>
+              </LinkBlockPopover>
+            }
+          />
+        ) : (
+          <ZoneHeaderSkeleton />
+        )}
         {isDanger && (
           <div className="mt-1 p-1 rounded bg-destructive/10 text-destructive text-[10px]">
             {zoneMetrics?.percentUsed}% - consider archiving
@@ -729,7 +730,7 @@ function ZoneLayout({
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-3 flex-1 min-h-0">
       {ZONES.map((zone) => (
-        <div key={zone} className={cn("rounded-lg border p-2 flex flex-col min-h-0 overflow-hidden", ZONE_INFO[zone].tint)}>
+        <div key={zone} className={cn("rounded-lg border p-3 flex flex-col min-h-0 overflow-hidden", ZONE_INFO[zone].tint)}>
           <ZoneColumn
             sessionId={sessionId}
             zone={zone}
@@ -832,6 +833,9 @@ function HomePage() {
   const [isCompressionDialogOpen, setIsCompressionDialogOpen] = useState(false)
   const [isImportSkillOpen, setIsImportSkillOpen] = useState(false)
   const [isExportSkillOpen, setIsExportSkillOpen] = useState(false)
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false)
+  const [showApplyTemplate, setShowApplyTemplate] = useState(false)
+  const [showAddToProject, setShowAddToProject] = useState(false)
   const { toast } = useToast()
 
   // Skill import for drag-and-drop (shared across all zones)
@@ -961,26 +965,58 @@ function HomePage() {
 
       {/* Compact toolbar row */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <SessionMetrics sessionId={sessionId} collapsed />
+          <div className="w-px h-4 bg-border mx-1" />
           <AddBlockForm sessionId={sessionId} />
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => setIsImportSkillOpen(true)}
-            className="h-7 text-xs"
+            className="h-7 text-xs px-2"
           >
             <Puzzle className="w-3 h-3 mr-1" />
             Import Skill
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={() => setIsExportSkillOpen(true)}
-            className="h-7 text-xs"
+            className="h-7 text-xs px-2"
           >
             <Download className="w-3 h-3 mr-1" />
             Export Skill
+          </Button>
+          <div className="w-px h-4 bg-border mx-1" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowSaveTemplate(true)}
+            title="Save current session as a reusable template"
+            className="h-7 text-xs px-2"
+          >
+            <Save className="w-3 h-3 mr-1" />
+            Save
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowApplyTemplate(true)}
+            title="Apply a template to this session"
+            className="h-7 text-xs px-2"
+          >
+            <FileDown className="w-3 h-3 mr-1" />
+            Apply
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowAddToProject(true)}
+            title="Add this session to a project"
+            className="h-7 text-xs px-2"
+          >
+            <FolderPlus className="w-3 h-3 mr-1" />
+            Project
           </Button>
         </div>
         <div className="flex items-center gap-2">
@@ -1056,6 +1092,27 @@ function HomePage() {
           onCancel={cancelProjectImport}
           isImporting={isSkillImporting}
         />
+      )}
+
+      {/* Template & project dialogs */}
+      {sessionId && (
+        <>
+          <SaveTemplateDialog
+            isOpen={showSaveTemplate}
+            onClose={() => setShowSaveTemplate(false)}
+            sessionId={sessionId}
+          />
+          <ApplyTemplateDialog
+            isOpen={showApplyTemplate}
+            onClose={() => setShowApplyTemplate(false)}
+            sessionId={sessionId}
+          />
+          <AddToProjectDialog
+            isOpen={showAddToProject}
+            onClose={() => setShowAddToProject(false)}
+            sessionId={sessionId}
+          />
+        </>
       )}
     </div>
   )
