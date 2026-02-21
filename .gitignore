@@ -5,6 +5,7 @@ node_modules
 dist
 dist-ssr
 site/public/app/
+site/.astro/
 
 # Environment (contains secrets)
 *.local
@@ -51,3 +52,5 @@ Thumbs.db
 # Internal docs (not for GitHub)
 docs/internal/
 2025-02-16-local-vpn-deployment-design.md
+.agents
+.claude
