@@ -203,13 +203,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
     saveConversation(sessionId, messages)
   }, [messages, sessionId])
 
-  // Reload conversation when session changes
-  useEffect(() => {
-    const stored = loadConversation(sessionId)
-    setMessages(stored)
-    setHasUnsavedContent(stored.length > 0)
-    setConversationRestored(stored.length > 0)
-  }, [sessionId])
+  // Reload conversation when session changes (merged with clear logic below)
 
   // Abort controller for client-side streaming
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -217,9 +211,12 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
   // Get blocks for context assembly (client-side)
   const blocks = useQuery(api.blocks.list, { sessionId })
 
-  // Clear conversation when session changes
+  // Reset streaming state and restore conversation when session changes
   useEffect(() => {
-    setMessages([])
+    const stored = loadConversation(sessionId)
+    setMessages(stored)
+    setHasUnsavedContent(stored.length > 0)
+    setConversationRestored(stored.length > 0)
     setStreamingText("")
     setError(null)
     setGenerationId(null)
