@@ -198,16 +198,9 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
     streamingTextRef.current = streamingText
   }, [streamingText])
 
-  // Persist messages to localStorage (debounced)
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Persist messages to localStorage immediately on every change
   useEffect(() => {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    saveTimerRef.current = setTimeout(() => {
-      saveConversation(sessionId, messages)
-    }, 1000)
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    }
+    saveConversation(sessionId, messages)
   }, [messages, sessionId])
 
   // Reload conversation when session changes
