@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from "framer-motion"
 import { dialogOverlay, dialogContent } from "@/lib/motion"
 import { Button } from "@/components/ui/button"
 import { DebouncedButton } from "@/components/ui/debounced-button"
-import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -330,7 +329,6 @@ export function BrainstormDialog({
   conversationRestored,
 }: BrainstormDialogProps) {
   const [inputValue, setInputValue] = useState("")
-  const [showCloseWarning, setShowCloseWarning] = useState(false)
   const [expandedSkill, setExpandedSkill] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -377,12 +375,9 @@ export function BrainstormDialog({
 
   // Handle close request (from Escape key or close button)
   const handleCloseRequest = useCallback(() => {
-    if (hasUnsavedContent) {
-      setShowCloseWarning(true)
-    } else {
-      onClose()
-    }
-  }, [hasUnsavedContent, onClose])
+    // Conversations auto-persist to localStorage, so closing is always safe
+    onClose()
+  }, [onClose])
 
   // Handle escape key
   useEffect(() => {
@@ -724,21 +719,7 @@ export function BrainstormDialog({
         </div>
       </motion.div>
 
-      {/* Unsaved content warning dialog */}
-      <ConfirmDialog
-        open={showCloseWarning}
-        onOpenChange={setShowCloseWarning}
-        title="Discard conversation?"
-        description="You have unsaved messages. Are you sure you want to close? Your conversation will be lost."
-        confirmLabel="Discard"
-        cancelLabel="Keep open"
-        destructive={true}
-        onConfirm={() => {
-          setShowCloseWarning(false)
-          onClearConversation()
-          onClose()
-        }}
-      />
+      {/* No close warning needed — conversations auto-persist to localStorage */}
     </motion.div>
       )}
     </AnimatePresence>
