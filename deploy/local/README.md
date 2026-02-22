@@ -34,7 +34,7 @@ cd ~/contextforge
 git clone https://github.com/opcheese/context_forge_ts.git ContextForgeTS
 cd ContextForgeTS
 pnpm install
-VITE_CONVEX_URL=http://192.168.87.58:3210 pnpm build
+VITE_CONVEX_URL=http://192.168.87.58:3210 pnpm build:standalone
 
 # 5. Copy deployment config
 cp deploy/local/ecosystem.config.cjs ~/contextforge/
@@ -74,19 +74,31 @@ npx convex run marketplace:seedCategories
 cd ~/contextforge/ContextForgeTS
 git pull
 pnpm install
-VITE_CONVEX_URL=http://192.168.87.58:3210 pnpm build
+VITE_CONVEX_URL=http://192.168.87.58:3210 pnpm build:standalone
 pm2 restart contextforge-frontend
 
 # If backend functions changed:
 export CONVEX_SELF_HOSTED_URL=http://192.168.87.58:3210
 export CONVEX_SELF_HOSTED_ADMIN_KEY=<ADMIN_KEY>
-npx convex deploy --yes
+npx convex deploy --admin-key $CONVEX_SELF_HOSTED_ADMIN_KEY --url $CONVEX_SELF_HOSTED_URL --yes
 ```
+
+**Important:** Use `pnpm build:standalone` (not `pnpm build`). The standalone build outputs to `dist/` which pm2 serves. The regular `pnpm build` outputs to `site/public/app/` for Vercel and won't update the VPN deployment.
+
+## Verifying Deployment
+
+After deploying, check **Settings > About** (bottom of page) to confirm the correct git commit hash and build time.
 
 ## Access
 
 - App: http://192.168.87.58:8080 (requires VPN)
 - Convex Dashboard: http://192.168.87.58:6791 (requires VPN)
+
+### Test Account
+
+- Email: `test@contextforge.com`
+- Password: `TestUser123!`
+- Name: `Test User`
 
 ## Logs
 
