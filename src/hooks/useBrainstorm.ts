@@ -80,11 +80,12 @@ interface UseBrainstormOptions {
 }
 
 interface UseBrainstormResult {
-  // Conversation state (ephemeral)
+  // Conversation state
   messages: Message[]
   isOpen: boolean
   provider: Provider
   hasUnsavedContent: boolean
+  conversationRestored: boolean
 
   // Actions
   open: (provider?: Provider) => void
@@ -170,6 +171,9 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
   const [hasUnsavedContent, setHasUnsavedContent] = useState(
     () => loadConversation(sessionId).length > 0
   )
+  const [conversationRestored, setConversationRestored] = useState(
+    () => loadConversation(sessionId).length > 0
+  )
 
   // Ephemeral skills (reset on dialog close)
   const [activeSkills, setActiveSkills] = useState<Record<string, boolean>>(
@@ -211,6 +215,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
     const stored = loadConversation(sessionId)
     setMessages(stored)
     setHasUnsavedContent(stored.length > 0)
+    setConversationRestored(stored.length > 0)
   }, [sessionId])
 
   // Abort controller for client-side streaming
@@ -368,6 +373,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
     prevTextRef.current = ""
     abortControllerRef.current?.abort()
     clearStoredConversation(sessionId)
+    setConversationRestored(false)
   }, [sessionId])
 
   // Send message via Ollama (client-side streaming)
@@ -549,6 +555,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
       if (!content.trim() || isStreaming) return
 
       setError(null)
+      setConversationRestored(false)
 
       // Build conversation history before adding new message
       const conversationHistory = messages.map((msg) => ({
@@ -764,6 +771,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
     isOpen,
     provider,
     hasUnsavedContent,
+    conversationRestored,
 
     // Actions
     open,

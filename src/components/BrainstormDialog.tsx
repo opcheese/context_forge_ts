@@ -23,6 +23,36 @@ import { OpenRouterCost } from '@/components/OpenRouterCost';
 import breaks from 'remark-breaks';
 
 
+function exportConversationAsMarkdown(messages: Message[], provider: Provider, model?: string | null) {
+  const lines: string[] = []
+  lines.push(`# Brainstorm Conversation`)
+  lines.push(``)
+  lines.push(`**Provider:** ${provider}${model ? ` (${model})` : ""}`)
+  lines.push(`**Exported:** ${new Date().toLocaleString()}`)
+  lines.push(`**Messages:** ${messages.length}`)
+  lines.push(``)
+  lines.push(`---`)
+  lines.push(``)
+
+  for (const msg of messages) {
+    const label = msg.role === "user" ? "**User**" : "**Assistant**"
+    lines.push(`### ${label}`)
+    lines.push(``)
+    lines.push(msg.content)
+    lines.push(``)
+    lines.push(`---`)
+    lines.push(``)
+  }
+
+  const blob = new Blob([lines.join("\n")], { type: "text/markdown" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `brainstorm-${new Date().toISOString().slice(0, 10)}.md`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 interface BrainstormDialogProps {
   isOpen: boolean
   onClose: () => void
@@ -60,6 +90,8 @@ interface BrainstormDialogProps {
   onToggleSkill?: (skillId: string) => void
   // OpenRouter session cost
   openrouterSessionCost?: number
+  // Conversation was restored from localStorage
+  conversationRestored?: boolean
 }
 
 // Message bubble component
@@ -295,6 +327,7 @@ export function BrainstormDialog({
   activeSkills,
   onToggleSkill,
   openrouterSessionCost,
+  conversationRestored,
 }: BrainstormDialogProps) {
   const [inputValue, setInputValue] = useState("")
   const [showCloseWarning, setShowCloseWarning] = useState(false)
@@ -485,6 +518,14 @@ export function BrainstormDialog({
               <Button
                 variant="ghost"
                 size="sm"
+                onClick={() => exportConversationAsMarkdown(messages, provider, model)}
+                disabled={messages.length === 0}
+              >
+                Export
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={onClearConversation}
                 disabled={messages.length === 0 && !streamingText}
               >
@@ -602,6 +643,11 @@ export function BrainstormDialog({
           onScroll={handleScroll}
           className="flex-1 overflow-y-auto p-4 space-y-4"
         >
+          {conversationRestored && messages.length > 0 && (
+            <div className="text-center text-xs text-muted-foreground py-2 border-b border-border mb-2">
+              Previous conversation restored ({messages.length} messages)
+            </div>
+          )}
           {messages.length === 0 && !isStreaming && (
             <div className="text-center text-muted-foreground py-8">
               <p className="text-lg mb-2">Start a conversation</p>
