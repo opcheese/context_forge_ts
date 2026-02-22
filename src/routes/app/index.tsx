@@ -41,6 +41,8 @@ import { SaveTemplateDialog, ApplyTemplateDialog } from "@/components/templates"
 import { AddToProjectDialog } from "@/components/projects"
 import { Save, FolderPlus, FileDown } from "lucide-react"
 
+const ZONE_INDEX: Record<Zone, number> = { PERMANENT: 0, STABLE: 1, WORKING: 2 }
+
 // Zone display info with subtle color tints
 const ZONE_INFO: Record<Zone, { label: string; description: string; tint: string }> = {
   PERMANENT: { label: "Permanent", description: "Always included", tint: "bg-blue-500/[0.02] dark:bg-blue-400/[0.03] border-blue-500/10 dark:border-blue-400/10" },
@@ -459,7 +461,7 @@ function BlockCard({
               onClick={(e) => handleMove(e, z)}
               className="px-1.5 py-0.5 text-[10px] rounded border border-input hover:bg-muted"
             >
-              → {ZONE_INFO[z].label}
+              {ZONE_INDEX[z] > ZONE_INDEX[zone] ? "→" : "←"} {ZONE_INFO[z].label}
             </button>
           ))}
         </div>

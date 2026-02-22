@@ -10,6 +10,56 @@ import {
   NO_TOOLS_SUFFIX,
 } from "@/lib/llm/context"
 import { DEFAULT_ACTIVE_SKILLS, getActiveSkillsContent } from "@/lib/llm/skills"
+import { brainstorm as brainstormSettings } from "@/lib/llm/settings"
+
+// localStorage keys for conversation persistence
+const CONVERSATION_KEY_PREFIX = "contextforge-brainstorm-conv-"
+const CONVERSATION_INDEX_KEY = "contextforge-brainstorm-conv-index"
+const MAX_STORED_CONVERSATIONS = 5
+
+function getConversationKey(sessionId: string) {
+  return `${CONVERSATION_KEY_PREFIX}${sessionId}`
+}
+
+function saveConversation(sessionId: string, messages: Message[]) {
+  if (messages.length === 0) {
+    localStorage.removeItem(getConversationKey(sessionId))
+    return
+  }
+  try {
+    localStorage.setItem(getConversationKey(sessionId), JSON.stringify(messages))
+    // Update index for LRU eviction
+    const index: string[] = JSON.parse(localStorage.getItem(CONVERSATION_INDEX_KEY) || "[]")
+    const filtered = index.filter((id) => id !== sessionId)
+    filtered.push(sessionId)
+    while (filtered.length > MAX_STORED_CONVERSATIONS) {
+      const evicted = filtered.shift()!
+      localStorage.removeItem(getConversationKey(evicted))
+    }
+    localStorage.setItem(CONVERSATION_INDEX_KEY, JSON.stringify(filtered))
+  } catch {
+    // localStorage full or unavailable — silently ignore
+  }
+}
+
+function loadConversation(sessionId: string): Message[] {
+  try {
+    const stored = localStorage.getItem(getConversationKey(sessionId))
+    return stored ? JSON.parse(stored) : []
+  } catch {
+    return []
+  }
+}
+
+function clearStoredConversation(sessionId: string) {
+  localStorage.removeItem(getConversationKey(sessionId))
+  try {
+    const index: string[] = JSON.parse(localStorage.getItem(CONVERSATION_INDEX_KEY) || "[]")
+    localStorage.setItem(CONVERSATION_INDEX_KEY, JSON.stringify(index.filter((id) => id !== sessionId)))
+  } catch {
+    // ignore
+  }
+}
 
 export type Provider = "ollama" | "claude" | "openrouter"
 export type Zone = "PERMANENT" | "STABLE" | "WORKING"
@@ -94,14 +144,32 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
 
   // Dialog state
   const [isOpen, setIsOpen] = useState(false)
-  const [provider, setProvider] = useState<Provider>("claude")
+  const [provider, setProviderState] = useState<Provider>(
+    () => (brainstormSettings.getProvider() as Provider) || "claude"
+  )
   const [disableAgentBehavior, setDisableAgentBehavior] = useState(defaultDisableAgentBehavior)
   const [preventSelfTalk, setPreventSelfTalk] = useState(true)
-  const [model, setModel] = useState<string | null>(null)
+  const [model, setModelState] = useState<string | null>(
+    () => brainstormSettings.getModel()
+  )
 
-  // Conversation state (ephemeral - lost on close/refresh)
-  const [messages, setMessages] = useState<Message[]>([])
-  const [hasUnsavedContent, setHasUnsavedContent] = useState(false)
+  const setProvider = useCallback((p: Provider) => {
+    setProviderState(p)
+    brainstormSettings.setProvider(p)
+  }, [])
+
+  const setModel = useCallback((m: string | null) => {
+    setModelState(m)
+    brainstormSettings.setModel(m)
+  }, [])
+
+  // Conversation state (persisted to localStorage per session)
+  const [messages, setMessages] = useState<Message[]>(
+    () => loadConversation(sessionId)
+  )
+  const [hasUnsavedContent, setHasUnsavedContent] = useState(
+    () => loadConversation(sessionId).length > 0
+  )
 
   // Ephemeral skills (reset on dialog close)
   const [activeSkills, setActiveSkills] = useState<Record<string, boolean>>(
@@ -125,6 +193,25 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
   useEffect(() => {
     streamingTextRef.current = streamingText
   }, [streamingText])
+
+  // Persist messages to localStorage (debounced)
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
+      saveConversation(sessionId, messages)
+    }, 1000)
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    }
+  }, [messages, sessionId])
+
+  // Reload conversation when session changes
+  useEffect(() => {
+    const stored = loadConversation(sessionId)
+    setMessages(stored)
+    setHasUnsavedContent(stored.length > 0)
+  }, [sessionId])
 
   // Abort controller for client-side streaming
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -280,7 +367,8 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
     setOpenrouterSessionCost(0)
     prevTextRef.current = ""
     abortControllerRef.current?.abort()
-  }, [])
+    clearStoredConversation(sessionId)
+  }, [sessionId])
 
   // Send message via Ollama (client-side streaming)
   const sendMessageOllama = useCallback(
@@ -435,12 +523,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
 
   // Send message via Claude (Convex mutations - backend)
   const sendMessageClaude = useCallback(
-    async (content: string) => {
-      const conversationHistory = messages.map((msg) => ({
-        role: msg.role as "user" | "assistant",
-        content: msg.content,
-      }))
-
+    async (content: string, conversationHistory: { role: "user" | "assistant"; content: string }[]) => {
       // Collect active skill IDs to pass to backend
       const activeSkillIds = Object.entries(activeSkills)
         .filter(([, enabled]) => enabled)
@@ -457,7 +540,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
       })
       setGenerationId(result.generationId)
     },
-    [sessionId, messages, startBrainstormGeneration, disableAgentBehavior, preventSelfTalk, activeSkills, model]
+    [sessionId, startBrainstormGeneration, disableAgentBehavior, preventSelfTalk, activeSkills, model]
   )
 
   // Send a new message (dispatches to correct provider)
@@ -494,7 +577,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
         } else if (provider === "openrouter") {
           await sendMessageOpenRouter(content.trim(), conversationHistory)
         } else {
-          await sendMessageClaude(content.trim())
+          await sendMessageClaude(content.trim(), conversationHistory)
         }
       } catch (err) {
         // Ignore AbortError — user pressed stop, partial text already saved by stopStreaming
@@ -597,7 +680,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
         } else if (provider === "openrouter") {
           await sendMessageOpenRouter(userMessage.content, conversationHistory)
         } else {
-          await sendMessageClaude(userMessage.content)
+          await sendMessageClaude(userMessage.content, conversationHistory)
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
@@ -657,7 +740,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
         } else if (provider === "openrouter") {
           await sendMessageOpenRouter(newContent.trim(), conversationHistory)
         } else {
-          await sendMessageClaude(newContent.trim())
+          await sendMessageClaude(newContent.trim(), conversationHistory)
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {

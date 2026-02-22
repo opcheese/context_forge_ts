@@ -296,6 +296,25 @@ export const remove = mutation({
       throw new Error("Template not found or access denied")
     }
 
+    // Clean up marketplace entry if published
+    const template = await ctx.db.get(args.id)
+    if (template?.publishedMarketplaceId) {
+      const mpId = template.publishedMarketplaceId
+      // Delete associated marketplace blocks
+      const mpBlocks = await ctx.db
+        .query("marketplaceBlocks")
+        .withIndex("by_marketplace", (q) => q.eq("marketplaceId", mpId))
+        .collect()
+      for (const b of mpBlocks) {
+        await ctx.db.delete(b._id)
+      }
+      // Delete marketplace entry
+      const mpEntry = await ctx.db.get(mpId)
+      if (mpEntry) {
+        await ctx.db.delete(mpId)
+      }
+    }
+
     await ctx.db.delete(args.id)
   },
 })

@@ -10,6 +10,8 @@ const KEYS = {
   OLLAMA_URL: "contextforge-ollama-url",
   OLLAMA_MODEL: "contextforge-ollama-model",
   COMPRESSION_PROVIDER: "contextforge-compression-provider",
+  BRAINSTORM_PROVIDER: "contextforge-brainstorm-provider",
+  BRAINSTORM_MODEL: "contextforge-brainstorm-model",
 } as const
 
 // Compression provider types
@@ -84,6 +86,31 @@ export const compression = {
 
   setProvider(provider: CompressionProvider): void {
     localStorage.setItem(KEYS.COMPRESSION_PROVIDER, provider)
+  },
+}
+
+/**
+ * Brainstorm provider/model preference
+ */
+export const brainstorm = {
+  getProvider(): string {
+    return localStorage.getItem(KEYS.BRAINSTORM_PROVIDER) || "claude"
+  },
+
+  setProvider(provider: string): void {
+    localStorage.setItem(KEYS.BRAINSTORM_PROVIDER, provider)
+  },
+
+  getModel(): string | null {
+    return localStorage.getItem(KEYS.BRAINSTORM_MODEL)
+  },
+
+  setModel(model: string | null): void {
+    if (model) {
+      localStorage.setItem(KEYS.BRAINSTORM_MODEL, model)
+    } else {
+      localStorage.removeItem(KEYS.BRAINSTORM_MODEL)
+    }
   },
 }
 
