@@ -1,6 +1,6 @@
 # Development Roadmap
 
-**Last updated:** 2026-02-19
+**Last updated:** 2026-02-22
 
 ## Now / Next / Later
 
@@ -25,7 +25,7 @@ Scoped and prioritized, not yet started. Will pick from these after linked block
 
 | Item | Type | Description | Effort |
 |------|------|-------------|--------|
-| `[feature]` Ephemeral skills for brainstorming | Feature | Inject skill context into brainstorm dialog. [Design approved](./plans/2026-02-16-ephemeral-skills-design.md) | 3-4 days |
+| `[feature]` Placeholder blocks | Feature | System-suggested blocks that prompt users to fill in content before brainstorming. Design TBD — needs UX thought. | 1-2 days |
 | `[feature]` Token budgets: make useful | Feature | Configurable per-session budgets, budget warnings that guide action, smart defaults based on model | 2-3 days |
 | `[feature]` Templates save only PERMANENT+STABLE | Feature | PM-requested — avoid saving WORKING zone junk into templates | 1 day |
 | `[feature]` TASK-006: Zone move from editor | Feature | Change block zone without navigating back to home | 1 hour |
@@ -112,6 +112,14 @@ Completed:
 - [x] Micro delights animation system (dialogs, toasts, buttons, AnimatedNumber)
 - [x] Session deletion from UI (TASK-003)
 - [x] Clipboard copy/paste fix for HTTP
+- [x] Zone arrow direction — move-to buttons show correct `←`/`→` based on zone index
+- [x] Marketplace cleanup on template delete — remove orphaned marketplace + blocks entries
+- [x] Brainstorm retry sends correct history for Claude provider (stale closure fix)
+- [x] Brainstorm conversation persistence — localStorage save/load, LRU eviction (5 sessions)
+- [x] Brainstorm export to markdown — download full conversation as .md file
+- [x] Brainstorm model/provider selection persisted across sessions
+- [x] Version display — git commit hash + build time on Settings > About
+- [x] Ephemeral skills for brainstorming — skill context injected into brainstorm dialog
 
 Remaining: see Now/Next sections above.
 
