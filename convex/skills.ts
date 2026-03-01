@@ -16,6 +16,8 @@ import { requireSessionAccess } from "./lib/auth"
 const skillMetadataArg = v.object({
   skillName: v.string(),
   skillDescription: v.optional(v.string()),
+  disableModelInvocation: v.optional(v.boolean()),
+  argumentHint: v.optional(v.string()),
   sourceType: v.union(v.literal("local"), v.literal("upload"), v.literal("url")),
   sourceRef: v.optional(v.string()),
   parentSkillName: v.optional(v.string()),
@@ -42,6 +44,8 @@ export async function insertSkillBlock(
     metadata: {
       skillName: string
       skillDescription?: string
+      disableModelInvocation?: boolean
+      argumentHint?: string
       sourceType: "local" | "upload" | "url"
       sourceRef?: string
       parentSkillName?: string
@@ -70,6 +74,8 @@ export async function insertSkillBlock(
     metadata: {
       skillName: args.metadata.skillName,
       skillDescription: args.metadata.skillDescription,
+      disableModelInvocation: args.metadata.disableModelInvocation,
+      argumentHint: args.metadata.argumentHint,
       sourceType: args.metadata.sourceType,
       sourceRef: args.metadata.sourceRef,
       parentSkillName: args.metadata.parentSkillName,

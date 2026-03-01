@@ -9,6 +9,8 @@
 export interface SkillMetadata {
   skillName: string
   skillDescription: string
+  disableModelInvocation?: boolean
+  argumentHint?: string
 }
 
 export interface ParsedSkill {
@@ -75,11 +77,17 @@ export function parseSkillMd(raw: string, fallbackName?: string): ParsedSkill {
 
   const description = fields["description"] || fallbackName || ""
 
+  const disableModelInvocation =
+    fields["disable-model-invocation"] === "true" ? true : undefined
+  const argumentHint = fields["argument-hint"] || undefined
+
   return {
     content: body,
     metadata: {
       skillName: name,
       skillDescription: description,
+      ...(disableModelInvocation !== undefined && { disableModelInvocation }),
+      ...(argumentHint !== undefined && { argumentHint }),
     },
   }
 }

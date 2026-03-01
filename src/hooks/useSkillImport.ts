@@ -57,6 +57,8 @@ export function useSkillImport({
           metadata: {
             skillName: parsed.metadata.skillName,
             skillDescription: parsed.metadata.skillDescription,
+            disableModelInvocation: parsed.metadata.disableModelInvocation,
+            argumentHint: parsed.metadata.argumentHint,
             sourceType,
             sourceRef,
           },
@@ -123,6 +125,8 @@ export function useSkillImport({
               metadata: {
                 skillName: parsed.skill.metadata.skillName,
                 skillDescription: parsed.skill.metadata.skillDescription,
+                disableModelInvocation: parsed.skill.metadata.disableModelInvocation,
+                argumentHint: parsed.skill.metadata.argumentHint,
                 sourceType: "upload",
                 sourceRef: file.name,
               },
@@ -141,6 +145,8 @@ export function useSkillImport({
             metadata: {
               skillName: parsed.skill.metadata.skillName,
               skillDescription: parsed.skill.metadata.skillDescription,
+              disableModelInvocation: parsed.skill.metadata.disableModelInvocation,
+              argumentHint: parsed.skill.metadata.argumentHint,
               sourceType: "upload",
               sourceRef: file.name,
             },

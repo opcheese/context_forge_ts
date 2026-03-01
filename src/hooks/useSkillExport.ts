@@ -27,6 +27,8 @@ interface ExportBlock {
   metadata?: {
     skillName?: string
     skillDescription?: string
+    disableModelInvocation?: boolean
+    argumentHint?: string
     sourceType?: string
     sourceRef?: string
     parentSkillName?: string
@@ -76,15 +78,44 @@ function addBlocksToZip(
 
 function generateSkillMd(
   skillBlocks: ExportBlock[],
-  fallbackName: string
+  fallbackName: string,
+  referencePaths: string[] = []
 ): string {
+  let name: string
+  let desc: string
+  let body: string
+
+  let disableModelInvocation: boolean | undefined
+  let argumentHint: string | undefined
+
   if (skillBlocks.length > 0) {
     const skill = skillBlocks[0]
-    const name = skill.metadata?.skillName || fallbackName
-    const desc = skill.metadata?.skillDescription || ""
-    return `---\nname: "${name}"\ndescription: "${desc}"\n---\n\n${skill.content}`
+    name = skill.metadata?.skillName || fallbackName
+    desc = skill.metadata?.skillDescription || ""
+    body = skill.content
+    disableModelInvocation = skill.metadata?.disableModelInvocation
+    argumentHint = skill.metadata?.argumentHint
+  } else {
+    name = fallbackName
+    desc = "Exported from ContextForge"
+    body = "This skill was exported from a ContextForge session."
   }
-  return `---\nname: "${fallbackName}"\ndescription: "Exported from ContextForge"\n---\n\nThis skill was exported from a ContextForge session.`
+
+  let frontmatter = `---\nname: "${name}"\ndescription: "${desc}"`
+  if (disableModelInvocation === true) frontmatter += `\ndisable-model-invocation: true`
+  if (argumentHint) frontmatter += `\nargument-hint: "${argumentHint}"`
+  frontmatter += `\n---`
+
+  let result = `${frontmatter}\n\n${body}`
+
+  if (referencePaths.length > 0) {
+    result += "\n\n## Supporting files\n\n"
+    for (const path of referencePaths) {
+      result += `- [${path}](${path})\n`
+    }
+  }
+
+  return result
 }
 
 export function useSkillExport({ sessionId, projectId: explicitProjectId }: UseSkillExportOptions) {
@@ -114,13 +145,14 @@ export function useSkillExport({ sessionId, projectId: explicitProjectId }: UseS
       const skillBlocks = blocks.filter((b) => b.type === "skill")
       const otherBlocks = blocks.filter((b) => b.type !== "skill")
 
+      const usedFilenames = new Set<string>()
+      const blockPathMap = addBlocksToZip(zip, otherBlocks, usedFilenames)
+      const referencePaths = Array.from(blockPathMap.values())
+
       zip.file(
         "SKILL.md",
-        generateSkillMd(skillBlocks, session.name || "Exported Skill")
+        generateSkillMd(skillBlocks, session.name || "Exported Skill", referencePaths)
       )
-
-      const usedFilenames = new Set<string>()
-      addBlocksToZip(zip, otherBlocks, usedFilenames)
 
       const blob = await zip.generateAsync({ type: "blob" })
       const zipName = sanitizeFilename(
@@ -145,11 +177,6 @@ export function useSkillExport({ sessionId, projectId: explicitProjectId }: UseS
       for (const step of steps) {
         allSkillBlocks.push(...step.blocks.filter((b) => b.type === "skill"))
       }
-
-      zip.file(
-        "SKILL.md",
-        generateSkillMd(allSkillBlocks, project.name || "Exported Project")
-      )
 
       // Deduplicate blocks by content across steps, track paths per step
       const contentToPath = new Map<string, string>()
@@ -200,6 +227,13 @@ export function useSkillExport({ sessionId, projectId: explicitProjectId }: UseS
           ...stepPaths,
         })
       }
+
+      // Write SKILL.md with all reference file paths
+      const referencePaths = Array.from(new Set(contentToPath.values()))
+      zip.file(
+        "SKILL.md",
+        generateSkillMd(allSkillBlocks, project.name || "Exported Project", referencePaths)
+      )
 
       // Generate context-map.yaml
       const contextMapObj: Record<string, any> = { contexts: {} }

@@ -7,6 +7,8 @@ import { zoneValidator, marketplaceTypeValidator } from "./lib/validators"
 const skillMetadataValidator = v.object({
   skillName: v.string(),
   skillDescription: v.optional(v.string()),
+  disableModelInvocation: v.optional(v.boolean()),
+  argumentHint: v.optional(v.string()),
   sourceType: v.union(v.literal("local"), v.literal("upload"), v.literal("url")),
   sourceRef: v.optional(v.string()),
   parentSkillName: v.optional(v.string()), // Links reference blocks to their parent skill

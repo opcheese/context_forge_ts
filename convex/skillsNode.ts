@@ -212,7 +212,13 @@ export const importFromScan = action({
 function parseSkillMdInline(
   raw: string,
   fallbackName: string
-): { content: string; skillName: string; skillDescription: string } | null {
+): {
+  content: string
+  skillName: string
+  skillDescription: string
+  disableModelInvocation?: boolean
+  argumentHint?: string
+} | null {
   const trimmed = raw.trim()
   if (!trimmed.startsWith("---")) return null
   const closingIndex = trimmed.indexOf("---", 3)
@@ -243,5 +249,8 @@ function parseSkillMdInline(
     content: body,
     skillName: name,
     skillDescription: fields["description"] || fallbackName,
+    disableModelInvocation:
+      fields["disable-model-invocation"] === "true" ? true : undefined,
+    argumentHint: fields["argument-hint"] || undefined,
   }
 }

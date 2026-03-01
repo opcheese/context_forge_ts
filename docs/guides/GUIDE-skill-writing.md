@@ -108,8 +108,10 @@ Save the pattern analysis to WORKING zone.
 
 1. Open the draft-template block in WORKING zone (or create a new block)
 2. Start with the YAML frontmatter — the rules are in your PERMANENT zone:
-   - `name`: letters, numbers, hyphens only, max 64 chars
-   - `description`: starts with "Use when...", third person, max 1024 chars
+   - `name`: letters, numbers, hyphens only, max 64 chars *(spec requirement)*
+   - `description`: starts with "Use when...", third person, max 1024 chars *(ContextForge best practice — spec only requires a description)*
+   - `disable-model-invocation: true`: add this if the skill has side effects or should only be invoked manually (e.g. deploy, send-message). Prevents Claude from auto-loading it. *(spec field — ContextForge preserves it on import/export)*
+   - `argument-hint`: short hint shown in autocomplete, e.g. `[issue-number]`. Add when the skill uses `$ARGUMENTS`. *(spec field)*
 
 3. Use brainstorm to iterate on the content:
 
@@ -130,6 +132,31 @@ Check against the rules in PERMANENT zone:
 - [ ] `description` is third person
 - [ ] `description` under 1024 characters
 - [ ] `description` does NOT summarize workflow
+- [ ] If skill has side effects: `disable-model-invocation: true` is set
+
+#### Using Arguments (optional)
+
+If your skill is designed to be invoked with an argument (e.g. `/fix-issue 123`), use `$ARGUMENTS` as a placeholder in the skill body:
+
+```markdown
+---
+name: fix-issue
+description: Fix a GitHub issue by number. Use when asked to fix a specific issue.
+disable-model-invocation: true
+argument-hint: "[issue-number]"
+---
+
+Fix GitHub issue $ARGUMENTS following our coding standards.
+
+1. Read the issue description
+2. Understand the requirements
+3. Implement the fix
+4. Write tests
+```
+
+When invoked as `/fix-issue 123`, Claude receives the skill with `$ARGUMENTS` replaced by `123`. Use `$ARGUMENTS[0]`, `$ARGUMENTS[1]` etc. for positional access, or the `$0`, `$1` shorthand.
+
+Store the skill draft as a block in WORKING zone, write the `$ARGUMENTS` placeholder inline, and export as normal — ContextForge passes it through unchanged.
 
 #### Test with Skill
 
@@ -206,10 +233,17 @@ Work through the quality checklist in STABLE zone. Every checkbox should be chec
 3. Extract and verify the structure:
    ```
    your-skill-name/
-     SKILL.md
+     SKILL.md                       ← frontmatter + instructions + ## Supporting files links
      references/
-       *.md
+       permanent/
+         your-rules-block.md
+       stable/
+         your-guide-block.md
+       working/
+         your-draft-block.md
    ```
+
+> **Note:** The `references/{zone}/` folder structure is a ContextForge convention — not part of the `agentskills.io` standard. It preserves zone metadata for round-tripping back into ContextForge. When used in plain Claude Code, the files are just files in subdirectories. The exported SKILL.md includes a `## Supporting files` section that links to them so Claude Code knows to load them.
 
 ---
 
