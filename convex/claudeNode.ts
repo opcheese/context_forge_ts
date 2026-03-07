@@ -20,7 +20,7 @@ import * as os from "os"
 import * as path from "path"
 import {
   assembleContextWithConversation,
-  extractSystemPromptFromBlocks,
+  assembleSystemPromptWithContext,
   formatPromptForSDK,
   NO_TOOLS_SUFFIX,
   NO_SELF_TALK_SUFFIX,
@@ -161,17 +161,15 @@ export const streamBrainstormMessage = action({
       sessionId: args.sessionId,
     })
 
-    // Extract system prompt from blocks to pass to provider
-    let systemPrompt = extractSystemPromptFromBlocks(blocks)
+    // Build unified system prompt: all PERMANENT zone blocks (including system_prompt)
+    let systemPrompt = assembleSystemPromptWithContext(blocks)
 
     // Append anti-agent suffix if enabled
     if (disableAgentBehavior) {
       systemPrompt = (systemPrompt ?? "") + NO_TOOLS_SUFFIX
     }
 
-    // Append anti-self-talk suffix to prevent model from simulating user turns
-    // (the XML-formatted conversation is a single prompt string, so the model
-    // might continue the <user>/<assistant> XML pattern)
+    // Append anti-self-talk suffix
     if (preventSelfTalk) {
       systemPrompt = (systemPrompt ?? "") + NO_SELF_TALK_SUFFIX
     }
@@ -181,14 +179,17 @@ export const streamBrainstormMessage = action({
       ? getActiveSkillsContent(args.activeSkillIds)
       : undefined
 
-    // Assemble context with conversation history (excludes system_prompt blocks)
+    // Assemble non-system context + conversation history
     const messages = assembleContextWithConversation(
       blocks,
       args.conversationHistory,
       args.newMessage,
       activeSkillsContent
     )
-    const prompt = formatPromptForSDK(messages)
+
+    // Filter out system-role messages — they're already in options.systemPrompt
+    const nonSystemMessages = messages.filter((m) => m.role !== "system")
+    const prompt = formatPromptForSDK(nonSystemMessages)
 
     // Create LangFuse trace for observability
     const trace = createGeneration(
@@ -253,6 +254,8 @@ export const streamBrainstormMessage = action({
           model: args.model, // Model override (undefined = CLI default)
           pathToClaudeCodeExecutable: getClaudeCodePath(),
           includePartialMessages: true, // Enable streaming deltas
+          persistSession: false,
+          maxBudgetUsd: 0.50,
           stderr: (data: string) => {
             stderrChunks.push(data)
           },

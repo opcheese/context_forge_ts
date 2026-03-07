@@ -6,6 +6,7 @@ import {
   extractSystemPromptFromBlocks,
   assembleContext,
   assembleContextWithConversation,
+  assembleSystemPromptWithContext,
   estimateTokenCount,
   getContextStats,
   NO_TOOLS_SUFFIX,
@@ -274,6 +275,55 @@ describe("NO_TOOLS_SUFFIX", () => {
   it("contains anti-agent instructions", () => {
     expect(NO_TOOLS_SUFFIX).toContain("do NOT have access to tools")
     expect(NO_TOOLS_SUFFIX).toContain("Do NOT say")
+  })
+})
+
+describe("assembleSystemPromptWithContext", () => {
+  it("combines extracted system prompt with PERMANENT zone content", () => {
+    const blocks = [
+      createBlock({ content: "System prompt", zone: "PERMANENT", type: "system_prompt", position: 0 }),
+      createBlock({ content: "PM persona", zone: "PERMANENT", type: "note", position: 1 }),
+      createBlock({ content: "Reference card", zone: "PERMANENT", type: "reference", position: 2 }),
+    ]
+    const result = assembleSystemPromptWithContext(blocks)
+    expect(result).toContain("System prompt")
+    expect(result).toContain("PM persona")
+    expect(result).toContain("Reference card")
+  })
+
+  it("returns only PERMANENT content when no system_prompt block exists", () => {
+    const blocks = [
+      createBlock({ content: "PM persona", zone: "PERMANENT", type: "note", position: 0 }),
+    ]
+    const result = assembleSystemPromptWithContext(blocks)
+    expect(result).toContain("PM persona")
+  })
+
+  it("returns undefined when no PERMANENT blocks exist at all", () => {
+    const blocks = [
+      createBlock({ content: "Working doc", zone: "WORKING", type: "note", position: 0 }),
+    ]
+    const result = assembleSystemPromptWithContext(blocks)
+    expect(result).toBeUndefined()
+  })
+
+  it("excludes draft blocks", () => {
+    const blocks = [
+      createBlock({ content: "Active", zone: "PERMANENT", type: "note", position: 0 }),
+      createBlock({ content: "Draft", zone: "PERMANENT", type: "note", position: 1, isDraft: true }),
+    ]
+    const result = assembleSystemPromptWithContext(blocks)
+    expect(result).toContain("Active")
+    expect(result).not.toContain("Draft")
+  })
+
+  it("orders by position", () => {
+    const blocks = [
+      createBlock({ content: "Second", zone: "PERMANENT", type: "note", position: 1 }),
+      createBlock({ content: "First", zone: "PERMANENT", type: "system_prompt", position: 0 }),
+    ]
+    const result = assembleSystemPromptWithContext(blocks)!
+    expect(result.indexOf("First")).toBeLessThan(result.indexOf("Second"))
   })
 })
 

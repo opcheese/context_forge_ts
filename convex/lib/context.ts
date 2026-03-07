@@ -266,6 +266,28 @@ export function assembleContextWithConversation(
 }
 
 /**
+ * Assemble the full system prompt from all PERMANENT zone blocks.
+ *
+ * Combines the system_prompt block (if any) with all other PERMANENT blocks
+ * into a single string suitable for the SDK's `systemPrompt` option.
+ * This puts all system-level content into the proper system prompt channel
+ * rather than duplicating it as text in the user prompt.
+ *
+ * @returns Combined system prompt, or undefined if no PERMANENT blocks exist
+ */
+export function assembleSystemPromptWithContext(
+  blocks: Doc<"blocks">[]
+): string | undefined {
+  const permanentBlocks = blocks
+    .filter((b) => b.zone === "PERMANENT" && !b.isDraft)
+    .sort((a, b) => a.position - b.position)
+
+  if (permanentBlocks.length === 0) return undefined
+
+  return permanentBlocks.map((b) => b.content).join("\n\n")
+}
+
+/**
  * Format assembled context messages into a prompt string for the Claude Agent SDK.
  *
  * Uses markdown-style delimiters instead of XML tags to prevent the model
