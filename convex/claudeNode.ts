@@ -21,6 +21,7 @@ import * as path from "path"
 import {
   assembleContextWithConversation,
   extractSystemPromptFromBlocks,
+  formatPromptForSDK,
   NO_TOOLS_SUFFIX,
   NO_SELF_TALK_SUFFIX,
 } from "./lib/context"
@@ -65,31 +66,6 @@ const getClaudeCodePath = (): string | undefined => {
   }
 
   return undefined
-}
-
-// Message format for context
-interface ClaudeMessage {
-  role: "system" | "user" | "assistant"
-  content: string
-}
-
-/**
- * Format messages array into a prompt string for Claude Agent SDK.
- */
-function formatMessagesAsPrompt(messages: ClaudeMessage[]): string {
-  const parts: string[] = []
-
-  for (const msg of messages) {
-    if (msg.role === "system") {
-      parts.push(`<system>\n${msg.content}\n</system>`)
-    } else if (msg.role === "user") {
-      parts.push(`<user>\n${msg.content}\n</user>`)
-    } else if (msg.role === "assistant") {
-      parts.push(`<assistant>\n${msg.content}\n</assistant>`)
-    }
-  }
-
-  return parts.join("\n\n")
 }
 
 /**
@@ -212,7 +188,7 @@ export const streamBrainstormMessage = action({
       args.newMessage,
       activeSkillsContent
     )
-    const prompt = formatMessagesAsPrompt(messages)
+    const prompt = formatPromptForSDK(messages)
 
     // Create LangFuse trace for observability
     const trace = createGeneration(

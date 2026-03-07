@@ -264,3 +264,28 @@ export function assembleContextWithConversation(
 
   return messages
 }
+
+/**
+ * Format assembled context messages into a prompt string for the Claude Agent SDK.
+ *
+ * Uses markdown-style delimiters instead of XML tags to prevent the model
+ * from continuing the tag pattern (generating </assistant>, <user>, etc.).
+ *
+ * System-role messages become "Context Instructions" sections.
+ * User/assistant conversation uses "USER:" / "ASSISTANT:" labels.
+ */
+export function formatPromptForSDK(messages: ContextMessage[]): string {
+  const parts: string[] = []
+
+  for (const msg of messages) {
+    if (msg.role === "system") {
+      parts.push(`=== Context Instructions ===\n${msg.content}\n===`)
+    } else if (msg.role === "user") {
+      parts.push(`USER:\n${msg.content}`)
+    } else if (msg.role === "assistant") {
+      parts.push(`ASSISTANT:\n${msg.content}`)
+    }
+  }
+
+  return parts.join("\n\n")
+}

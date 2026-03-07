@@ -9,7 +9,9 @@ import {
   estimateTokenCount,
   getContextStats,
   NO_TOOLS_SUFFIX,
+  formatPromptForSDK,
 } from "./context"
+import type { ContextMessage } from "./context"
 import type { Doc } from "../_generated/dataModel"
 
 // Helper to create mock blocks
@@ -272,5 +274,55 @@ describe("NO_TOOLS_SUFFIX", () => {
   it("contains anti-agent instructions", () => {
     expect(NO_TOOLS_SUFFIX).toContain("do NOT have access to tools")
     expect(NO_TOOLS_SUFFIX).toContain("Do NOT say")
+  })
+})
+
+describe("formatPromptForSDK", () => {
+  it("formats context zones with markdown headers, not XML tags", () => {
+    const messages: ContextMessage[] = [
+      { role: "system", content: "PM persona instructions" },
+      { role: "user", content: "Reference Material:\n\nSome ref" },
+      { role: "user", content: "Current Context:\n\nSome context" },
+    ]
+    const result = formatPromptForSDK(messages)
+
+    expect(result).not.toContain("<system>")
+    expect(result).not.toContain("</system>")
+    expect(result).not.toContain("<user>")
+    expect(result).not.toContain("</user>")
+    expect(result).not.toContain("<assistant>")
+    expect(result).not.toContain("</assistant>")
+
+    expect(result).toContain("PM persona instructions")
+    expect(result).toContain("Some ref")
+    expect(result).toContain("Some context")
+  })
+
+  it("formats conversation history with labeled turns", () => {
+    const messages: ContextMessage[] = [
+      { role: "user", content: "What about study groups?" },
+      { role: "assistant", content: "Great question..." },
+      { role: "user", content: "Now the IRD" },
+    ]
+    const result = formatPromptForSDK(messages)
+
+    expect(result).toContain("What about study groups?")
+    expect(result).toContain("Great question...")
+    expect(result).toContain("Now the IRD")
+    expect(result).not.toContain("<user>")
+    expect(result).not.toContain("<assistant>")
+  })
+
+  it("separates system content from conversation", () => {
+    const messages: ContextMessage[] = [
+      { role: "system", content: "Instructions" },
+      { role: "user", content: "Hello" },
+      { role: "assistant", content: "Hi" },
+      { role: "user", content: "Question" },
+    ]
+    const result = formatPromptForSDK(messages)
+    const sysIdx = result.indexOf("Instructions")
+    const convIdx = result.indexOf("Hello")
+    expect(sysIdx).toBeLessThan(convIdx)
   })
 })
