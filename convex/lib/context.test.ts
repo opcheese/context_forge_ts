@@ -10,6 +10,7 @@ import {
   estimateTokenCount,
   getContextStats,
   NO_TOOLS_SUFFIX,
+  NO_SELF_TALK_SUFFIX,
   formatPromptForSDK,
 } from "./context"
 import type { ContextMessage } from "./context"
@@ -275,6 +276,13 @@ describe("NO_TOOLS_SUFFIX", () => {
   it("contains anti-agent instructions", () => {
     expect(NO_TOOLS_SUFFIX).toContain("do NOT have access to tools")
     expect(NO_TOOLS_SUFFIX).toContain("Do NOT say")
+  })
+})
+
+describe("NO_SELF_TALK_SUFFIX", () => {
+  it("contains anti-self-talk instructions", () => {
+    expect(NO_SELF_TALK_SUFFIX).toContain("ONLY your single assistant response")
+    expect(NO_SELF_TALK_SUFFIX).toContain("Do NOT")
   })
 })
 

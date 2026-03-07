@@ -13,12 +13,11 @@ IMPORTANT: In this conversation you do NOT have access to tools, files, or code 
 
 /**
  * Anti-self-talk suffix to prevent the model from simulating user messages.
- * The XML-formatted conversation is passed as a single prompt string to the SDK,
- * so the model might continue the XML pattern by generating <user> tags.
+ * Appended to the system prompt when using the Claude Agent SDK.
  */
 export const NO_SELF_TALK_SUFFIX = `
 
-IMPORTANT: Generate ONLY your single assistant response. Do NOT simulate, generate, or continue with any user messages. Do NOT write <user> tags or pretend to be the user. Stop after your response is complete.`
+IMPORTANT: Generate ONLY your single assistant response. Do NOT simulate, generate, or continue with any user messages. Do NOT write "USER:" or pretend to be the user. Your response ends when your answer is complete — do not continue the conversation pattern.`
 
 export interface ContextMessage {
   role: "system" | "user" | "assistant"
