@@ -25,6 +25,7 @@ import {
   NO_TOOLS_SUFFIX,
   NO_SELF_TALK_SUFFIX,
 } from "./lib/context"
+import { SelfTalkDetector } from "./lib/selfTalkDetector"
 import { getActiveSkillsContent } from "./lib/skills"
 import { createGeneration, flushLangfuse } from "./lib/langfuse"
 import { isClaudeCodeEnabled } from "./lib/featureFlags"
@@ -221,6 +222,9 @@ export const streamBrainstormMessage = action({
     // Capture stderr from Claude Code process for debugging
     const stderrChunks: string[] = []
 
+    // Self-talk detection (when preventSelfTalk is enabled)
+    const selfTalkDetector = preventSelfTalk ? new SelfTalkDetector() : null
+
     // Helper to check if generation was cancelled via DB flag
     const isCancelled = async (): Promise<boolean> => {
       const gen = await ctx.runQuery(internal.generations.getInternal, {
@@ -270,6 +274,27 @@ export const streamBrainstormMessage = action({
             const delta = event.delta as Record<string, unknown> | undefined
             if (delta && delta.type === "text_delta" && typeof delta.text === "string") {
               hasReceivedStreamEvents = true
+
+              // Check for self-talk markers before buffering
+              if (selfTalkDetector) {
+                const detection = selfTalkDetector.feed(delta.text)
+                if (detection) {
+                  // Add the clean portion before the marker
+                  if (detection.cleanText) {
+                    buffer += detection.cleanText
+                    fullText += detection.cleanText
+                  }
+                  // Flush what we have, then abort
+                  console.warn(
+                    `[Claude Brainstorm] Self-talk detected: model generated "${detection.marker}" ` +
+                    `at position ${detection.position}. Aborting stream.`
+                  )
+                  await flushBuffer()
+                  abortController.abort()
+                  break
+                }
+              }
+
               buffer += delta.text
               fullText += delta.text
 
