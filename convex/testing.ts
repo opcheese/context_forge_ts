@@ -5,6 +5,7 @@
  * The HTTP endpoint checks for a test environment before allowing reset.
  */
 
+import { v } from "convex/values"
 import { internalMutation, internalQuery } from "./_generated/server"
 import { internal } from "./_generated/api"
 
@@ -116,6 +117,97 @@ export const resetAuth = internalMutation({
     }
 
     return results
+  },
+})
+
+// Clean up all data for a user by email. Leaves the user account intact.
+// Usage: npx convex run testing:cleanupUserData '{"email":"demo2@contextforge.com"}'
+export const cleanupUserData = internalMutation({
+  args: { email: v.string() },
+  handler: async (ctx, { email }) => {
+    // Find user by email via authAccounts
+    const accounts = await ctx.db.query("authAccounts").collect()
+    const account = accounts.find(
+      (a) => (a as any).providerAccountId === email
+    )
+    if (!account) {
+      return { error: `No account found for ${email}` }
+    }
+
+    const userId = account.userId
+
+    // Delete all sessions owned by this user + cascade
+    const sessions = await ctx.db.query("sessions").collect()
+    const userSessions = sessions.filter((s) => s.userId === userId)
+
+    let deletedBlocks = 0
+    let deletedSnapshots = 0
+    let deletedGenerations = 0
+
+    for (const session of userSessions) {
+      const blocks = await ctx.db
+        .query("blocks")
+        .withIndex("by_session", (q) => q.eq("sessionId", session._id))
+        .collect()
+      for (const block of blocks) {
+        await ctx.db.delete(block._id)
+        deletedBlocks++
+      }
+
+      const snapshots = await ctx.db
+        .query("snapshots")
+        .withIndex("by_session", (q) => q.eq("sessionId", session._id))
+        .collect()
+      for (const snapshot of snapshots) {
+        await ctx.db.delete(snapshot._id)
+        deletedSnapshots++
+      }
+
+      const generations = await ctx.db
+        .query("generations")
+        .withIndex("by_session", (q) => q.eq("sessionId", session._id))
+        .collect()
+      for (const generation of generations) {
+        await ctx.db.delete(generation._id)
+        deletedGenerations++
+      }
+
+      await ctx.db.delete(session._id)
+    }
+
+    // Delete templates, projects, workflows owned by user
+    let deletedTemplates = 0
+    let deletedProjects = 0
+    let deletedWorkflows = 0
+
+    const templates = await ctx.db.query("templates").collect()
+    for (const t of templates.filter((t) => t.userId === userId)) {
+      await ctx.db.delete(t._id)
+      deletedTemplates++
+    }
+
+    const projects = await ctx.db.query("projects").collect()
+    for (const p of projects.filter((p) => p.userId === userId)) {
+      await ctx.db.delete(p._id)
+      deletedProjects++
+    }
+
+    const workflows = await ctx.db.query("workflows").collect()
+    for (const w of workflows.filter((w) => w.userId === userId)) {
+      await ctx.db.delete(w._id)
+      deletedWorkflows++
+    }
+
+    return {
+      userId,
+      deletedSessions: userSessions.length,
+      deletedBlocks,
+      deletedSnapshots,
+      deletedGenerations,
+      deletedTemplates,
+      deletedProjects,
+      deletedWorkflows,
+    }
   },
 })
 
