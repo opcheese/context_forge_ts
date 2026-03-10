@@ -8,6 +8,23 @@ import { computeContentHash } from "./lib/contentHash"
 import { canAccessSession, requireSessionAccess } from "./lib/auth"
 import { resolveBlocks } from "./lib/resolve"
 
+/**
+ * Clear Claude session ID when PERMANENT or STABLE blocks change.
+ * Forces a fresh Claude session on the next brainstorm turn.
+ */
+async function invalidateClaudeSession(
+  ctx: MutationCtx,
+  sessionId: Id<"sessions">,
+  zone: string
+) {
+  if (zone === "PERMANENT" || zone === "STABLE") {
+    const session = await ctx.db.get(sessionId)
+    if (session?.claudeSessionId) {
+      await ctx.db.patch(sessionId, { claudeSessionId: undefined })
+    }
+  }
+}
+
 // Fetch canonical blocks for a set of linked blocks, returns lookup map
 async function fetchCanonicalLookup(
   ctx: { db: any },
@@ -197,7 +214,7 @@ export const create = mutation({
     // Update session's updatedAt
     await ctx.db.patch(args.sessionId, { updatedAt: now })
 
-    return await ctx.db.insert("blocks", {
+    const blockId = await ctx.db.insert("blocks", {
       sessionId: args.sessionId,
       content: args.content,
       type: args.type,
@@ -212,6 +229,10 @@ export const create = mutation({
       tokenModel: DEFAULT_TOKEN_MODEL,
       contentHash,
     })
+
+    await invalidateClaudeSession(ctx, args.sessionId, zone)
+
+    return blockId
   },
 })
 
@@ -237,7 +258,7 @@ export const createLinked = mutation({
 
     await ctx.db.patch(args.sessionId, { updatedAt: now })
 
-    return await ctx.db.insert("blocks", {
+    const blockId = await ctx.db.insert("blocks", {
       sessionId: args.sessionId,
       content: "", // Empty — content comes from canonical
       type: canonical.type,
@@ -250,6 +271,10 @@ export const createLinked = mutation({
       originalTokens: canonical.originalTokens,
       tokenModel: canonical.tokenModel,
     })
+
+    await invalidateClaudeSession(ctx, args.sessionId, zone)
+
+    return blockId
   },
 })
 
@@ -282,6 +307,10 @@ export const move = mutation({
     // Update session's updatedAt
     await ctx.db.patch(block.sessionId, { updatedAt: now })
 
+    // Invalidate Claude session if moving to/from PERMANENT/STABLE
+    await invalidateClaudeSession(ctx, block.sessionId, args.zone)
+    await invalidateClaudeSession(ctx, block.sessionId, block.zone)
+
     return args.id
   },
 })
@@ -309,6 +338,10 @@ export const moveAndReorder = mutation({
     })
 
     await ctx.db.patch(block.sessionId, { updatedAt: now })
+
+    // Invalidate Claude session if moving to/from PERMANENT or STABLE
+    await invalidateClaudeSession(ctx, block.sessionId, args.zone)
+    await invalidateClaudeSession(ctx, block.sessionId, block.zone)
 
     return args.id
   },
@@ -338,6 +371,9 @@ export const reorder = mutation({
 
     // Update session's updatedAt
     await ctx.db.patch(block.sessionId, { updatedAt: now })
+
+    // Invalidate Claude session if reordering within PERMANENT or STABLE
+    await invalidateClaudeSession(ctx, block.sessionId, block.zone)
 
     return args.id
   },
@@ -391,6 +427,11 @@ export const update = mutation({
 
     await ctx.db.patch(targetId, updates)
 
+    // Invalidate Claude session if content changed in PERMANENT/STABLE
+    if (args.content !== undefined) {
+      await invalidateClaudeSession(ctx, block.sessionId, block.zone)
+    }
+
     // If we updated a canonical block through a ref, also update all referencing blocks' tokens
     if (block.refBlockId && args.content !== undefined) {
       const refs = await ctx.db
@@ -439,6 +480,8 @@ export const remove = mutation({
 
       // Update session's updatedAt before deleting
       await ctx.db.patch(block.sessionId, { updatedAt: Date.now() })
+
+      await invalidateClaudeSession(ctx, block.sessionId, block.zone)
     }
     await ctx.db.delete(args.id)
   },
@@ -459,6 +502,9 @@ export const toggleDraft = mutation({
       updatedAt: now,
     })
     await ctx.db.patch(block.sessionId, { updatedAt: now })
+
+    // Toggling draft changes what's included in LLM context
+    await invalidateClaudeSession(ctx, block.sessionId, block.zone)
 
     return args.id
   },
@@ -486,6 +532,8 @@ export const unlink = mutation({
       tokenModel: DEFAULT_TOKEN_MODEL,
       updatedAt: Date.now(),
     })
+
+    await invalidateClaudeSession(ctx, block.sessionId, block.zone)
   },
 })
 
@@ -535,6 +583,8 @@ export const compress = mutation({
 
     // Update session's updatedAt
     await ctx.db.patch(block.sessionId, { updatedAt: now })
+
+    await invalidateClaudeSession(ctx, block.sessionId, block.zone)
 
     return { success: true, blockId: args.blockId }
   },
@@ -610,6 +660,8 @@ export const compressAndMerge = mutation({
 
     // Update session's updatedAt
     await ctx.db.patch(sessionId, { updatedAt: now })
+
+    await invalidateClaudeSession(ctx, sessionId, args.targetZone)
 
     return {
       success: true,

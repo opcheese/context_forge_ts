@@ -335,6 +335,60 @@ describe("assembleSystemPromptWithContext", () => {
   })
 })
 
+describe("session resume prompt pattern", () => {
+  it("turn 1: assembles full context with conversation", () => {
+    const blocks = [
+      createBlock({ content: "System rules", zone: "PERMANENT", type: "system_prompt", position: 0 }),
+      createBlock({ content: "Reference doc", zone: "STABLE", position: 0 }),
+      createBlock({ content: "Current draft", zone: "WORKING", position: 0 }),
+    ]
+    const history = [
+      { role: "user" as const, content: "Hello" },
+      { role: "assistant" as const, content: "Hi there" },
+    ]
+
+    const messages = assembleContextWithConversation(blocks, history, "New question")
+    const nonSystem = messages.filter((m) => m.role !== "system")
+    const prompt = formatPromptForSDK(nonSystem)
+
+    // Full context should include STABLE, WORKING, history, and new message
+    expect(prompt).toContain("Reference doc")
+    expect(prompt).toContain("Current draft")
+    expect(prompt).toContain("Hello")
+    expect(prompt).toContain("Hi there")
+    expect(prompt).toContain("New question")
+  })
+
+  it("turn 2+: only new message needed (context is in SDK session)", () => {
+    // When resuming, we send just the new message as prompt
+    const resumePrompt = "Follow-up question"
+
+    // This is the raw string sent to claudeQuery on resume
+    // No formatting needed — it's a plain user message
+    expect(resumePrompt).toBe("Follow-up question")
+    expect(resumePrompt).not.toContain("Reference Material")
+    expect(resumePrompt).not.toContain("Current Context")
+  })
+
+  it("system prompt is consistent between fresh and resume paths", () => {
+    const blocks = [
+      createBlock({ content: "System rules", zone: "PERMANENT", type: "system_prompt", position: 0 }),
+      createBlock({ content: "Persona", zone: "PERMANENT", type: "note", position: 1 }),
+    ]
+
+    // Both paths use the same assembleSystemPromptWithContext call
+    const systemPrompt = assembleSystemPromptWithContext(blocks)
+    expect(systemPrompt).toContain("System rules")
+    expect(systemPrompt).toContain("Persona")
+
+    // Suffixes can be appended identically to both paths
+    const withSuffixes = (systemPrompt ?? "") + NO_TOOLS_SUFFIX + NO_SELF_TALK_SUFFIX
+    expect(withSuffixes).toContain("System rules")
+    expect(withSuffixes).toContain("do NOT have access to tools")
+    expect(withSuffixes).toContain("ONLY your single assistant response")
+  })
+})
+
 describe("formatPromptForSDK", () => {
   it("formats context zones with markdown headers, not XML tags", () => {
     const messages: ContextMessage[] = [

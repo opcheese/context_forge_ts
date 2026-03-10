@@ -87,7 +87,7 @@ export interface TraceMetadata {
  */
 export interface GenerationInput {
   systemPrompt?: string
-  messages: Array<{ role: string; content: string }>
+  messages?: Array<{ role: string; content: string }>
   prompt?: string // Formatted prompt string
 }
 
@@ -150,7 +150,7 @@ export function createGeneration(
         formattedPrompt: input.prompt?.slice(0, 1000), // Truncate for display
       },
       metadata: {
-        messageCount: input.messages.length,
+        messageCount: input.messages?.length ?? 0,
         systemPromptLength: input.systemPrompt?.length ?? 0,
       },
     })

@@ -138,6 +138,9 @@ export const streamBrainstormMessage = action({
   args: {
     generationId: v.id("generations"),
     sessionId: v.id("sessions"),
+    // Note: conversationHistory is used only on turn 1 (no existing claudeSessionId).
+    // On turn 2+ with resume, the SDK has the full conversation cached.
+    // We still accept it here as fallback if the session is invalidated mid-conversation.
     conversationHistory: v.array(
       v.object({
         role: v.union(v.literal("user"), v.literal("assistant")),
@@ -157,44 +160,55 @@ export const streamBrainstormMessage = action({
     const disableAgentBehavior = args.disableAgentBehavior ?? true
     const preventSelfTalk = args.preventSelfTalk ?? true
 
+    // Check for existing Claude session (enables prompt caching on turn 2+)
+    const session = await ctx.runQuery(internal.generations.getSessionInternal, {
+      sessionId: args.sessionId,
+    })
+    const existingClaudeSessionId = session?.claudeSessionId
+
     // Get blocks for context assembly (use internal query to bypass auth in scheduled actions)
     const blocks = await ctx.runQuery(internal.blocks.listBySessionInternal, {
       sessionId: args.sessionId,
     })
 
-    // Build unified system prompt: all PERMANENT zone blocks (including system_prompt)
-    let systemPrompt = assembleSystemPromptWithContext(blocks)
-
-    // Append anti-agent suffix if enabled
+    // System prompt is the same for both fresh and resume paths
+    let systemPrompt: string | undefined = assembleSystemPromptWithContext(blocks)
     if (disableAgentBehavior) {
       systemPrompt = (systemPrompt ?? "") + NO_TOOLS_SUFFIX
     }
-
-    // Append anti-self-talk suffix
     if (preventSelfTalk) {
       systemPrompt = (systemPrompt ?? "") + NO_SELF_TALK_SUFFIX
     }
 
-    // Build active skills content for injection
+    let prompt: string
+
+    // Resolve active skills content once (used in both paths)
     const activeSkillsContent = args.activeSkillIds?.length
       ? getActiveSkillsContent(args.activeSkillIds)
       : undefined
 
-    // Assemble non-system context + conversation history
-    const messages = assembleContextWithConversation(
-      blocks,
-      args.conversationHistory,
-      args.newMessage,
-      activeSkillsContent
-    )
-
-    // Filter out system-role messages — they're already in options.systemPrompt
-    const nonSystemMessages = messages.filter((m) => m.role !== "system")
-    const prompt = formatPromptForSDK(nonSystemMessages)
+    if (existingClaudeSessionId) {
+      // Turn 2+: SDK has full prior context cached, send only new message.
+      // Inject skills into system prompt since there's no context assembly on resume.
+      if (activeSkillsContent) {
+        systemPrompt = (systemPrompt ?? "") + "\n\nActive Skills:\n\n" + activeSkillsContent
+      }
+      prompt = args.newMessage
+    } else {
+      // Turn 1: assemble full context as prompt (skills injected via assembleContextWithConversation)
+      const messages = assembleContextWithConversation(
+        blocks,
+        args.conversationHistory,
+        args.newMessage,
+        activeSkillsContent
+      )
+      const nonSystemMessages = messages.filter((m) => m.role !== "system")
+      prompt = formatPromptForSDK(nonSystemMessages)
+    }
 
     // Create LangFuse trace for observability
     const trace = createGeneration(
-      "claude-brainstorm",
+      existingClaudeSessionId ? "claude-brainstorm-resume" : "claude-brainstorm",
       {
         sessionId: args.sessionId,
         provider: "claude",
@@ -202,7 +216,6 @@ export const streamBrainstormMessage = action({
       },
       {
         systemPrompt,
-        messages,
         prompt,
       }
     )
@@ -258,8 +271,8 @@ export const streamBrainstormMessage = action({
           model: args.model, // Model override (undefined = CLI default)
           pathToClaudeCodeExecutable: getClaudeCodePath(),
           includePartialMessages: true, // Enable streaming deltas
-          persistSession: false,
           maxBudgetUsd: 0.50,
+          ...(existingClaudeSessionId ? { resume: existingClaudeSessionId } : {}),
           stderr: (data: string) => {
             stderrChunks.push(data)
           },
@@ -337,6 +350,15 @@ export const streamBrainstormMessage = action({
           }
           costUsd = msg.total_cost_usd as number | undefined
 
+          // Capture and store Claude session ID for future resume
+          const claudeSessionId = msg.session_id as string | undefined
+          if (claudeSessionId && !existingClaudeSessionId) {
+            await ctx.runMutation(internal.generations.setClaudeSessionId, {
+              sessionId: args.sessionId,
+              claudeSessionId,
+            })
+          }
+
           // Log SDK-level execution errors
           if (msg.subtype === "error_during_execution") {
             const errors = msg.errors as string[] | undefined
@@ -381,6 +403,18 @@ export const streamBrainstormMessage = action({
       })
       await flushLangfuse()
     } catch (error) {
+      // If resume failed, clear session ID so next turn starts fresh
+      if (existingClaudeSessionId) {
+        console.warn("[Claude Brainstorm] Session resume may have failed, clearing claudeSessionId")
+        try {
+          await ctx.runMutation(internal.generations.clearClaudeSessionId, {
+            sessionId: args.sessionId,
+          })
+        } catch {
+          // Best effort — don't mask the original error
+        }
+      }
+
       // Handle AbortError gracefully — not a real error
       if (error instanceof Error && error.name === "AbortError") {
         await flushBuffer()

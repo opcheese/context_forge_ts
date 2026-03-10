@@ -3,12 +3,13 @@ import { v } from "convex/values"
 import { countTokens } from "./lib/tokenizer"
 import { canAccessSession } from "./lib/auth"
 
-// Default budgets (matches Python implementation)
+// Default budgets — 150K total to stay within Claude Code's effective context
+// window (~160K usable of 200K, minus compaction buffer and response space)
 export const DEFAULT_BUDGETS = {
-  permanent: 50_000,
+  permanent: 30_000,
   stable: 50_000,
-  working: 50_000,
-  total: 200_000,
+  working: 40_000,
+  total: 150_000,
 } as const
 
 export type Budgets = typeof DEFAULT_BUDGETS

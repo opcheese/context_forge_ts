@@ -12,7 +12,7 @@
 
 ## Overview
 
-ContextForge deals with large contexts (100K+ tokens). This document covers:
+ContextForge deals with large contexts (up to 150K tokens). This document covers:
 1. Why the zone system matters for caching
 2. Provider-specific caching mechanisms
 3. How to structure prompts for cache hits
@@ -208,7 +208,7 @@ const messages = [
 
 ### Do We Need to Optimize?
 
-For 100K+ token contexts:
+For sessions up to 150K tokens (the Claude Code effective limit):
 
 | Concern | Impact | Mitigation |
 |---------|--------|------------|
@@ -233,7 +233,7 @@ async function* streamContext(sessionId: Id<"sessions">) {
   }
 }
 
-// 2. Paginate if needed (unlikely for 100K tokens)
+// 2. Paginate if needed (unlikely for 150K tokens)
 const blocks = await ctx.db
   .query("blocks")
   .withIndex("by_session_zone", q => q.eq("sessionId", sessionId))
@@ -245,10 +245,10 @@ const blocks = await ctx.db
 ```typescript
 // Track tokens per zone to enforce budgets
 interface ZoneBudgets {
-  permanent: number;  // Default: 50,000
-  stable: number;     // Default: 100,000
-  working: number;    // Default: 100,000
-  total: number;      // Default: 500,000
+  permanent: number;  // Default: 30,000
+  stable: number;     // Default: 50,000
+  working: number;    // Default: 40,000
+  total: number;      // Default: 150,000
 }
 
 function checkBudgets(blocks: Block[], budgets: ZoneBudgets): BudgetStatus {
@@ -311,7 +311,7 @@ function checkBudgets(blocks: Block[], budgets: ZoneBudgets): BudgetStatus {
 2. **OpenAI caches automatically** - Just order correctly
 3. **Anthropic needs cache_control** - But Claude Code handles it
 4. **Ollama doesn't cache prompts** - Good for testing, not for validating cache behavior
-5. **100K tokens is fine** - Caching makes large contexts cost-effective
+5. **150K token budget** - Stays within Claude Code's effective context window (200K minus compaction buffer and response space)
 6. **Defer explicit caching** - Get ordering right first, add cache_control later if needed
 
 ---

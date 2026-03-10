@@ -33,14 +33,16 @@ export default defineSchema({
     // Token budget configuration (optional, uses defaults if not set)
     budgets: v.optional(
       v.object({
-        permanent: v.number(), // Default: 50000
-        stable: v.number(), // Default: 100000
-        working: v.number(), // Default: 100000
-        total: v.number(), // Default: 500000
+        permanent: v.number(), // Default: 30000
+        stable: v.number(), // Default: 50000
+        working: v.number(), // Default: 40000
+        total: v.number(), // Default: 150000
       })
     ),
     // System prompt for LLM interactions
     systemPrompt: v.optional(v.string()),
+    // Claude Agent SDK session ID for resume (enables prompt caching)
+    claudeSessionId: v.optional(v.string()),
     // Project/workflow linkage (Phase 2+)
     projectId: v.optional(v.id("projects")),
     templateId: v.optional(v.id("templates")),

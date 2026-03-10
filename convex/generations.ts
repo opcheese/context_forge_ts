@@ -274,6 +274,52 @@ export const startBrainstormGeneration = mutation({
 })
 
 /**
+ * Internal mutation to store Claude Agent SDK session ID on a session.
+ * Called by the streaming action after the first turn creates a session.
+ */
+export const setClaudeSessionId = internalMutation({
+  args: {
+    sessionId: v.id("sessions"),
+    claudeSessionId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db.get(args.sessionId)
+    if (!session) return // Session was deleted
+    await ctx.db.patch(args.sessionId, {
+      claudeSessionId: args.claudeSessionId,
+    })
+  },
+})
+
+/**
+ * Internal mutation to clear Claude Agent SDK session ID.
+ * Called when PERMANENT/STABLE blocks change, forcing a fresh session on next turn.
+ */
+export const clearClaudeSessionId = internalMutation({
+  args: {
+    sessionId: v.id("sessions"),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db.get(args.sessionId)
+    if (!session) return // Session was deleted
+    await ctx.db.patch(args.sessionId, {
+      claudeSessionId: undefined,
+    })
+  },
+})
+
+/**
+ * Internal query to get session by ID.
+ * Used by the streaming action to read claudeSessionId.
+ */
+export const getSessionInternal = internalQuery({
+  args: { sessionId: v.id("sessions") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.sessionId)
+  },
+})
+
+/**
  * Save a brainstorm message as a block.
  *
  * This is called manually by the user to save individual messages
