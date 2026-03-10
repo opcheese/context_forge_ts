@@ -51,6 +51,8 @@ Thumbs.db
 
 # Internal docs (not for GitHub)
 docs/internal/
+internal/
 2025-02-16-local-vpn-deployment-design.md
 .agents
 .claude
+contextforge-tutorials/
