@@ -325,6 +325,10 @@ export const toggleMemoryPin = mutation({
     const session = await ctx.db.get(args.sessionId)
     if (!session) throw new Error("Session not found")
 
+    // Validate entry exists before pinning
+    const entry = await ctx.db.get(args.entryId)
+    if (!entry) throw new Error("Memory entry not found")
+
     const current = session.pinnedMemories ?? []
     const isPinned = current.includes(args.entryId)
 
