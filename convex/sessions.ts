@@ -308,6 +308,63 @@ export const clear = mutation({
   },
 })
 
+// ============ Memory Mutations ============
+
+/**
+ * Toggle a memory entry pin on/off for this session.
+ * Returns the new pin state (true = pinned, false = unpinned).
+ */
+export const toggleMemoryPin = mutation({
+  args: {
+    sessionId: v.id("sessions"),
+    entryId: v.id("memoryEntries"),
+  },
+  handler: async (ctx, args) => {
+    await requireSessionAccess(ctx, args.sessionId)
+
+    const session = await ctx.db.get(args.sessionId)
+    if (!session) throw new Error("Session not found")
+
+    const current = session.pinnedMemories ?? []
+    const isPinned = current.includes(args.entryId)
+
+    if (isPinned) {
+      await ctx.db.patch(args.sessionId, {
+        pinnedMemories: current.filter((id) => id !== args.entryId),
+      })
+      return false
+    } else {
+      await ctx.db.patch(args.sessionId, {
+        pinnedMemories: [...current, args.entryId],
+      })
+      return true
+    }
+  },
+})
+
+/**
+ * Set session tags for memory auto-selection.
+ * Tags are normalized (trimmed, lowercased).
+ */
+export const updateSessionTags = mutation({
+  args: {
+    sessionId: v.id("sessions"),
+    tags: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireSessionAccess(ctx, args.sessionId)
+
+    const session = await ctx.db.get(args.sessionId)
+    if (!session) throw new Error("Session not found")
+
+    await ctx.db.patch(args.sessionId, {
+      sessionTags: args.tags.map((t) => t.trim().toLowerCase()),
+    })
+
+    return args.sessionId
+  },
+})
+
 // ============ Workflow Context ============
 
 /**
