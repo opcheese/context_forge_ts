@@ -39,6 +39,7 @@ import { useSkillImport } from "@/hooks/useSkillImport"
 import { LinkBlockPopover } from "@/components/LinkBlockPopover"
 import { SaveTemplateDialog, ApplyTemplateDialog } from "@/components/templates"
 import { AddToProjectDialog } from "@/components/projects"
+import { MemoryDrawer } from "@/components/memory/MemoryDrawer"
 import { Save, FolderPlus, FileDown } from "lucide-react"
 
 const ZONE_INDEX: Record<Zone, number> = { PERMANENT: 0, STABLE: 1, WORKING: 2 }
@@ -831,6 +832,7 @@ function WorkflowStepIndicator({ sessionId }: { sessionId: Id<"sessions"> }) {
 // Home page
 function HomePage() {
   const { sessionId, isLoading } = useSession()
+  const sessionData = useQuery(api.sessions.get, sessionId ? { id: sessionId } : "skip")
   const [selectedBlockIds, setSelectedBlockIds] = useState<Set<Id<"blocks">>>(new Set())
   const [isCompressionDialogOpen, setIsCompressionDialogOpen] = useState(false)
   const [isImportSkillOpen, setIsImportSkillOpen] = useState(false)
@@ -1116,6 +1118,13 @@ function HomePage() {
           />
         </>
       )}
+
+      {/* Memory drawer */}
+      <MemoryDrawer
+        projectId={sessionData?.projectId ?? undefined}
+        sessionId={sessionId ?? undefined}
+        pinnedMemories={sessionData?.pinnedMemories}
+      />
     </div>
   )
 }
