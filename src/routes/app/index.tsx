@@ -1124,6 +1124,7 @@ function HomePage() {
         projectId={sessionData?.projectId ?? undefined}
         sessionId={sessionId ?? undefined}
         pinnedMemories={sessionData?.pinnedMemories}
+        sessionTags={sessionData?.sessionTags}
       />
     </div>
   )
