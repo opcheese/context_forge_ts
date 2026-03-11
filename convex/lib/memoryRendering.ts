@@ -25,9 +25,12 @@ export function scoreEntryByTags(sessionTags: string[], entryTags: string[]): nu
 /**
  * Render matched memory entries into structured text for LLM context.
  *
+ * Pinned entries can be identified either by reference equality (test convenience)
+ * or by passing a Set of pinned indices/IDs separately.
+ *
  * @param entries All project memory entries
  * @param sessionTags Tags from the current session (for auto-selection)
- * @param pinnedEntries Entries that are pinned (always included)
+ * @param pinnedEntries Entries that are pinned (always included) — matched by reference
  * @returns Formatted markdown string, or empty string if no matches
  */
 export function renderMemoryBlock(
@@ -78,9 +81,7 @@ export function renderMemoryBlock(
 
     parts.push(`\n### ${type} (${items.length} matched)`)
     for (const { entry } of items) {
-      const contentPreview =
-        entry.content.length > 200 ? entry.content.slice(0, 200) + "..." : entry.content
-      parts.push(`**${entry.title}** — ${contentPreview}`)
+      parts.push(`**${entry.title}** — ${entry.content}`)
     }
   }
 

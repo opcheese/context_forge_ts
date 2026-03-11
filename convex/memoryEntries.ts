@@ -6,8 +6,31 @@
  */
 
 import { mutation, query, internalQuery } from "./_generated/server"
+import type { MutationCtx } from "./_generated/server"
+import type { Id } from "./_generated/dataModel"
 import { v } from "convex/values"
 import { canAccessProject } from "./lib/auth"
+
+/**
+ * Invalidate Claude sessions for all sessions in a project.
+ * Memory is rendered into the system prompt (PERMANENT zone),
+ * so any memory change must clear cached SDK sessions.
+ */
+async function invalidateProjectSessions(
+  ctx: MutationCtx,
+  projectId: Id<"projects">
+) {
+  const sessions = await ctx.db
+    .query("sessions")
+    .withIndex("by_project", (q) => q.eq("projectId", projectId))
+    .collect()
+
+  for (const session of sessions) {
+    if (session.claudeSessionId) {
+      await ctx.db.patch(session._id, { claudeSessionId: undefined })
+    }
+  }
+}
 
 // ============ Queries ============
 
@@ -125,7 +148,7 @@ export const create = mutation({
     }
 
     const now = Date.now()
-    return await ctx.db.insert("memoryEntries", {
+    const id = await ctx.db.insert("memoryEntries", {
       projectId: args.projectId,
       type: args.type,
       title: args.title.trim(),
@@ -134,6 +157,9 @@ export const create = mutation({
       createdAt: now,
       updatedAt: now,
     })
+
+    await invalidateProjectSessions(ctx, args.projectId)
+    return id
   },
 })
 
@@ -173,6 +199,7 @@ export const update = mutation({
     }
 
     await ctx.db.patch(args.id, updates)
+    await invalidateProjectSessions(ctx, entry.projectId)
     return args.id
   },
 })
@@ -208,5 +235,6 @@ export const remove = mutation({
     }
 
     await ctx.db.delete(args.id)
+    await invalidateProjectSessions(ctx, entry.projectId)
   },
 })

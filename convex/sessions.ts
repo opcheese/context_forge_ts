@@ -325,9 +325,12 @@ export const toggleMemoryPin = mutation({
     const session = await ctx.db.get(args.sessionId)
     if (!session) throw new Error("Session not found")
 
-    // Validate entry exists before pinning
+    // Validate entry exists and belongs to the same project
     const entry = await ctx.db.get(args.entryId)
     if (!entry) throw new Error("Memory entry not found")
+    if (!session.projectId || entry.projectId !== session.projectId) {
+      throw new Error("Memory entry does not belong to this session's project")
+    }
 
     const current = session.pinnedMemories ?? []
     const isPinned = current.includes(args.entryId)
@@ -335,11 +338,13 @@ export const toggleMemoryPin = mutation({
     if (isPinned) {
       await ctx.db.patch(args.sessionId, {
         pinnedMemories: current.filter((id) => id !== args.entryId),
+        claudeSessionId: undefined,
       })
       return false
     } else {
       await ctx.db.patch(args.sessionId, {
         pinnedMemories: [...current, args.entryId],
+        claudeSessionId: undefined,
       })
       return true
     }
@@ -363,6 +368,7 @@ export const updateSessionTags = mutation({
 
     await ctx.db.patch(args.sessionId, {
       sessionTags: args.tags.map((t) => t.trim().toLowerCase()),
+      claudeSessionId: undefined,
     })
 
     return args.sessionId
