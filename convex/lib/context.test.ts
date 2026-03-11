@@ -333,6 +333,18 @@ describe("assembleSystemPromptWithContext", () => {
     const result = assembleSystemPromptWithContext(blocks)!
     expect(result.indexOf("First")).toBeLessThan(result.indexOf("Second"))
   })
+
+  it("includes rendered memory in system prompt when provided", () => {
+    const blocks = [
+      createBlock({ content: "System prompt", type: "system_prompt", zone: "PERMANENT", position: 0 }),
+      createBlock({ content: "Reference doc", type: "note", zone: "PERMANENT", position: 1 }),
+    ]
+    const result = assembleSystemPromptWithContext(blocks, "## Project Memory\n\n### character\n**Renn** — engineer")
+    expect(result).toContain("System prompt")
+    expect(result).toContain("Reference doc")
+    expect(result).toContain("## Project Memory")
+    expect(result).toContain("**Renn**")
+  })
 })
 
 describe("session resume prompt pattern", () => {

@@ -27,6 +27,7 @@ import {
 } from "./lib/context"
 import { SelfTalkDetector } from "./lib/selfTalkDetector"
 import { getActiveSkillsContent } from "./lib/skills"
+import { renderMemoryBlock } from "./lib/memoryRendering"
 import { createGeneration, flushLangfuse } from "./lib/langfuse"
 import { isClaudeCodeEnabled } from "./lib/featureFlags"
 
@@ -171,8 +172,24 @@ export const streamBrainstormMessage = action({
       sessionId: args.sessionId,
     })
 
+    // Fetch memory entries if session belongs to a project
+    let renderedMemory: string | undefined
+    if (session?.projectId) {
+      const memoryEntries = await ctx.runQuery(
+        internal.memoryEntries.listByProjectInternal,
+        { projectId: session.projectId }
+      )
+      if (memoryEntries.length > 0) {
+        const sessionTags = session.sessionTags ?? []
+        const pinnedIds = new Set(session.pinnedMemories ?? [])
+        const pinnedEntries = memoryEntries.filter((e) => pinnedIds.has(e._id))
+
+        renderedMemory = renderMemoryBlock(memoryEntries, sessionTags, pinnedEntries)
+      }
+    }
+
     // System prompt is the same for both fresh and resume paths
-    let systemPrompt: string | undefined = assembleSystemPromptWithContext(blocks)
+    let systemPrompt: string | undefined = assembleSystemPromptWithContext(blocks, renderedMemory)
     if (disableAgentBehavior) {
       systemPrompt = (systemPrompt ?? "") + NO_TOOLS_SUFFIX
     }

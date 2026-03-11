@@ -275,15 +275,20 @@ export function assembleContextWithConversation(
  * @returns Combined system prompt, or undefined if no PERMANENT blocks exist
  */
 export function assembleSystemPromptWithContext(
-  blocks: Doc<"blocks">[]
+  blocks: Doc<"blocks">[],
+  renderedMemory?: string
 ): string | undefined {
   const permanentBlocks = blocks
     .filter((b) => b.zone === "PERMANENT" && !b.isDraft)
     .sort((a, b) => a.position - b.position)
 
-  if (permanentBlocks.length === 0) return undefined
+  const parts: string[] = permanentBlocks.map((b) => b.content)
+  if (renderedMemory) {
+    parts.push(renderedMemory)
+  }
 
-  return permanentBlocks.map((b) => b.content).join("\n\n")
+  if (parts.length === 0) return undefined
+  return parts.join("\n\n")
 }
 
 /**
