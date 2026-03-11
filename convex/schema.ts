@@ -45,6 +45,10 @@ export default defineSchema({
     claudeSessionId: v.optional(v.string()),
     // Actual model resolved by the Claude SDK (e.g. "claude-sonnet-4-5-20250929")
     claudeResolvedModel: v.optional(v.string()),
+    // Memory pins (session-scoped — not carried forward)
+    pinnedMemories: v.optional(v.array(v.id("memoryEntries"))),
+    // Session tags for memory auto-selection (merged from template defaults + user overrides)
+    sessionTags: v.optional(v.array(v.string())),
     // Project/workflow linkage (Phase 2+)
     projectId: v.optional(v.id("projects")),
     templateId: v.optional(v.id("templates")),
@@ -147,6 +151,33 @@ export default defineSchema({
     .index("by_session", ["sessionId"])
     .index("by_session_zone", ["sessionId", "zone", "position"])
     .index("by_content_hash", ["contentHash"]),
+
+  // Memory type definitions per project
+  memorySchemas: defineTable({
+    projectId: v.id("projects"),
+    types: v.array(
+      v.object({
+        name: v.string(),
+        color: v.string(),
+        icon: v.string(),
+      })
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_project", ["projectId"]),
+
+  // Individual memory entries
+  memoryEntries: defineTable({
+    projectId: v.id("projects"),
+    type: v.string(),
+    title: v.string(),
+    content: v.string(),
+    tags: v.array(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_project", ["projectId"])
+    .index("by_project_type", ["projectId", "type"]),
 
   // Snapshots - saved copies of session state for testing/restore
   snapshots: defineTable({
