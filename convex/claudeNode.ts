@@ -212,7 +212,7 @@ export const streamBrainstormMessage = action({
       {
         sessionId: args.sessionId,
         provider: "claude",
-        model: "claude-code",
+        model: args.model || "claude-code",
       },
       {
         systemPrompt,
@@ -228,6 +228,7 @@ export const streamBrainstormMessage = action({
     let inputTokens: number | undefined
     let outputTokens: number | undefined
     let costUsd: number | undefined
+    let resolvedModel: string | undefined
 
     // AbortController for SDK process termination
     const abortController = new AbortController()
@@ -324,6 +325,15 @@ export const streamBrainstormMessage = action({
           }
         }
 
+        // Capture the actual model from the SDK response
+        if (msgType === "assistant" && !resolvedModel) {
+          const msg = message as Record<string, unknown>
+          const msgContent = msg.message as Record<string, unknown> | undefined
+          if (typeof msgContent?.model === "string") {
+            resolvedModel = msgContent.model
+          }
+        }
+
         // Fallback: handle assistant messages if we didn't receive stream events
         if (msgType === "assistant" && !hasReceivedStreamEvents) {
           const msg = message as Record<string, unknown>
@@ -350,12 +360,18 @@ export const streamBrainstormMessage = action({
           }
           costUsd = msg.total_cost_usd as number | undefined
 
-          // Capture and store Claude session ID for future resume
+          // Capture and store Claude session ID + resolved model
           const claudeSessionId = msg.session_id as string | undefined
           if (claudeSessionId && !existingClaudeSessionId) {
             await ctx.runMutation(internal.generations.setClaudeSessionId, {
               sessionId: args.sessionId,
               claudeSessionId,
+            })
+          }
+          if (resolvedModel) {
+            await ctx.runMutation(internal.generations.setClaudeResolvedModel, {
+              sessionId: args.sessionId,
+              model: resolvedModel,
             })
           }
 
@@ -379,7 +395,7 @@ export const streamBrainstormMessage = action({
         generationId: args.generationId,
       })
       if (gen?.status === "cancelled") {
-        trace.complete({ text: fullText, inputTokens, outputTokens, costUsd, durationMs })
+        trace.complete({ text: fullText, inputTokens, outputTokens, costUsd, durationMs, resolvedModel })
         await flushLangfuse()
         return
       }
@@ -400,6 +416,7 @@ export const streamBrainstormMessage = action({
         outputTokens,
         costUsd,
         durationMs,
+        resolvedModel,
       })
       await flushLangfuse()
     } catch (error) {
@@ -419,7 +436,7 @@ export const streamBrainstormMessage = action({
       if (error instanceof Error && error.name === "AbortError") {
         await flushBuffer()
         const durationMs = Date.now() - startTime
-        trace.complete({ text: fullText, inputTokens, outputTokens, costUsd, durationMs })
+        trace.complete({ text: fullText, inputTokens, outputTokens, costUsd, durationMs, resolvedModel })
         await flushLangfuse()
         return
       }

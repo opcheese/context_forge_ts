@@ -24,6 +24,7 @@ import type * as lib_context from "../lib/context.js";
 import type * as lib_featureFlags from "../lib/featureFlags.js";
 import type * as lib_langfuse from "../lib/langfuse.js";
 import type * as lib_resolve from "../lib/resolve.js";
+import type * as lib_selfTalkDetector from "../lib/selfTalkDetector.js";
 import type * as lib_skills from "../lib/skills.js";
 import type * as lib_tokenizer from "../lib/tokenizer.js";
 import type * as lib_validators from "../lib/validators.js";
@@ -63,6 +64,7 @@ declare const fullApi: ApiFromModules<{
   "lib/featureFlags": typeof lib_featureFlags;
   "lib/langfuse": typeof lib_langfuse;
   "lib/resolve": typeof lib_resolve;
+  "lib/selfTalkDetector": typeof lib_selfTalkDetector;
   "lib/skills": typeof lib_skills;
   "lib/tokenizer": typeof lib_tokenizer;
   "lib/validators": typeof lib_validators;

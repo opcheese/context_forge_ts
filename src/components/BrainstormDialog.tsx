@@ -84,6 +84,8 @@ interface BrainstormDialogProps {
   // Model selection (Claude provider)
   model?: string | null
   onModelChange?: (model: string | null) => void
+  // Actual model resolved by the SDK (shown in Default label)
+  claudeResolvedModel?: string
   // Ephemeral skills
   activeSkills?: Record<string, boolean>
   onToggleSkill?: (skillId: string) => void
@@ -323,6 +325,7 @@ export function BrainstormDialog({
   onStopStreaming,
   model,
   onModelChange,
+  claudeResolvedModel,
   activeSkills,
   onToggleSkill,
   openrouterSessionCost,
@@ -494,7 +497,10 @@ export function BrainstormDialog({
                   disabled={!canChangeProvider || isStreaming}
                   className="text-sm border border-input rounded-md px-2 py-1 bg-background disabled:opacity-50 max-w-[200px]"
                 >
-                  <option value="">Default (Opus)</option>
+                  <option value="">
+                    Default{claudeResolvedModel && !model ? ` (${claudeResolvedModel.replace("claude-", "").replace(/-\d{8}$/, "")})` : ""}
+                  </option>
+                  <option value="claude-sonnet-4-6">Sonnet 4.6</option>
                   <option value="claude-sonnet-4-5-20250929">Sonnet 4.5</option>
                   <option value="claude-opus-4-6">Opus 4.6</option>
                   <option value="claude-haiku-4-5-20251001">Haiku 4.5</option>

@@ -43,6 +43,8 @@ export default defineSchema({
     systemPrompt: v.optional(v.string()),
     // Claude Agent SDK session ID for resume (enables prompt caching)
     claudeSessionId: v.optional(v.string()),
+    // Actual model resolved by the Claude SDK (e.g. "claude-sonnet-4-5-20250929")
+    claudeResolvedModel: v.optional(v.string()),
     // Project/workflow linkage (Phase 2+)
     projectId: v.optional(v.id("projects")),
     templateId: v.optional(v.id("templates")),

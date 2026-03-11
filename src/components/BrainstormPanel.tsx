@@ -80,6 +80,7 @@ interface BrainstormPanelProps {
 
 export function BrainstormPanel({ sessionId, compact = false }: BrainstormPanelProps) {
   const health = useProviderHealth()
+  const session = useQuery(api.sessions.get, { id: sessionId })
   const [showSystemPrompt, setShowSystemPrompt] = useState(false)
   const [newSystemPrompt, setNewSystemPrompt] = useState("")
   const [isCreatingBlock, setIsCreatingBlock] = useState(false)
@@ -205,6 +206,7 @@ export function BrainstormPanel({ sessionId, compact = false }: BrainstormPanelP
           onStopStreaming={brainstorm.stopStreaming}
           model={brainstorm.model}
           onModelChange={brainstorm.setModel}
+          claudeResolvedModel={session?.claudeResolvedModel}
           activeSkills={brainstorm.activeSkills}
           onToggleSkill={brainstorm.toggleSkill}
           openrouterSessionCost={brainstorm.openrouterSessionCost}
@@ -350,6 +352,7 @@ export function BrainstormPanel({ sessionId, compact = false }: BrainstormPanelP
         onStopStreaming={brainstorm.stopStreaming}
         model={brainstorm.model}
         onModelChange={brainstorm.setModel}
+        claudeResolvedModel={session?.claudeResolvedModel}
         activeSkills={brainstorm.activeSkills}
         onToggleSkill={brainstorm.toggleSkill}
         openrouterSessionCost={brainstorm.openrouterSessionCost}

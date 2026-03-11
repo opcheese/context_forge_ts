@@ -309,6 +309,24 @@ export const clearClaudeSessionId = internalMutation({
 })
 
 /**
+ * Internal mutation to store the actual model resolved by the Claude SDK.
+ * Called after the first assistant message reveals the model name.
+ */
+export const setClaudeResolvedModel = internalMutation({
+  args: {
+    sessionId: v.id("sessions"),
+    model: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const session = await ctx.db.get(args.sessionId)
+    if (!session) return
+    await ctx.db.patch(args.sessionId, {
+      claudeResolvedModel: args.model,
+    })
+  },
+})
+
+/**
  * Internal query to get session by ID.
  * Used by the streaming action to read claudeSessionId.
  */

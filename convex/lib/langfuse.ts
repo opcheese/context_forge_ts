@@ -100,6 +100,7 @@ export interface GenerationOutput {
   outputTokens?: number
   costUsd?: number
   durationMs?: number
+  resolvedModel?: string
 }
 
 /**
@@ -160,6 +161,7 @@ export function createGeneration(
         try {
           generation.end({
             output: output.text,
+            model: output.resolvedModel,
             usage: {
               input: output.inputTokens,
               output: output.outputTokens,
@@ -168,6 +170,7 @@ export function createGeneration(
             metadata: {
               costUsd: output.costUsd,
               durationMs: output.durationMs,
+              resolvedModel: output.resolvedModel,
             },
           })
         } catch (error) {
