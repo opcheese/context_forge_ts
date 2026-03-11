@@ -160,6 +160,29 @@ These are optional — the built-in templates are self-sufficient. See [Communit
 
 ---
 
+### Building Project Memory
+
+After a GO decision, you're committing to this project. This is a good time to set up **Project Memory** — structured knowledge that the LLM can see automatically based on relevance.
+
+**Zones vs Memory:**
+
+| | WORKING Zone Blocks | Memory Entries |
+|---|---|---|
+| Structure | Linear — everything piles up | Typed and tagged — scored by relevance |
+| Visibility | LLM sees all blocks in the zone | LLM sees entries matching your session tags |
+| Scope | Per-session (carried forward via workflow) | Per-project (available in any session) |
+
+**What to do:**
+
+1. Click the memory bar at the bottom of the session
+2. The drawer expands — click "Choose a starter template"
+3. Select **PM** — this gives you types: learning, decision, stakeholder, tension
+4. You now have project memory ready. You'll populate it starting with personas in the next step.
+
+**How tags work:** Each memory entry has tags (e.g., `#aisha, #persona`). Each session has session tags. The LLM automatically sees entries whose tags overlap with your session tags — no manual pasting needed.
+
+---
+
 ### L2: Personas
 
 **Goal:** Define 2-3 user archetypes grounded in behavior, not demographics.
@@ -182,6 +205,9 @@ These are optional — the built-in templates are self-sufficient. See [Communit
    - Everything is marked [ASSUMPTION] or [VALIDATED]
 4. If you have more than 4 personas, you haven't prioritized — merge or cut
 5. Save personas to WORKING
+6. **Save to Memory:** For each persona, open the memory drawer and click **+**. Set type to `stakeholder`, title to the persona name, paste goals + frustrations as content, and add tags like `#aisha, #persona`.
+
+> **Try it:** Set your session tags to `#aisha`. Now brainstorm about Aisha's scenarios. The LLM sees her persona card automatically — without you pasting it into the conversation.
 
 **Quality check:**
 - [ ] 2-3 personas (not more)
@@ -212,6 +238,7 @@ These are optional — the built-in templates are self-sufficient. See [Communit
 4. Identify opportunities — where can the product intervene? Which steps have pain scores of 4-5?
 5. Write at least one edge case or failure scenario per persona
 6. Save scenarios to WORKING
+7. **Save to Memory:** Save key scenarios as memory entries (type: `tension` or `learning`, tags: persona name + context like `#aisha, #onboarding`)
 
 **Quality check:**
 - [ ] At least one scenario per persona
@@ -259,6 +286,7 @@ Skip this step if the project doesn't have a UI, or if you're handing off to a d
 5. Identify state transitions: what states do key entities pass through?
 6. Define invariants: rules that must always be true
 7. Mark boundary decisions: what's in-system vs external
+8. **Save to Memory:** Save key glossary terms and domain decisions as memory entries (type: `decision`, tags: entity names like `#order, #customer`)
 
 **This is NOT a database schema.** No IDs, no foreign keys, no data types. If a developer needs those, they derive them from your model. Your job is the user-facing concepts.
 
@@ -369,16 +397,16 @@ Run through this after L5, before handing stories to the dev team:
 
 ## Quick Reference
 
-| Step | Method | Key Framework | Primary Output |
-|------|--------|--------------|----------------|
-| L0 | CIRCLES | Comprehend -> Summarize | Project Brief + Appetite |
-| L1 | EARS | 5 requirement patterns | IRD with testable requirements |
-| GATE | Decision framework | Evidence + Risk | GO / PIVOT / KILL |
-| L2 | Proto-persona | Behavioral goals | 2-3 user archetypes |
-| L3 | Journey mapping | Steps + Touchpoints + Pain | User scenarios |
-| L3.5 | Fat-marker sketches | Information architecture | Key screen layouts |
-| L4 | Use-case driven | Glossary + Relationships | Conceptual model |
-| L5 | Story mapping | Vertical slices + Priority tiers | Prioritized user stories |
+| Step | Method | Primary Output | Save to Memory? |
+|------|--------|----------------|-----------------|
+| L0 | CIRCLES | Project Brief + Appetite | — |
+| L1 | EARS | IRD with testable requirements | — |
+| GATE | Decision framework | GO / PIVOT / KILL | Set up memory schema (PM template) |
+| L2 | Proto-persona | 2-3 user archetypes | Personas as `stakeholder` entries |
+| L3 | Journey mapping | User scenarios | Key scenarios as `tension`/`learning` |
+| L3.5 | Fat-marker sketches | Key screen layouts | — |
+| L4 | Use-case driven | Conceptual model | Glossary terms as `decision` entries |
+| L5 | Story mapping | Prioritized user stories | — |
 
 ---
 
