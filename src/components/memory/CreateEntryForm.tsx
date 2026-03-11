@@ -5,6 +5,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { parseTags } from "@/lib/tags"
 import type { Id } from "../../../convex/_generated/dataModel"
 
 interface CreateEntryFormProps {
@@ -18,14 +19,6 @@ interface CreateEntryFormProps {
     tags: string[]
   }) => Promise<unknown>
   onCancel: () => void
-}
-
-function parseTags(raw: string): string[] {
-  return raw
-    .split(",")
-    .map((t) => t.trim())
-    .filter(Boolean)
-    .map((t) => (t.startsWith("#") ? t : `#${t}`))
 }
 
 export function CreateEntryForm({ projectId, types, onSubmit, onCancel }: CreateEntryFormProps) {

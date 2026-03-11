@@ -7,6 +7,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { ChevronUp, ChevronDown, X, Search, Pin, Plus, Pencil, Trash2, Tag } from "lucide-react"
 import type { Id } from "../../../convex/_generated/dataModel"
 import { cn } from "@/lib/utils"
+import { parseTags } from "@/lib/tags"
 import { CreateEntryForm } from "./CreateEntryForm"
 
 interface MemoryDrawerProps {
@@ -14,14 +15,6 @@ interface MemoryDrawerProps {
   sessionId: Id<"sessions"> | undefined
   pinnedMemories?: Id<"memoryEntries">[]
   sessionTags?: string[]
-}
-
-function parseTags(raw: string): string[] {
-  return raw
-    .split(",")
-    .map((t) => t.trim())
-    .filter(Boolean)
-    .map((t) => (t.startsWith("#") ? t : `#${t}`))
 }
 
 export function MemoryDrawer({ projectId, sessionId, pinnedMemories, sessionTags }: MemoryDrawerProps) {
@@ -33,7 +26,7 @@ export function MemoryDrawer({ projectId, sessionId, pinnedMemories, sessionTags
   const [isCreating, setIsCreating] = useState(false)
 
   // Task 10: edit/delete state
-  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<Id<"memoryEntries"> | null>(null)
   const [deletingId, setDeletingId] = useState<Id<"memoryEntries"> | null>(null)
   const [editType, setEditType] = useState("")
   const [editTitle, setEditTitle] = useState("")
@@ -52,9 +45,6 @@ export function MemoryDrawer({ projectId, sessionId, pinnedMemories, sessionTags
     () => new Set(pinnedMemories ?? []),
     [pinnedMemories]
   )
-
-  // Don't render if no project linked
-  if (!projectId) return null
 
   const totalEntries = memory.entries.length
   const hasSchema = !!memory.schema
@@ -85,8 +75,11 @@ export function MemoryDrawer({ projectId, sessionId, pinnedMemories, sessionTags
     }))
   }, [memory.schema, memory.countsByType])
 
+  // Don't render if no project linked
+  if (!projectId) return null
+
   // Task 10: start editing an entry
-  const startEditing = (entry: { _id: string; type: string; title: string; content: string; tags: string[] }) => {
+  const startEditing = (entry: { _id: Id<"memoryEntries">; type: string; title: string; content: string; tags: string[] }) => {
     setEditingId(entry._id)
     setEditType(entry.type)
     setEditTitle(entry.title)
@@ -534,6 +527,7 @@ export function MemoryDrawer({ projectId, sessionId, pinnedMemories, sessionTags
         title="Delete memory entry?"
         description="This memory entry will be permanently deleted. Any sessions that pin it will be updated."
         onConfirm={confirmDelete}
+        destructive
         loading={isDeleting}
       />
     </>
