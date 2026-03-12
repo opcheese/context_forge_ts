@@ -169,7 +169,8 @@ export const streamBrainstormMessage = action({
     const session = await ctx.runQuery(internal.generations.getSessionInternal, {
       sessionId: args.sessionId,
     })
-    const existingClaudeSessionId = session?.claudeSessionId
+    // Validation mode always needs fresh context assembly (criteria blocks differ)
+    const existingClaudeSessionId = isValidation ? undefined : session?.claudeSessionId
 
     // Get blocks for context assembly (use internal query to bypass auth in scheduled actions)
     const blocks = await ctx.runQuery(internal.blocks.listBySessionInternal, {

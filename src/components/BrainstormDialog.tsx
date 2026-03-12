@@ -68,10 +68,10 @@ interface BrainstormDialogProps {
   onClearConversation: () => void
   onSaveMessage: (messageId: string, zone: Zone) => Promise<void>
   // Save-to-memory support
-  projectId?: string
+  projectId?: Id<"projects">
   memorySchemaTypes?: Array<{ name: string; color: string; icon: string }>
   onCreateMemoryEntry?: (args: {
-    projectId: string
+    projectId: Id<"projects">
     type: string
     title: string
     content: string
@@ -732,7 +732,7 @@ export function BrainstormDialog({
         {memoryDraftText && projectId && memorySchemaTypes && onCreateMemoryEntry && (
           <div className="mx-4 mb-2">
             <SaveToMemoryDialog
-              projectId={projectId as Id<"projects">}
+              projectId={projectId}
               selectedText={memoryDraftText}
               schemaTypes={memorySchemaTypes}
               onSave={async (args) => {
