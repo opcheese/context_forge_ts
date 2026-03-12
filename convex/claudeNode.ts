@@ -33,7 +33,7 @@ import { createGeneration, flushLangfuse } from "./lib/langfuse"
 import { isClaudeCodeEnabled } from "./lib/featureFlags"
 
 // Get Claude Code executable path by trying to locate it
-const getClaudeCodePath = (): string | undefined => {
+export const getClaudeCodePath = (): string | undefined => {
   // First try environment variable
   if (process.env.CLAUDE_CODE_PATH) {
     return process.env.CLAUDE_CODE_PATH

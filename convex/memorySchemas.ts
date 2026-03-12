@@ -6,7 +6,7 @@
  * Starter templates provide sensible defaults for common project types.
  */
 
-import { mutation, query } from "./_generated/server"
+import { mutation, query, internalQuery } from "./_generated/server"
 import { v } from "convex/values"
 import { canAccessProject } from "./lib/auth"
 
@@ -87,6 +87,21 @@ export const listTemplates = query({
       typeCount: types.length,
       typeNames: types.map((t) => t.name),
     }))
+  },
+})
+
+// ============ Internal Queries ============
+
+/**
+ * Get the memory schema for a project (bypasses auth for server-side actions).
+ */
+export const getByProjectInternal = internalQuery({
+  args: { projectId: v.id("projects") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("memorySchemas")
+      .withIndex("by_project", (q) => q.eq("projectId", args.projectId))
+      .first()
   },
 })
 

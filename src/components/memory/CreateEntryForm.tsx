@@ -19,13 +19,19 @@ interface CreateEntryFormProps {
     tags: string[]
   }) => Promise<unknown>
   onCancel: () => void
+  initialValues?: {
+    type: string
+    title: string
+    content: string
+    tags: string[]
+  }
 }
 
-export function CreateEntryForm({ projectId, types, onSubmit, onCancel }: CreateEntryFormProps) {
-  const [type, setType] = useState(types[0]?.name ?? "")
-  const [title, setTitle] = useState("")
-  const [content, setContent] = useState("")
-  const [tagsInput, setTagsInput] = useState("")
+export function CreateEntryForm({ projectId, types, onSubmit, onCancel, initialValues }: CreateEntryFormProps) {
+  const [type, setType] = useState(initialValues?.type ?? types[0]?.name ?? "")
+  const [title, setTitle] = useState(initialValues?.title ?? "")
+  const [content, setContent] = useState(initialValues?.content ?? "")
+  const [tagsInput, setTagsInput] = useState(initialValues?.tags?.join(", ") ?? "")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const titleRef = useRef<HTMLInputElement>(null)
 
