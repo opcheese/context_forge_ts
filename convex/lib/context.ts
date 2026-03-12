@@ -20,6 +20,12 @@ export const NO_SELF_TALK_SUFFIX = `
 IMPORTANT: Generate ONLY your single assistant response. Do NOT simulate, generate, or continue with any user messages. Do NOT write "USER:" or pretend to be the user. Your response ends when your answer is complete — do not continue the conversation pattern.`
 
 /**
+ * Validation mode suffix appended to system prompt when evaluating artifacts against criteria.
+ */
+export const VALIDATION_SUFFIX = `
+VALIDATION MODE: You are evaluating artifacts against criteria. Blocks marked as validation criteria define what "good" looks like. For each criterion, state whether the artifacts meet it. Be specific — quote the artifact where it meets or fails the criterion. Summarize with a clear PASS / PARTIAL / FAIL verdict.`
+
+/**
  * Check if a block should be excluded from context assembly.
  * @param block - The block to check
  * @param mode - "brainstorm" includes default blocks only; "validation" includes default + validation blocks

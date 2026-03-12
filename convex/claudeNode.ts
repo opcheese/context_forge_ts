@@ -24,6 +24,7 @@ import {
   formatPromptForSDK,
   NO_TOOLS_SUFFIX,
   NO_SELF_TALK_SUFFIX,
+  VALIDATION_SUFFIX,
 } from "./lib/context"
 import { SelfTalkDetector } from "./lib/selfTalkDetector"
 import { getActiveSkillsContent } from "./lib/skills"
@@ -154,12 +155,15 @@ export const streamBrainstormMessage = action({
     preventSelfTalk: v.optional(v.boolean()), // Append anti-self-talk suffix
     activeSkillIds: v.optional(v.array(v.string())), // Ephemeral skill IDs to inject
     model: v.optional(v.string()), // Claude model override (e.g. "claude-sonnet-4-5-20250929")
+    isValidation: v.optional(v.boolean()), // Validation mode — include validation criteria blocks + suffix
   },
   handler: async (ctx, args): Promise<void> => {
     const throttleMs = args.throttleMs ?? 100
     const startTime = Date.now()
     const disableAgentBehavior = args.disableAgentBehavior ?? true
     const preventSelfTalk = args.preventSelfTalk ?? true
+    const isValidation = args.isValidation ?? false
+    const contextMode = isValidation ? "validation" as const : "brainstorm" as const
 
     // Check for existing Claude session (enables prompt caching on turn 2+)
     const session = await ctx.runQuery(internal.generations.getSessionInternal, {
@@ -189,12 +193,22 @@ export const streamBrainstormMessage = action({
     }
 
     // System prompt is the same for both fresh and resume paths
-    let systemPrompt: string | undefined = assembleSystemPromptWithContext(blocks, renderedMemory)
+    let systemPrompt: string | undefined = assembleSystemPromptWithContext(blocks, renderedMemory, contextMode)
     if (disableAgentBehavior) {
       systemPrompt = (systemPrompt ?? "") + NO_TOOLS_SUFFIX
     }
     if (preventSelfTalk) {
       systemPrompt = (systemPrompt ?? "") + NO_SELF_TALK_SUFFIX
+    }
+    if (isValidation) {
+      const validationPromptBlock = blocks.find(
+        (b) => b.type === "validation_prompt" && b.zone === "PERMANENT" && (b.contextMode ?? "default") !== "draft"
+      )
+      if (validationPromptBlock) {
+        systemPrompt = (systemPrompt ?? "") + "\n\n" + validationPromptBlock.content
+      } else {
+        systemPrompt = (systemPrompt ?? "") + VALIDATION_SUFFIX
+      }
     }
 
     let prompt: string
@@ -217,7 +231,8 @@ export const streamBrainstormMessage = action({
         blocks,
         args.conversationHistory,
         args.newMessage,
-        activeSkillsContent
+        activeSkillsContent,
+        contextMode
       )
       const nonSystemMessages = messages.filter((m) => m.role !== "system")
       prompt = formatPromptForSDK(nonSystemMessages)
