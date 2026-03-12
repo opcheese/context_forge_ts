@@ -14,6 +14,12 @@ export const DEFAULT_BUDGETS = {
 
 export type Budgets = typeof DEFAULT_BUDGETS
 
+/** Block is excluded from brainstorm context (draft or validation-only) */
+function isExcludedFromBudget(block: { contextMode?: string }): boolean {
+  const mode = block.contextMode ?? "default"
+  return mode === "draft" || mode === "validation"
+}
+
 /**
  * Get token metrics for all zones in a session.
  * Returns current usage, budgets, and percentage used.
@@ -64,8 +70,8 @@ export const getZoneMetrics = query({
       const tokens = block.tokens ?? countTokens(block.content)
 
       zones[zone].blocks++
-      // Draft blocks don't count toward token budgets
-      if ((block.contextMode ?? "default") !== "draft") {
+      // Draft and validation blocks don't count toward token budgets
+      if (!isExcludedFromBudget(block)) {
         zones[zone].tokens += tokens
         totalTokens += tokens
       }
@@ -132,7 +138,7 @@ export const checkBudget = query({
       .collect()
 
     const currentTokens = blocks.reduce(
-      (sum, block) => (block.contextMode ?? "default") === "draft" ? sum : sum + (block.tokens ?? countTokens(block.content)),
+      (sum, block) => isExcludedFromBudget(block) ? sum : sum + (block.tokens ?? countTokens(block.content)),
       0
     )
 
@@ -208,7 +214,7 @@ export const getBudgetStatus = query({
     }
 
     for (const block of blocks) {
-      if ((block.contextMode ?? "default") === "draft") continue
+      if (isExcludedFromBudget(block)) continue
       const tokens = block.tokens ?? countTokens(block.content)
       zoneTotals[block.zone] = (zoneTotals[block.zone] ?? 0) + tokens
     }
