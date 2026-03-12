@@ -192,6 +192,7 @@ export function BrainstormPanel({ sessionId, compact = false }: BrainstormPanelP
           provider={brainstorm.provider}
           onProviderChange={brainstorm.setProvider}
           onSendMessage={(content) => brainstorm.sendMessage(content)}
+          onSendValidation={(content) => brainstorm.sendValidation(content)}
           onClearConversation={brainstorm.clearConversation}
           onSaveMessage={handleSaveMessage}
           onRetryMessage={(messageId) => brainstorm.retryMessage(messageId)}
@@ -341,6 +342,7 @@ export function BrainstormPanel({ sessionId, compact = false }: BrainstormPanelP
         provider={brainstorm.provider}
         onProviderChange={brainstorm.setProvider}
         onSendMessage={(content) => brainstorm.sendMessage(content)}
+          onSendValidation={(content) => brainstorm.sendValidation(content)}
         onClearConversation={brainstorm.clearConversation}
         onSaveMessage={handleSaveMessage}
         onRetryMessage={(messageId) => brainstorm.retryMessage(messageId)}

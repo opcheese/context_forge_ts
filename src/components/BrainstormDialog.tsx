@@ -62,6 +62,7 @@ interface BrainstormDialogProps {
   provider: Provider
   onProviderChange: (provider: Provider) => void
   onSendMessage: (content: string) => Promise<void>
+  onSendValidation?: (content: string) => Promise<void>
   onClearConversation: () => void
   onSaveMessage: (messageId: string, zone: Zone) => Promise<void>
   onRetryMessage: (messageId: string) => Promise<void>
@@ -311,6 +312,7 @@ export function BrainstormDialog({
   provider,
   onProviderChange,
   onSendMessage,
+  onSendValidation,
   onClearConversation,
   onSaveMessage,
   onRetryMessage,
@@ -400,6 +402,13 @@ export function BrainstormDialog({
     setInputValue("")
     await onSendMessage(content)
   }, [inputValue, isStreaming, onSendMessage])
+
+  const handleValidate = useCallback(async () => {
+    if (!inputValue.trim() || isStreaming || !onSendValidation) return
+    const content = inputValue.trim()
+    setInputValue("")
+    await onSendValidation(content)
+  }, [inputValue, isStreaming, onSendValidation])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
@@ -709,14 +718,26 @@ export function BrainstormDialog({
                 Stop
               </Button>
             ) : (
-              <DebouncedButton
-                onClick={handleSend}
-                disabled={!inputValue.trim() || !isProviderAvailable}
-                className="self-end"
-                debounceMs={300}
-              >
-                Send
-              </DebouncedButton>
+              <div className="flex gap-1 self-end">
+                {onSendValidation && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleValidate}
+                    disabled={!inputValue.trim() || !isProviderAvailable}
+                    title="Send with validation criteria included"
+                  >
+                    Validate
+                  </Button>
+                )}
+                <DebouncedButton
+                  onClick={handleSend}
+                  disabled={!inputValue.trim() || !isProviderAvailable}
+                  debounceMs={300}
+                >
+                  Send
+                </DebouncedButton>
+              </div>
             )}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
