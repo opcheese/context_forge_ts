@@ -19,6 +19,21 @@ export const NO_SELF_TALK_SUFFIX = `
 
 IMPORTANT: Generate ONLY your single assistant response. Do NOT simulate, generate, or continue with any user messages. Do NOT write "USER:" or pretend to be the user. Your response ends when your answer is complete — do not continue the conversation pattern.`
 
+/**
+ * Check if a block should be excluded from context assembly.
+ * @param block - The block to check
+ * @param mode - "brainstorm" includes default blocks only; "validation" includes default + validation blocks
+ */
+function isBlockExcluded(
+  block: { contextMode?: string; type: string },
+  mode: "brainstorm" | "validation" = "brainstorm"
+): boolean {
+  const contextMode = block.contextMode ?? "default"
+  if (contextMode === "draft") return true
+  if (contextMode === "validation" && mode !== "validation") return true
+  return false
+}
+
 export interface ContextMessage {
   role: "system" | "user" | "assistant"
   content: string
@@ -36,10 +51,11 @@ export interface ConversationMessage {
  * @returns The active system prompt content, or undefined if none exists
  */
 export function extractSystemPromptFromBlocks(
-  blocks: Doc<"blocks">[]
+  blocks: Doc<"blocks">[],
+  mode: "brainstorm" | "validation" = "brainstorm"
 ): string | undefined {
   const systemPromptBlocks = blocks
-    .filter((b) => b.type === "system_prompt" && b.zone === "PERMANENT" && !b.isDraft)
+    .filter((b) => b.type === "system_prompt" && b.zone === "PERMANENT" && !isBlockExcluded(b, mode))
     .sort((a, b) => a.position - b.position)
 
   return systemPromptBlocks[0]?.content
@@ -64,7 +80,8 @@ export function extractSystemPromptFromBlocks(
  */
 export function assembleContext(
   blocks: Doc<"blocks">[],
-  userPrompt: string
+  userPrompt: string,
+  mode: "brainstorm" | "validation" = "brainstorm"
 ): ContextMessage[] {
   const messages: ContextMessage[] = []
 
@@ -77,7 +94,7 @@ export function assembleContext(
 
   for (const block of blocks) {
     // Skip system_prompt blocks - caller extracts them via extractSystemPromptFromBlocks()
-    if (block.type === "system_prompt" || block.isDraft) {
+    if (block.type === "system_prompt" || isBlockExcluded(block, mode)) {
       continue
     }
     const zone = block.zone as Zone
@@ -140,7 +157,10 @@ export function estimateTokenCount(messages: ContextMessage[]): number {
 /**
  * Get context stats by zone.
  */
-export function getContextStats(blocks: Doc<"blocks">[]): {
+export function getContextStats(
+  blocks: Doc<"blocks">[],
+  mode: "brainstorm" | "validation" = "brainstorm"
+): {
   permanent: { count: number; chars: number }
   stable: { count: number; chars: number }
   working: { count: number; chars: number }
@@ -154,7 +174,7 @@ export function getContextStats(blocks: Doc<"blocks">[]): {
   }
 
   for (const block of blocks) {
-    if (block.isDraft) continue
+    if (isBlockExcluded(block, mode)) continue
     const zone = block.zone.toLowerCase() as "permanent" | "stable" | "working"
     stats[zone].count++
     stats[zone].chars += block.content.length
@@ -185,7 +205,8 @@ export function assembleContextWithConversation(
   blocks: Doc<"blocks">[],
   conversationHistory: ConversationMessage[],
   newMessage: string,
-  activeSkillsContent?: string
+  activeSkillsContent?: string,
+  mode: "brainstorm" | "validation" = "brainstorm"
 ): ContextMessage[] {
   const messages: ContextMessage[] = []
 
@@ -198,7 +219,7 @@ export function assembleContextWithConversation(
 
   for (const block of blocks) {
     // Skip system_prompt blocks - caller extracts them via extractSystemPromptFromBlocks()
-    if (block.type === "system_prompt" || block.isDraft) {
+    if (block.type === "system_prompt" || isBlockExcluded(block, mode)) {
       continue
     }
     const zone = block.zone as Zone
@@ -276,10 +297,11 @@ export function assembleContextWithConversation(
  */
 export function assembleSystemPromptWithContext(
   blocks: Doc<"blocks">[],
-  renderedMemory?: string
+  renderedMemory?: string,
+  mode: "brainstorm" | "validation" = "brainstorm"
 ): string | undefined {
   const permanentBlocks = blocks
-    .filter((b) => b.zone === "PERMANENT" && !b.isDraft)
+    .filter((b) => b.zone === "PERMANENT" && !isBlockExcluded(b, mode))
     .sort((a, b) => a.position - b.position)
 
   const parts: string[] = permanentBlocks.map((b) => b.content)

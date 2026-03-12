@@ -149,7 +149,7 @@ export const getPreview = query({
     }
 
     // Filter out draft blocks — preview should match what the LLM sees
-    const activeBlocks = blocks.filter((b) => !b.isDraft)
+    const activeBlocks = blocks.filter((b) => (b.contextMode ?? "default") !== "draft")
 
     for (const block of activeBlocks) {
       const zone = block.zone as keyof typeof zones

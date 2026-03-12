@@ -211,7 +211,7 @@ function BlockCard({
   zone,
   createdAt,
   tokens,
-  isDraft,
+  contextMode,
   isCompressed,
   compressionRatio,
   sessionId,
@@ -227,7 +227,7 @@ function BlockCard({
   zone: Zone
   createdAt: number
   tokens?: number
-  isDraft?: boolean
+  contextMode?: "default" | "draft" | "validation"
   isCompressed?: boolean
   compressionRatio?: number
   sessionId: Id<"sessions">
@@ -247,7 +247,7 @@ function BlockCard({
   const [copied, setCopied] = useState(false)
   const removeBlock = useMutation(api.blocks.remove)
   const moveBlock = useMutation(api.blocks.move)
-  const toggleDraft = useMutation(api.blocks.toggleDraft)
+  const setContextModeMutation = useMutation(api.blocks.setContextMode)
   const unlinkBlock = useMutation(api.blocks.unlink)
   const createLinkedBlock = useMutation(api.blocks.createLinked)
   const { toast } = useToast()
@@ -325,11 +325,6 @@ function BlockCard({
     )
   }
 
-  const handleToggleDraft = async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    await toggleDraft({ id })
-  }
-
   const typeMeta = getBlockTypeMetadata(type)
   const otherZones = ZONES.filter((z) => z !== zone)
 
@@ -348,7 +343,8 @@ function BlockCard({
         "rounded-lg border bg-card p-2.5 select-none transition-all duration-150",
         "hover:shadow-sm hover:border-border/80",
         isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border",
-        isDraft && "opacity-50",
+        contextMode === "draft" && "opacity-50",
+        contextMode === "validation" && "opacity-75 border-l-2 border-l-blue-400",
         refBlockId ? "border-l-2 border-l-[oklch(0.65_0.08_220)]" : ""
       )}
       onMouseEnter={() => setShowActions(true)}
@@ -368,9 +364,14 @@ function BlockCard({
           <span className={cn("shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium", typeMeta.color)}>
             {typeMeta.displayName}
           </span>
-          {isDraft && (
+          {contextMode === "draft" && (
             <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">
               Draft
+            </span>
+          )}
+          {contextMode === "validation" && (
+            <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400">
+              Criteria
             </span>
           )}
           <span className="text-[10px] text-muted-foreground">{formatTimeAgo(createdAt)}</span>
@@ -401,7 +402,19 @@ function BlockCard({
                 {isCompressing ? "..." : "Compress"}
               </DebouncedButton>
             )}
-            <button onClick={handleToggleDraft} className="px-1.5 py-0.5 text-[10px] rounded hover:bg-muted">{isDraft ? "Undraft" : "Draft"}</button>
+            <select
+              value={contextMode ?? "default"}
+              onChange={(e) => {
+                const mode = e.target.value as "default" | "draft" | "validation"
+                setContextModeMutation({ id, contextMode: mode })
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="px-1.5 py-0.5 text-[10px] rounded bg-transparent border border-border hover:bg-muted cursor-pointer"
+            >
+              <option value="default">Active</option>
+              <option value="draft">Draft</option>
+              <option value="validation">Criteria</option>
+            </select>
             <button 
               onClick={handleCopy} 
               className={cn(
@@ -672,7 +685,7 @@ function ZoneColumn({
                   zone={block.zone}
                   createdAt={block.createdAt}
                   tokens={block.tokens ?? undefined}
-                  isDraft={block.isDraft}
+                  contextMode={block.contextMode}
                   isCompressed={block.isCompressed}
                   compressionRatio={block.compressionRatio}
                   sessionId={sessionId}

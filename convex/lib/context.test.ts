@@ -223,11 +223,11 @@ describe("getContextStats", () => {
   })
 })
 
-describe("draft block filtering", () => {
+describe("context mode filtering", () => {
   it("excludes draft blocks from assembleContext", () => {
     const blocks = [
       createBlock({ content: "Active note", zone: "WORKING", position: 0 }),
-      createBlock({ content: "Draft note", zone: "WORKING", position: 1, isDraft: true }),
+      createBlock({ content: "Draft note", zone: "WORKING", position: 1, contextMode: "draft" }),
     ]
     const messages = assembleContext(blocks, "Question")
     const workingMsg = messages.find((m) => m.content.includes("Current Context"))
@@ -237,7 +237,7 @@ describe("draft block filtering", () => {
 
   it("excludes draft system_prompt from extractSystemPromptFromBlocks", () => {
     const blocks = [
-      createBlock({ content: "Draft prompt", zone: "PERMANENT", type: "system_prompt", position: 0, isDraft: true }),
+      createBlock({ content: "Draft prompt", zone: "PERMANENT", type: "system_prompt", position: 0, contextMode: "draft" }),
       createBlock({ content: "Active prompt", zone: "PERMANENT", type: "system_prompt", position: 1 }),
     ]
     expect(extractSystemPromptFromBlocks(blocks)).toBe("Active prompt")
@@ -245,7 +245,7 @@ describe("draft block filtering", () => {
 
   it("returns undefined when only draft system_prompt exists", () => {
     const blocks = [
-      createBlock({ content: "Draft prompt", zone: "PERMANENT", type: "system_prompt", position: 0, isDraft: true }),
+      createBlock({ content: "Draft prompt", zone: "PERMANENT", type: "system_prompt", position: 0, contextMode: "draft" }),
     ]
     expect(extractSystemPromptFromBlocks(blocks)).toBeUndefined()
   })
@@ -253,7 +253,7 @@ describe("draft block filtering", () => {
   it("excludes draft blocks from assembleContextWithConversation", () => {
     const blocks = [
       createBlock({ content: "Active ref", zone: "STABLE", position: 0 }),
-      createBlock({ content: "Draft ref", zone: "STABLE", position: 1, isDraft: true }),
+      createBlock({ content: "Draft ref", zone: "STABLE", position: 1, contextMode: "draft" }),
     ]
     const messages = assembleContextWithConversation(blocks, [], "Hello")
     const refMsg = messages.find((m) => m.content.includes("Reference Material"))
@@ -264,11 +264,49 @@ describe("draft block filtering", () => {
   it("excludes draft blocks from getContextStats", () => {
     const blocks = [
       createBlock({ content: "ABCD", zone: "PERMANENT", position: 0 }),
-      createBlock({ content: "EFGH", zone: "PERMANENT", position: 1, isDraft: true }),
+      createBlock({ content: "EFGH", zone: "PERMANENT", position: 1, contextMode: "draft" }),
     ]
     const stats = getContextStats(blocks)
     expect(stats.permanent).toEqual({ count: 1, chars: 4 })
     expect(stats.total).toEqual({ count: 1, chars: 4 })
+  })
+
+  it("excludes validation blocks from brainstorm context", () => {
+    const blocks = [
+      createBlock({ content: "Active", zone: "WORKING", position: 0 }),
+      createBlock({ content: "Criteria", zone: "STABLE", position: 0, contextMode: "validation" }),
+    ]
+    const result = assembleContext(blocks, "test", "brainstorm")
+    expect(result.some((m) => m.content.includes("Active"))).toBe(true)
+    expect(result.some((m) => m.content.includes("Criteria"))).toBe(false)
+  })
+
+  it("includes validation blocks in validation context", () => {
+    const blocks = [
+      createBlock({ content: "Active", zone: "WORKING", position: 0 }),
+      createBlock({ content: "Criteria", zone: "STABLE", position: 0, contextMode: "validation" }),
+    ]
+    const result = assembleContext(blocks, "test", "validation")
+    expect(result.some((m) => m.content.includes("Active"))).toBe(true)
+    expect(result.some((m) => m.content.includes("Criteria"))).toBe(true)
+  })
+
+  it("excludes draft blocks from validation context", () => {
+    const blocks = [
+      createBlock({ content: "Draft", zone: "WORKING", position: 0, contextMode: "draft" }),
+    ]
+    const result = assembleContext(blocks, "test", "validation")
+    expect(result.some((m) => m.content.includes("Draft"))).toBe(false)
+  })
+
+  it("treats undefined contextMode as default (included everywhere)", () => {
+    const blocks = [
+      createBlock({ content: "Normal", zone: "WORKING", position: 0 }),
+    ]
+    const brainstorm = assembleContext(blocks, "test", "brainstorm")
+    const validation = assembleContext(blocks, "test", "validation")
+    expect(brainstorm.some((m) => m.content.includes("Normal"))).toBe(true)
+    expect(validation.some((m) => m.content.includes("Normal"))).toBe(true)
   })
 })
 
@@ -318,7 +356,7 @@ describe("assembleSystemPromptWithContext", () => {
   it("excludes draft blocks", () => {
     const blocks = [
       createBlock({ content: "Active", zone: "PERMANENT", type: "note", position: 0 }),
-      createBlock({ content: "Draft", zone: "PERMANENT", type: "note", position: 1, isDraft: true }),
+      createBlock({ content: "Draft", zone: "PERMANENT", type: "note", position: 1, contextMode: "draft" }),
     ]
     const result = assembleSystemPromptWithContext(blocks)
     expect(result).toContain("Active")

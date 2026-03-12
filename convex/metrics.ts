@@ -65,7 +65,7 @@ export const getZoneMetrics = query({
 
       zones[zone].blocks++
       // Draft blocks don't count toward token budgets
-      if (!block.isDraft) {
+      if ((block.contextMode ?? "default") !== "draft") {
         zones[zone].tokens += tokens
         totalTokens += tokens
       }
@@ -132,7 +132,7 @@ export const checkBudget = query({
       .collect()
 
     const currentTokens = blocks.reduce(
-      (sum, block) => block.isDraft ? sum : sum + (block.tokens ?? countTokens(block.content)),
+      (sum, block) => (block.contextMode ?? "default") === "draft" ? sum : sum + (block.tokens ?? countTokens(block.content)),
       0
     )
 
@@ -208,7 +208,7 @@ export const getBudgetStatus = query({
     }
 
     for (const block of blocks) {
-      if (block.isDraft) continue
+      if ((block.contextMode ?? "default") === "draft") continue
       const tokens = block.tokens ?? countTokens(block.content)
       zoneTotals[block.zone] = (zoneTotals[block.zone] ?? 0) + tokens
     }

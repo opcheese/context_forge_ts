@@ -487,9 +487,12 @@ export const remove = mutation({
   },
 })
 
-// Toggle draft status on a block
-export const toggleDraft = mutation({
-  args: { id: v.id("blocks") },
+// Set context mode on a block (default, draft, or validation)
+export const setContextMode = mutation({
+  args: {
+    id: v.id("blocks"),
+    contextMode: v.union(v.literal("default"), v.literal("draft"), v.literal("validation")),
+  },
   handler: async (ctx, args) => {
     const block = await ctx.db.get(args.id)
     if (!block) throw new Error("Block not found")
@@ -497,13 +500,15 @@ export const toggleDraft = mutation({
     await requireSessionAccess(ctx, block.sessionId)
 
     const now = Date.now()
+    // Store "default" as undefined for backwards compatibility
+    const modeValue = args.contextMode === "default" ? undefined : args.contextMode
     await ctx.db.patch(args.id, {
-      isDraft: block.isDraft ? undefined : true,
+      contextMode: modeValue,
       updatedAt: now,
     })
     await ctx.db.patch(block.sessionId, { updatedAt: now })
 
-    // Toggling draft changes what's included in LLM context
+    // Context mode changes affect what's included in LLM context
     await invalidateClaudeSession(ctx, block.sessionId, block.zone)
 
     return args.id
