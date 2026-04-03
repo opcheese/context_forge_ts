@@ -16,6 +16,7 @@ export const getFlags = query({
       claudeCodeEnabled: FEATURES.CLAUDE_CODE_ENABLED,
       oauthEnabled: FEATURES.OAUTH_ENABLED,
       skillScanEnabled: FEATURES.SKILL_SCAN_ENABLED,
+      localResearchEnabled: FEATURES.LOCAL_RESEARCH_ENABLED,
     }
   },
 })

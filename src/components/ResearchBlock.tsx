@@ -24,6 +24,9 @@ export function ResearchBlock({ blockId, sessionId, content, researchSource, res
   const startResearch = useMutation(api.research.startResearch)
   const cancelGeneration = useMutation(api.generations.cancel)
 
+  const features = useQuery(api.features.getFlags)
+  const localResearchEnabled = features?.localResearchEnabled ?? false
+
   // Subscribe to active generation — shows streaming progress while running
   const latestGen = useQuery(api.generations.getLatestForSession, { sessionId })
   const isRunning = latestGen?.status === "streaming"
@@ -117,8 +120,8 @@ export function ResearchBlock({ blockId, sessionId, content, researchSource, res
   // Empty — spec editing mode
   return (
     <div className="space-y-2">
-      {/* Source toggle */}
-      <div className="flex gap-1">
+      {/* Source toggle — Local only shown when LOCAL_RESEARCH_ENABLED */}
+      {localResearchEnabled && <div className="flex gap-1">
         <Button
           variant={source === "web" ? "default" : "outline"}
           size="sm"
@@ -137,7 +140,7 @@ export function ResearchBlock({ blockId, sessionId, content, researchSource, res
         >
           Local
         </Button>
-      </div>
+      </div>}
 
       {/* Path input for local source */}
       {source === "local" && (

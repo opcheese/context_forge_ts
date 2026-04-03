@@ -32,7 +32,7 @@ import { SelfTalkDetector } from "./lib/selfTalkDetector"
 import { getActiveSkillsContent } from "./lib/skills"
 import { renderMemoryBlock } from "./lib/memoryRendering"
 import { createGeneration, flushLangfuse } from "./lib/langfuse"
-import { isClaudeCodeEnabled } from "./lib/featureFlags"
+import { isClaudeCodeEnabled, isLocalResearchEnabled } from "./lib/featureFlags"
 
 // Get Claude Code executable path by trying to locate it
 export const getClaudeCodePath = (): string | undefined => {
@@ -518,6 +518,9 @@ export const runResearchAction = action({
       sessionId: args.sessionId,
     })
     const isLocal = args.source === "local"
+    if (isLocal && !isLocalResearchEnabled()) {
+      throw new Error("Local research is not enabled on this deployment (LOCAL_RESEARCH_ENABLED=false)")
+    }
     let systemPrompt = assembleSystemPromptWithContext(blocks, undefined, "brainstorm")
     systemPrompt = (systemPrompt ?? "") + (isLocal ? LOCAL_RESEARCH_SUFFIX : RESEARCH_SUFFIX)
 
