@@ -639,7 +639,7 @@ export const runResearchAction = action({
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
         await flushBuffer()
-        trace.complete({ text: fullText, inputTokens, outputTokens, costUsd, durationMs: Date.now() - startTime, resolvedModel })
+        trace.complete({ text: fullText, inputTokens, outputTokens, costUsd, durationMs, resolvedModel })
         await flushLangfuse()
         return
       }
