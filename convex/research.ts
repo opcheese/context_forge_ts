@@ -71,7 +71,7 @@ export const startResearch = mutation({
     const now = Date.now()
     const generationId = await ctx.db.insert("generations", {
       sessionId: args.sessionId,
-      provider: "claude",
+      provider: "claude-research",
       status: "streaming",
       text: "",
       createdAt: now,

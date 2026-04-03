@@ -13,6 +13,7 @@ interface ResearchBlockProps {
 export function ResearchBlock({ blockId, sessionId, content }: ResearchBlockProps) {
   const [isStarting, setIsStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [localContent, setLocalContent] = useState(content)
 
   const updateBlock = useMutation(api.blocks.update)
   const startResearch = useMutation(api.research.startResearch)
@@ -83,7 +84,8 @@ export function ResearchBlock({ blockId, sessionId, content }: ResearchBlockProp
       <textarea
         className="w-full min-h-24 text-sm border rounded p-2 resize-y bg-background"
         placeholder="Describe what to research and what format the output should take..."
-        defaultValue={content}
+        value={localContent}
+        onChange={(e) => setLocalContent(e.target.value)}
         onBlur={(e) => handleContentChange(e.target.value)}
       />
       <div className="flex items-center gap-2">
@@ -91,7 +93,7 @@ export function ResearchBlock({ blockId, sessionId, content }: ResearchBlockProp
           size="sm"
           className="h-7 text-xs"
           onClick={handleRun}
-          disabled={isStarting || !content.trim()}
+          disabled={isStarting || !localContent.trim()}
         >
           {isStarting ? "Starting..." : "Run Research"}
         </Button>
