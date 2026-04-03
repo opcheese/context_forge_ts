@@ -221,6 +221,8 @@ function BlockCard({
   metadata,
   refBlockId,
   contentHash,
+  researchSource,
+  researchPath,
 }: {
   id: Id<"blocks">
   content: string
@@ -243,6 +245,8 @@ function BlockCard({
   }
   refBlockId?: string
   contentHash?: string
+  researchSource?: "web" | "local"
+  researchPath?: string
 }) {
   const [showActions, setShowActions] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -466,7 +470,7 @@ function BlockCard({
         </div>
       )}
       {type === "research" ? (
-        <ResearchBlock blockId={id} sessionId={sessionId} content={content} />
+        <ResearchBlock blockId={id} sessionId={sessionId} content={content} researchSource={researchSource} researchPath={researchPath} />
       ) : (
         <p className="text-xs text-foreground whitespace-pre-wrap break-words line-clamp-2 leading-tight">
           {content}
@@ -701,6 +705,8 @@ function ZoneColumn({
                   metadata={block.metadata ?? undefined}
                   refBlockId={block.refBlockId}
                   contentHash={block.contentHash}
+                  researchSource={block.researchSource}
+                  researchPath={block.researchPath}
                 />
               </SortableBlock>
             ))
