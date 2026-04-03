@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../convex/_generated/api"
 import type { Id } from "../../convex/_generated/dataModel"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 interface ResearchBlockProps {
   blockId: Id<"blocks">
@@ -49,6 +50,7 @@ export function ResearchBlock({ blockId, sessionId, content, researchSource, res
   }
 
   const handleSourceChange = async (newSource: "web" | "local") => {
+    if (newSource === source) return
     setSource(newSource)
     await updateBlock({ id: blockId, researchSource: newSource })
   }
@@ -58,12 +60,22 @@ export function ResearchBlock({ blockId, sessionId, content, researchSource, res
     await updateBlock({ id: blockId, researchPath: value })
   }
 
+  const prevContentRef = useRef(content)
   useEffect(() => {
-    // When content transitions from empty to filled (research completed),
-    // reset localContent so spec-editing mode starts fresh on next run
-    if (content.trim() && localContent === "") return
-    if (!content.trim()) setLocalContent("")
+    if (prevContentRef.current.trim() && !content.trim()) {
+      // content just went from filled to empty (result cleared) — reset local editing state
+      setLocalContent("")
+    }
+    prevContentRef.current = content
   }, [content])
+
+  useEffect(() => {
+    setSource(researchSource ?? "web")
+  }, [researchSource])
+
+  useEffect(() => {
+    setLocalPath(researchPath ?? "")
+  }, [researchPath])
 
   // Running — show streaming progress
   if (isRunning) {
@@ -112,6 +124,7 @@ export function ResearchBlock({ blockId, sessionId, content, researchSource, res
           size="sm"
           className="h-6 text-xs"
           onClick={() => handleSourceChange("web")}
+          aria-pressed={source === "web"}
         >
           Web
         </Button>
@@ -120,6 +133,7 @@ export function ResearchBlock({ blockId, sessionId, content, researchSource, res
           size="sm"
           className="h-6 text-xs"
           onClick={() => handleSourceChange("local")}
+          aria-pressed={source === "local"}
         >
           Local
         </Button>
@@ -127,9 +141,9 @@ export function ResearchBlock({ blockId, sessionId, content, researchSource, res
 
       {/* Path input for local source */}
       {source === "local" && (
-        <input
+        <Input
           type="text"
-          className="w-full text-sm border rounded p-1.5 bg-background"
+          className="h-8 text-sm"
           placeholder="/path/to/docs"
           value={localPath}
           onChange={(e) => setLocalPath(e.target.value)}
