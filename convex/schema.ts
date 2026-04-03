@@ -146,6 +146,9 @@ export default defineSchema({
     refBlockId: v.optional(v.id("blocks")),
     // Content hash for duplicate detection (DJB2 hex, first 16 chars)
     contentHash: v.optional(v.string()),
+    // Research block fields
+    researchSource: v.optional(v.union(v.literal("web"), v.literal("local"))),
+    researchPath: v.optional(v.string()),
   })
     .index("by_zone", ["zone", "position"]) // Legacy index
     .index("by_session", ["sessionId"])
