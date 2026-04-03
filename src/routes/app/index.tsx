@@ -40,6 +40,7 @@ import { LinkBlockPopover } from "@/components/LinkBlockPopover"
 import { SaveTemplateDialog, ApplyTemplateDialog } from "@/components/templates"
 import { AddToProjectDialog } from "@/components/projects"
 import { MemoryDrawer } from "@/components/memory/MemoryDrawer"
+import { ResearchBlock } from "@/components/ResearchBlock"
 import { Save, FolderPlus, FileDown } from "lucide-react"
 
 const ZONE_INDEX: Record<Zone, number> = { PERMANENT: 0, STABLE: 1, WORKING: 2 }
@@ -464,9 +465,13 @@ function BlockCard({
           <span className="text-[10px] text-muted-foreground truncate">from: {metadata.parentSkillName}</span>
         </div>
       )}
-      <p className="text-xs text-foreground whitespace-pre-wrap break-words line-clamp-2 leading-tight">
-        {content}
-      </p>
+      {type === "research" ? (
+        <ResearchBlock blockId={id} sessionId={sessionId} content={content} />
+      ) : (
+        <p className="text-xs text-foreground whitespace-pre-wrap break-words line-clamp-2 leading-tight">
+          {content}
+        </p>
+      )}
       {showActions && (
         <div className="flex gap-1 mt-1">
           {otherZones.map((z) => (
@@ -529,6 +534,8 @@ function ZoneColumn({
 }) {
   const [isZoneCompressionDialogOpen, setIsZoneCompressionDialogOpen] = useState(false)
   const blocks = useQuery(api.blocks.listByZone, { sessionId, zone })
+  const researchBlock = useQuery(api.research.getResearchBlock, zone === "WORKING" ? { sessionId } : "skip")
+  const createBlock = useMutation(api.blocks.create)
   const info = ZONE_INFO[zone]
   const { toast } = useToast()
   const { isDragOver, dropProps } = useFileDrop({
@@ -700,6 +707,20 @@ function ZoneColumn({
           )}
         </div>
       </DroppableZone>
+
+      {zone === "WORKING" && (
+        <div className="mt-1.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 text-xs"
+            disabled={researchBlock != null}
+            onClick={() => createBlock({ sessionId, content: "", type: "research", zone: "WORKING" })}
+          >
+            + Research
+          </Button>
+        </div>
+      )}
 
       {isDragOver && (
         <div className="absolute inset-0 flex items-center justify-center bg-primary/10 border-2 border-dashed border-primary rounded z-10 pointer-events-none">
