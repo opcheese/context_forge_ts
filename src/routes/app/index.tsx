@@ -710,16 +710,15 @@ function ZoneColumn({
 
       {zone === "WORKING" && (
         <div className="mt-1.5">
-          <DebouncedButton
+          <Button
             variant="ghost"
             size="sm"
             className="h-6 text-xs"
             disabled={researchBlock != null}
             onClick={() => createBlock({ sessionId, content: "", type: "research", zone: "WORKING" })}
-            debounceMs={300}
           >
             + Research
-          </DebouncedButton>
+          </Button>
         </div>
       )}
 
