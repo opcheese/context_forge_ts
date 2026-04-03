@@ -19,6 +19,8 @@ import gfm from 'remark-gfm'
 import { MarkdownComponents } from '@/components/MarkdownComponents';
 import { SubscriptionUsage } from '@/components/SubscriptionUsage';
 import { OpenRouterCost } from '@/components/OpenRouterCost';
+import { SaveToMemoryDialog } from '@/components/SaveToMemoryDialog';
+import type { Id } from '../../convex/_generated/dataModel';
 import breaks from 'remark-breaks';
 
 
@@ -62,8 +64,19 @@ interface BrainstormDialogProps {
   provider: Provider
   onProviderChange: (provider: Provider) => void
   onSendMessage: (content: string) => Promise<void>
+  onSendValidation?: (content: string) => Promise<void>
   onClearConversation: () => void
   onSaveMessage: (messageId: string, zone: Zone) => Promise<void>
+  // Save-to-memory support
+  projectId?: Id<"projects">
+  memorySchemaTypes?: Array<{ name: string; color: string; icon: string }>
+  onCreateMemoryEntry?: (args: {
+    projectId: Id<"projects">
+    type: string
+    title: string
+    content: string
+    tags: string[]
+  }) => Promise<unknown>
   onRetryMessage: (messageId: string) => Promise<void>
   onEditMessage: (messageId: string, newContent: string) => Promise<void>
   error: string | null
@@ -100,6 +113,7 @@ function MessageBubble({
   message,
   onCopy,
   onSave,
+  onSaveToMemory,
   onRetry,
   onEdit,
   isStreaming,
@@ -107,6 +121,7 @@ function MessageBubble({
   message: Message
   onCopy: () => void
   onSave: (zone: Zone) => void
+  onSaveToMemory?: (selectedText: string) => void
   onRetry: () => void
   onEdit: (newContent: string) => void
   isStreaming: boolean
@@ -257,6 +272,22 @@ function MessageBubble({
               <DropdownMenuItem onSelect={() => onSave("PERMANENT")}>Permanent</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          {onSaveToMemory && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs"
+              onClick={() => {
+                const selection = window.getSelection()?.toString()
+                if (selection?.trim()) {
+                  onSaveToMemory(selection)
+                }
+              }}
+              title="Select text first, then click to save to memory"
+            >
+              Memory
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -311,6 +342,7 @@ export function BrainstormDialog({
   provider,
   onProviderChange,
   onSendMessage,
+  onSendValidation,
   onClearConversation,
   onSaveMessage,
   onRetryMessage,
@@ -330,8 +362,12 @@ export function BrainstormDialog({
   onToggleSkill,
   openrouterSessionCost,
   conversationRestored,
+  projectId,
+  memorySchemaTypes,
+  onCreateMemoryEntry,
 }: BrainstormDialogProps) {
   const [inputValue, setInputValue] = useState("")
+  const [memoryDraftText, setMemoryDraftText] = useState<string | null>(null)
   const [expandedSkill, setExpandedSkill] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -400,6 +436,13 @@ export function BrainstormDialog({
     setInputValue("")
     await onSendMessage(content)
   }, [inputValue, isStreaming, onSendMessage])
+
+  const handleValidate = useCallback(async () => {
+    if (!inputValue.trim() || isStreaming || !onSendValidation) return
+    const content = inputValue.trim()
+    setInputValue("")
+    await onSendValidation(content)
+  }, [inputValue, isStreaming, onSendValidation])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
@@ -669,6 +712,11 @@ export function BrainstormDialog({
               message={message}
               onCopy={() => {}}
               onSave={(zone) => onSaveMessage(message.id, zone)}
+              onSaveToMemory={
+                projectId && memorySchemaTypes && onCreateMemoryEntry
+                  ? (selectedText) => setMemoryDraftText(selectedText)
+                  : undefined
+              }
               onRetry={() => onRetryMessage(message.id)}
               onEdit={(newContent) => onEditMessage(message.id, newContent)}
               isStreaming={isStreaming}
@@ -679,6 +727,22 @@ export function BrainstormDialog({
 
           <div ref={messagesEndRef} />
         </div>
+
+        {/* Save to memory dialog */}
+        {memoryDraftText && projectId && memorySchemaTypes && onCreateMemoryEntry && (
+          <div className="mx-4 mb-2">
+            <SaveToMemoryDialog
+              projectId={projectId}
+              selectedText={memoryDraftText}
+              schemaTypes={memorySchemaTypes}
+              onSave={async (args) => {
+                await onCreateMemoryEntry(args)
+                setMemoryDraftText(null)
+              }}
+              onClose={() => setMemoryDraftText(null)}
+            />
+          </div>
+        )}
 
         {/* Error display */}
         {error && (
@@ -709,14 +773,26 @@ export function BrainstormDialog({
                 Stop
               </Button>
             ) : (
-              <DebouncedButton
-                onClick={handleSend}
-                disabled={!inputValue.trim() || !isProviderAvailable}
-                className="self-end"
-                debounceMs={300}
-              >
-                Send
-              </DebouncedButton>
+              <div className="flex gap-1 self-end">
+                {onSendValidation && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleValidate}
+                    disabled={!inputValue.trim() || !isProviderAvailable}
+                    title="Send with validation criteria included"
+                  >
+                    Validate
+                  </Button>
+                )}
+                <DebouncedButton
+                  onClick={handleSend}
+                  disabled={!inputValue.trim() || !isProviderAvailable}
+                  debounceMs={300}
+                >
+                  Send
+                </DebouncedButton>
+              </div>
             )}
           </div>
           <p className="text-xs text-muted-foreground mt-1">

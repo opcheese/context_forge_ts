@@ -91,6 +91,7 @@ interface UseBrainstormResult {
   open: (provider?: Provider) => void
   close: () => void
   sendMessage: (content: string) => Promise<void>
+  sendValidation: (content: string) => Promise<void>
   clearConversation: () => void
   setProvider: (provider: Provider) => void
   retryMessage: (messageId: string) => Promise<void>
@@ -519,7 +520,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
 
   // Send message via Claude (Convex mutations - backend)
   const sendMessageClaude = useCallback(
-    async (content: string, conversationHistory: { role: "user" | "assistant"; content: string }[]) => {
+    async (content: string, conversationHistory: { role: "user" | "assistant"; content: string }[], isValidation = false) => {
       // Collect active skill IDs to pass to backend
       const activeSkillIds = Object.entries(activeSkills)
         .filter(([, enabled]) => enabled)
@@ -533,6 +534,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
         preventSelfTalk,
         activeSkillIds,
         model: model ?? undefined,
+        isValidation: isValidation || undefined,
       })
       setGenerationId(result.generationId)
     },
@@ -540,8 +542,8 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
   )
 
   // Send a new message (dispatches to correct provider)
-  const sendMessage = useCallback(
-    async (content: string) => {
+  const sendMessageInternal = useCallback(
+    async (content: string, isValidation = false) => {
       if (!content.trim() || isStreaming) return
 
       setError(null)
@@ -574,7 +576,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
         } else if (provider === "openrouter") {
           await sendMessageOpenRouter(content.trim(), conversationHistory)
         } else {
-          await sendMessageClaude(content.trim(), conversationHistory)
+          await sendMessageClaude(content.trim(), conversationHistory, isValidation)
         }
       } catch (err) {
         // Ignore AbortError — user pressed stop, partial text already saved by stopStreaming
@@ -593,6 +595,16 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
       }
     },
     [provider, isStreaming, messages, sendMessageOllama, sendMessageOpenRouter, sendMessageClaude, onError]
+  )
+
+  const sendMessage = useCallback(
+    (content: string) => sendMessageInternal(content, false),
+    [sendMessageInternal]
+  )
+
+  const sendValidation = useCallback(
+    (content: string) => sendMessageInternal(content, true),
+    [sendMessageInternal]
   )
 
   // Save a message as a block
@@ -767,6 +779,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
     open,
     close,
     sendMessage,
+    sendValidation,
     clearConversation,
     setProvider,
     retryMessage,

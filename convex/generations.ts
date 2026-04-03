@@ -218,6 +218,24 @@ export const getLatest = query({
   },
 })
 
+export const getLatestForSession = query({
+  args: { sessionId: v.id("sessions") },
+  handler: async (ctx, args) => {
+    // Check session access
+    const hasAccess = await canAccessSession(ctx, args.sessionId)
+    if (!hasAccess) {
+      return null
+    }
+
+    return await ctx.db
+      .query("generations")
+      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .order("desc")
+      .filter((q) => q.eq(q.field("provider"), "claude-research"))
+      .first()
+  },
+})
+
 /**
  * Start a brainstorm streaming generation.
  *
@@ -243,6 +261,7 @@ export const startBrainstormGeneration = mutation({
     preventSelfTalk: v.optional(v.boolean()), // Append anti-self-talk suffix
     activeSkillIds: v.optional(v.array(v.string())), // Ephemeral skill IDs to inject
     model: v.optional(v.string()), // Claude model override
+    isValidation: v.optional(v.boolean()), // Validation mode — include validation criteria blocks + suffix
   },
   handler: async (ctx, args) => {
     // Create generation record
@@ -267,6 +286,7 @@ export const startBrainstormGeneration = mutation({
       preventSelfTalk: args.preventSelfTalk ?? true, // Default to true
       activeSkillIds: args.activeSkillIds,
       model: args.model,
+      isValidation: args.isValidation,
     })
 
     return { generationId }

@@ -36,6 +36,16 @@ export function isSkillScanEnabled(): boolean {
 }
 
 /**
+ * Check if local filesystem research is enabled.
+ * Defaults to false (disabled) if not explicitly set to "true".
+ * Disabled on cloud deployments — local paths are not accessible from Convex cloud.
+ * Typically enabled for self-hosted deployments only.
+ */
+export function isLocalResearchEnabled(): boolean {
+  return process.env.LOCAL_RESEARCH_ENABLED === "true"
+}
+
+/**
  * All feature flags.
  */
 export const FEATURES = {
@@ -47,5 +57,8 @@ export const FEATURES = {
   },
   get SKILL_SCAN_ENABLED() {
     return isSkillScanEnabled()
+  },
+  get LOCAL_RESEARCH_ENABLED() {
+    return isLocalResearchEnabled()
   },
 }

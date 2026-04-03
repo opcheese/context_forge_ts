@@ -105,6 +105,14 @@ export function BrainstormPanel({ sessionId, compact = false }: BrainstormPanelP
   // Get the active system prompt content
   const activeSystemPrompt = systemPromptBlock?.content ?? ""
 
+  // Memory support for save-to-memory from brainstorm
+  const projectId = session?.projectId
+  const memorySchema = useQuery(
+    api.memorySchemas.getByProject,
+    projectId ? { projectId } : "skip"
+  )
+  const createMemoryEntry = useMutation(api.memoryEntries.create)
+
   const brainstorm = useBrainstorm({
     sessionId,
     onError: (err) => console.error("Brainstorm error:", err),
@@ -192,6 +200,7 @@ export function BrainstormPanel({ sessionId, compact = false }: BrainstormPanelP
           provider={brainstorm.provider}
           onProviderChange={brainstorm.setProvider}
           onSendMessage={(content) => brainstorm.sendMessage(content)}
+          onSendValidation={(content) => brainstorm.sendValidation(content)}
           onClearConversation={brainstorm.clearConversation}
           onSaveMessage={handleSaveMessage}
           onRetryMessage={(messageId) => brainstorm.retryMessage(messageId)}
@@ -211,6 +220,9 @@ export function BrainstormPanel({ sessionId, compact = false }: BrainstormPanelP
           onToggleSkill={brainstorm.toggleSkill}
           openrouterSessionCost={brainstorm.openrouterSessionCost}
           conversationRestored={brainstorm.conversationRestored}
+          projectId={projectId}
+          memorySchemaTypes={memorySchema?.types}
+          onCreateMemoryEntry={memorySchema ? (args) => createMemoryEntry({ ...args, projectId: args.projectId as Id<"projects"> }) : undefined}
         />
       </>
     )
@@ -341,6 +353,7 @@ export function BrainstormPanel({ sessionId, compact = false }: BrainstormPanelP
         provider={brainstorm.provider}
         onProviderChange={brainstorm.setProvider}
         onSendMessage={(content) => brainstorm.sendMessage(content)}
+        onSendValidation={(content) => brainstorm.sendValidation(content)}
         onClearConversation={brainstorm.clearConversation}
         onSaveMessage={handleSaveMessage}
         onRetryMessage={(messageId) => brainstorm.retryMessage(messageId)}
@@ -360,6 +373,9 @@ export function BrainstormPanel({ sessionId, compact = false }: BrainstormPanelP
         onToggleSkill={brainstorm.toggleSkill}
         openrouterSessionCost={brainstorm.openrouterSessionCost}
         conversationRestored={brainstorm.conversationRestored}
+        projectId={projectId}
+        memorySchemaTypes={memorySchema?.types}
+        onCreateMemoryEntry={memorySchema ? (args) => createMemoryEntry({ ...args, projectId: args.projectId as Id<"projects"> }) : undefined}
       />
     </div>
   )

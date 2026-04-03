@@ -127,8 +127,8 @@ export default defineSchema({
     updatedAt: v.number(),
     // Test data flag - marked records can be bulk deleted
     testData: v.optional(v.boolean()),
-    // Draft flag - draft blocks are visible but excluded from LLM context
-    isDraft: v.optional(v.boolean()),
+    // Context mode - controls how the block participates in LLM context
+    contextMode: v.optional(v.union(v.literal("default"), v.literal("draft"), v.literal("validation"))),
     // Token tracking
     tokens: v.optional(v.number()), // Current token count
     originalTokens: v.optional(v.number()), // Original token count (before compression)
@@ -146,6 +146,9 @@ export default defineSchema({
     refBlockId: v.optional(v.id("blocks")),
     // Content hash for duplicate detection (DJB2 hex, first 16 chars)
     contentHash: v.optional(v.string()),
+    // Research block fields
+    researchSource: v.optional(v.union(v.literal("web"), v.literal("local"))),
+    researchPath: v.optional(v.string()),
   })
     .index("by_zone", ["zone", "position"]) // Legacy index
     .index("by_session", ["sessionId"])
@@ -196,7 +199,7 @@ export default defineSchema({
         originalTokens: v.optional(v.number()),
         tokenModel: v.optional(v.string()),
         metadata: v.optional(skillMetadataValidator),
-        isDraft: v.optional(v.boolean()),
+        contextMode: v.optional(v.union(v.literal("default"), v.literal("draft"), v.literal("validation"))),
       })
     ),
   }).index("by_session", ["sessionId"]),

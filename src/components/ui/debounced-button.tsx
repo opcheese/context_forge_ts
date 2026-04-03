@@ -8,6 +8,7 @@ import { Button, type ButtonProps } from "./button"
 
 interface DebouncedButtonProps extends ButtonProps {
   debounceMs?: number
+  children?: React.ReactNode
 }
 
 export function DebouncedButton({

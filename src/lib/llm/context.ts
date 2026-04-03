@@ -32,7 +32,21 @@ export interface Block {
   type: string
   zone: Zone | string
   position: number
-  isDraft?: boolean
+  contextMode?: "default" | "draft" | "validation"
+}
+
+/**
+ * Check if a block should be excluded from context assembly.
+ * Draft blocks are always excluded. Validation blocks are only included in validation mode.
+ */
+function isBlockExcluded(
+  block: { contextMode?: string; type: string },
+  mode: "brainstorm" | "validation" = "brainstorm"
+): boolean {
+  const contextMode = block.contextMode ?? "default"
+  if (contextMode === "draft") return true
+  if (contextMode === "validation" && mode !== "validation") return true
+  return false
 }
 
 /**
@@ -41,9 +55,9 @@ export interface Block {
  *
  * @returns The active system prompt content, or undefined if none exists
  */
-export function extractSystemPromptFromBlocks(blocks: Block[]): string | undefined {
+export function extractSystemPromptFromBlocks(blocks: Block[], mode: "brainstorm" | "validation" = "brainstorm"): string | undefined {
   const systemPromptBlocks = blocks
-    .filter((b) => b.type === "system_prompt" && b.zone === "PERMANENT" && !b.isDraft)
+    .filter((b) => b.type === "system_prompt" && b.zone === "PERMANENT" && !isBlockExcluded(b, mode))
     .sort((a, b) => a.position - b.position)
 
   return systemPromptBlocks[0]?.content
@@ -60,7 +74,7 @@ export function extractSystemPromptFromBlocks(blocks: Block[]): string | undefin
  * @param blocks - All blocks for the session
  * @param userPrompt - The current user message
  */
-export function assembleContext(blocks: Block[], userPrompt: string): ContextMessage[] {
+export function assembleContext(blocks: Block[], userPrompt: string, mode: "brainstorm" | "validation" = "brainstorm"): ContextMessage[] {
   const messages: ContextMessage[] = []
 
   // Group blocks by zone, excluding system_prompt blocks
@@ -71,7 +85,7 @@ export function assembleContext(blocks: Block[], userPrompt: string): ContextMes
   }
 
   for (const block of blocks) {
-    if (block.type === "system_prompt" || block.isDraft) {
+    if (block.type === "system_prompt" || isBlockExcluded(block, mode)) {
       continue
     }
     const zone = block.zone as Zone
@@ -137,7 +151,8 @@ export function assembleContextWithConversation(
   blocks: Block[],
   conversationHistory: ConversationMessage[],
   newMessage: string,
-  activeSkillsContent?: string
+  activeSkillsContent?: string,
+  mode: "brainstorm" | "validation" = "brainstorm"
 ): ContextMessage[] {
   const messages: ContextMessage[] = []
 
@@ -149,7 +164,7 @@ export function assembleContextWithConversation(
   }
 
   for (const block of blocks) {
-    if (block.type === "system_prompt" || block.isDraft) {
+    if (block.type === "system_prompt" || isBlockExcluded(block, mode)) {
       continue
     }
     const zone = block.zone as Zone
@@ -227,7 +242,7 @@ export function estimateTokenCount(messages: ContextMessage[]): number {
 /**
  * Get context stats by zone.
  */
-export function getContextStats(blocks: Block[]): {
+export function getContextStats(blocks: Block[], mode: "brainstorm" | "validation" = "brainstorm"): {
   permanent: { count: number; chars: number }
   stable: { count: number; chars: number }
   working: { count: number; chars: number }
@@ -241,7 +256,7 @@ export function getContextStats(blocks: Block[]): {
   }
 
   for (const block of blocks) {
-    if (block.isDraft) continue
+    if (isBlockExcluded(block, mode)) continue
     const zone = (block.zone as string).toLowerCase() as "permanent" | "stable" | "working"
     if (stats[zone]) {
       stats[zone].count++

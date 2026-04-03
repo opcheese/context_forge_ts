@@ -148,8 +148,11 @@ export const getPreview = query({
       WORKING: { blocks: 0, tokens: 0, content: "" },
     }
 
-    // Filter out draft blocks — preview should match what the LLM sees
-    const activeBlocks = blocks.filter((b) => !b.isDraft)
+    // Filter out draft and validation blocks — preview matches brainstorm context
+    const activeBlocks = blocks.filter((b) => {
+      const mode = b.contextMode ?? "default"
+      return mode !== "draft" && mode !== "validation"
+    })
 
     for (const block of activeBlocks) {
       const zone = block.zone as keyof typeof zones
