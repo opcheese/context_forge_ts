@@ -32,6 +32,10 @@ export const RESEARCH_SUFFIX = `
 
 RESEARCH MODE: You have access to WebSearch and WebFetch tools. Use them to thoroughly research the user's request before responding. Synthesize findings into a clear, structured report. Cite sources inline. If you cannot find something, say so explicitly.`
 
+export const LOCAL_RESEARCH_SUFFIX = `
+
+LOCAL RESEARCH MODE: You have access to Read, Glob, and Grep tools to search the local filesystem. Use them to find and read relevant files in the specified folder. Synthesize findings into a clear, structured report. Reference the file paths you read. If you cannot find relevant content, say so explicitly.`
+
 /**
  * Check if a block should be excluded from context assembly.
  * @param block - The block to check

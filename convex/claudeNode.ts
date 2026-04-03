@@ -26,6 +26,7 @@ import {
   NO_SELF_TALK_SUFFIX,
   VALIDATION_SUFFIX,
   RESEARCH_SUFFIX,
+  LOCAL_RESEARCH_SUFFIX,
 } from "./lib/context"
 import { SelfTalkDetector } from "./lib/selfTalkDetector"
 import { getActiveSkillsContent } from "./lib/skills"
@@ -507,6 +508,8 @@ export const runResearchAction = action({
     sessionId: v.id("sessions"),
     blockId: v.id("blocks"),
     spec: v.string(),
+    source: v.optional(v.union(v.literal("web"), v.literal("local"))),
+    researchPath: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<void> => {
     const startTime = Date.now()
@@ -514,13 +517,18 @@ export const runResearchAction = action({
     const blocks = await ctx.runQuery(internal.blocks.listBySessionInternal, {
       sessionId: args.sessionId,
     })
+    const isLocal = args.source === "local"
     let systemPrompt = assembleSystemPromptWithContext(blocks, undefined, "brainstorm")
-    systemPrompt = (systemPrompt ?? "") + RESEARCH_SUFFIX
+    systemPrompt = (systemPrompt ?? "") + (isLocal ? LOCAL_RESEARCH_SUFFIX : RESEARCH_SUFFIX)
+
+    const prompt = isLocal && args.researchPath
+      ? `Research folder: ${args.researchPath}\n\n${args.spec}`
+      : args.spec
 
     const trace = createGeneration(
       "claude-research",
       { sessionId: args.sessionId, provider: "claude", model: "claude-code" },
-      { systemPrompt, prompt: args.spec }
+      { systemPrompt, prompt }
     )
 
     let buffer = ""
@@ -556,10 +564,10 @@ export const runResearchAction = action({
       let hasReceivedStreamEvents = false
 
       for await (const message of claudeQuery({
-        prompt: args.spec,
+        prompt,
         options: {
           abortController,
-          allowedTools: ["WebSearch", "WebFetch"],
+          allowedTools: isLocal ? ["Read", "Glob", "Grep"] : ["WebSearch", "WebFetch"],
           maxTurns: 10,
           systemPrompt,
           pathToClaudeCodeExecutable: getClaudeCodePath(),

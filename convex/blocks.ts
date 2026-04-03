@@ -385,6 +385,8 @@ export const update = mutation({
     id: v.id("blocks"),
     content: v.optional(v.string()),
     type: v.optional(v.string()),
+    researchSource: v.optional(v.union(v.literal("web"), v.literal("local"))),
+    researchPath: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const block = await ctx.db.get(args.id)
@@ -410,6 +412,8 @@ export const update = mutation({
       tokens?: number
       tokenModel?: string
       contentHash?: string
+      researchSource?: "web" | "local"
+      researchPath?: string
     } = {
       updatedAt: now,
     }
@@ -423,6 +427,12 @@ export const update = mutation({
     }
     if (args.type !== undefined) {
       updates.type = args.type
+    }
+    if (args.researchSource !== undefined) {
+      updates.researchSource = args.researchSource
+    }
+    if (args.researchPath !== undefined) {
+      updates.researchPath = args.researchPath
     }
 
     await ctx.db.patch(targetId, updates)

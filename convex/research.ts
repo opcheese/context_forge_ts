@@ -1,11 +1,14 @@
 import { mutation, internalMutation, query, internalQuery } from "./_generated/server"
 import { internal } from "./_generated/api"
 import { v } from "convex/values"
+import { canAccessSession, requireSessionAccess } from "./lib/auth"
 
 /** Public query — returns the research block for a session (null if none). */
 export const getResearchBlock = query({
   args: { sessionId: v.id("sessions") },
   handler: async (ctx, args) => {
+    const canAccess = await canAccessSession(ctx, args.sessionId)
+    if (!canAccess) return null
     return await ctx.db
       .query("blocks")
       .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
@@ -45,6 +48,8 @@ export const fillResearchBlock = internalMutation({
 export const startResearch = mutation({
   args: { sessionId: v.id("sessions") },
   handler: async (ctx, args) => {
+    await requireSessionAccess(ctx, args.sessionId)
+
     const researchBlock = await ctx.db
       .query("blocks")
       .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
@@ -58,14 +63,15 @@ export const startResearch = mutation({
       throw new Error("Write a research spec in the block before running")
     }
 
-    // Check not already running
+    // Check not already running — filter to research generations only
     const activeGen = await ctx.db
       .query("generations")
       .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
       .order("desc")
+      .filter((q) => q.eq(q.field("provider"), "claude-research"))
       .first()
     if (activeGen?.status === "streaming") {
-      throw new Error("A generation is already in progress")
+      throw new Error("Research is already in progress")
     }
 
     const now = Date.now()
@@ -83,6 +89,8 @@ export const startResearch = mutation({
       sessionId: args.sessionId,
       blockId: researchBlock._id,
       spec: researchBlock.content,
+      source: researchBlock.researchSource ?? "web",
+      researchPath: researchBlock.researchPath,
     })
 
     return { generationId, blockId: researchBlock._id }
