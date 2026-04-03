@@ -35,6 +35,7 @@ import type * as memorySchemas from "../memorySchemas.js";
 import type * as metrics from "../metrics.js";
 import type * as migrations from "../migrations.js";
 import type * as projects from "../projects.js";
+import type * as research from "../research.js";
 import type * as sessions from "../sessions.js";
 import type * as skillExport from "../skillExport.js";
 import type * as skills from "../skills.js";
@@ -78,6 +79,7 @@ declare const fullApi: ApiFromModules<{
   metrics: typeof metrics;
   migrations: typeof migrations;
   projects: typeof projects;
+  research: typeof research;
   sessions: typeof sessions;
   skillExport: typeof skillExport;
   skills: typeof skills;
