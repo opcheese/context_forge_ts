@@ -62,6 +62,9 @@ export const startResearch = mutation({
     if (!researchBlock.content.trim()) {
       throw new Error("Write a research spec in the block before running")
     }
+    if ((researchBlock.researchSource ?? "web") === "local" && !researchBlock.researchPath?.trim()) {
+      throw new Error("A local path is required for local research mode")
+    }
 
     // Check not already running — filter to research generations only
     const activeGen = await ctx.db
