@@ -218,6 +218,17 @@ export const getLatest = query({
   },
 })
 
+export const getLatestForSession = query({
+  args: { sessionId: v.id("sessions") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("generations")
+      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .order("desc")
+      .first()
+  },
+})
+
 /**
  * Start a brainstorm streaming generation.
  *
