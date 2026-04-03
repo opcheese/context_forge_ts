@@ -26,6 +26,13 @@ export const VALIDATION_SUFFIX = `
 VALIDATION MODE: You are evaluating artifacts against criteria. Blocks marked as validation criteria define what "good" looks like. For each criterion, state whether the artifacts meet it. Be specific — quote the artifact where it meets or fails the criterion. Summarize with a clear PASS / PARTIAL / FAIL verdict.`
 
 /**
+ * Research mode suffix appended to system prompt when conducting research.
+ */
+export const RESEARCH_SUFFIX = `
+
+RESEARCH MODE: You have access to WebSearch and WebFetch tools. Use them to thoroughly research the user's request before responding. Synthesize findings into a clear, structured report. Cite sources inline. If you cannot find something, say so explicitly.`
+
+/**
  * Check if a block should be excluded from context assembly.
  * @param block - The block to check
  * @param mode - "brainstorm" includes default blocks only; "validation" includes default + validation blocks
