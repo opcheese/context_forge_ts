@@ -1,5 +1,5 @@
 import { mutation, internalMutation, query, internalQuery } from "./_generated/server"
-import { internal } from "./_generated/api"
+import { api } from "./_generated/api"
 import { v } from "convex/values"
 import { canAccessSession, requireSessionAccess } from "./lib/auth"
 
@@ -84,7 +84,7 @@ export const startResearch = mutation({
       updatedAt: now,
     })
 
-    await ctx.scheduler.runAfter(0, internal.claudeNode.runResearchAction, {
+    await ctx.scheduler.runAfter(0, api.claudeNode.runResearchAction, {
       generationId,
       sessionId: args.sessionId,
       blockId: researchBlock._id,
