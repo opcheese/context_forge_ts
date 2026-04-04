@@ -146,11 +146,14 @@ export default defineSchema({
     refBlockId: v.optional(v.id("blocks")),
     // Content hash for duplicate detection (DJB2 hex, first 16 chars)
     contentHash: v.optional(v.string()),
+    // Template this block was created from — suppresses "Link?" for same-template siblings
+    sourceTemplateId: v.optional(v.id("templates")),
   })
     .index("by_zone", ["zone", "position"]) // Legacy index
     .index("by_session", ["sessionId"])
     .index("by_session_zone", ["sessionId", "zone", "position"])
-    .index("by_content_hash", ["contentHash"]),
+    .index("by_content_hash", ["contentHash"])
+    .index("by_ref_block", ["refBlockId"]),
 
   // Memory type definitions per project
   memorySchemas: defineTable({

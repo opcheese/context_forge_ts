@@ -23,7 +23,7 @@ async function promoteReferencesForSession(
   for (const block of sessionBlocks) {
     const refs = await ctx.db
       .query("blocks")
-      .filter((q) => q.eq(q.field("refBlockId"), block._id))
+      .withIndex("by_ref_block", (q) => q.eq("refBlockId", block._id))
       .collect()
     for (const ref of refs) {
       await ctx.db.patch(ref._id, {

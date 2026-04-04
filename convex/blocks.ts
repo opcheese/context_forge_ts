@@ -438,7 +438,7 @@ export const update = mutation({
     if (block.refBlockId && args.content !== undefined) {
       const refs = await ctx.db
         .query("blocks")
-        .filter((q) => q.eq(q.field("refBlockId"), block.refBlockId))
+        .withIndex("by_ref_block", (q) => q.eq("refBlockId", block.refBlockId))
         .collect()
       for (const ref of refs) {
         await ctx.db.patch(ref._id, {
