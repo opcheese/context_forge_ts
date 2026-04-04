@@ -157,7 +157,7 @@ export function MemoryDrawer({ projectId, sessionId, pinnedMemories, sessionTags
   return (
     <>
       {/* Collapsed bar */}
-      {state === "collapsed" && (totalEntries > 0 || !hasSchema) && (
+      {state === "collapsed" && (
         <motion.div
           initial={{ y: 48 }}
           animate={{ y: 0 }}
