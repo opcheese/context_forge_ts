@@ -39,10 +39,8 @@ async function promoteReferencesForSession(
 
 /**
  * Cascade delete all data for given session IDs.
- * Uses bulk fetches to avoid N+1 queries.
- *
- * Pattern: Fetch all related data ONCE, then filter and delete.
- * This is O(1) queries + O(N) deletes, not O(N) queries + O(N) deletes.
+ * Queries per session using indexes to avoid full-table scans.
+ * Full-table collect() fails with Convex's 16MB document read limit on large databases.
  */
 async function cascadeDeleteSessions(
   ctx: MutationCtx,
@@ -583,6 +581,7 @@ export const goToNextStep = mutation({
             createdAt: now,
             updatedAt: now,
             metadata: templateBlock.metadata,
+            contentHash: computeContentHash(templateBlock.content),
             sourceTemplateId: nextStep.templateId,
           })
         }
