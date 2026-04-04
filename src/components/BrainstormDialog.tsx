@@ -106,6 +106,8 @@ interface BrainstormDialogProps {
   openrouterSessionCost?: number
   // Conversation was restored from localStorage
   conversationRestored?: boolean
+  // Gate Validate button on presence of validation-mode blocks
+  hasCriteria?: boolean
 }
 
 // Message bubble component
@@ -365,6 +367,7 @@ export function BrainstormDialog({
   projectId,
   memorySchemaTypes,
   onCreateMemoryEntry,
+  hasCriteria = false,
 }: BrainstormDialogProps) {
   const [inputValue, setInputValue] = useState("")
   const [memoryDraftText, setMemoryDraftText] = useState<string | null>(null)
@@ -438,8 +441,8 @@ export function BrainstormDialog({
   }, [inputValue, isStreaming, onSendMessage])
 
   const handleValidate = useCallback(async () => {
-    if (!inputValue.trim() || isStreaming || !onSendValidation) return
-    const content = inputValue.trim()
+    if (isStreaming || !onSendValidation) return
+    const content = inputValue.trim() || "Validate the artifacts against the criteria."
     setInputValue("")
     await onSendValidation(content)
   }, [inputValue, isStreaming, onSendValidation])
@@ -779,8 +782,8 @@ export function BrainstormDialog({
                     variant="secondary"
                     size="sm"
                     onClick={handleValidate}
-                    disabled={!inputValue.trim() || !isProviderAvailable}
-                    title="Send with validation criteria included"
+                    disabled={!isProviderAvailable || !hasCriteria}
+                    title={hasCriteria ? "Send with validation criteria included" : "Mark blocks as Criteria to enable validation"}
                   >
                     Validate
                   </Button>

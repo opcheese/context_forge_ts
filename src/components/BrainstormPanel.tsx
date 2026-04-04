@@ -201,6 +201,7 @@ export function BrainstormPanel({ sessionId, compact = false }: BrainstormPanelP
           onProviderChange={brainstorm.setProvider}
           onSendMessage={(content) => brainstorm.sendMessage(content)}
           onSendValidation={(content) => brainstorm.sendValidation(content)}
+          hasCriteria={brainstorm.hasCriteria}
           onClearConversation={brainstorm.clearConversation}
           onSaveMessage={handleSaveMessage}
           onRetryMessage={(messageId) => brainstorm.retryMessage(messageId)}

@@ -93,6 +93,7 @@ interface UseBrainstormResult {
   close: () => void
   sendMessage: (content: string) => Promise<void>
   sendValidation: (content: string) => Promise<void>
+  hasCriteria: boolean
   clearConversation: () => void
   setProvider: (provider: Provider) => void
   retryMessage: (messageId: string) => Promise<void>
@@ -805,6 +806,9 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
     close,
     sendMessage,
     sendValidation,
+    hasCriteria: (blocks ?? []).some(
+      (b: { contextMode?: string }) => (b.contextMode ?? "default") === "validation"
+    ),
     clearConversation,
     setProvider,
     retryMessage,
