@@ -9,6 +9,7 @@ import {
   extractSystemPromptFromBlocks,
   NO_TOOLS_SUFFIX,
 } from "@/lib/llm/context"
+import { renderMemoryBlock, type MemoryEntry } from "@/lib/llm/memoryRendering"
 import { DEFAULT_ACTIVE_SKILLS, getActiveSkillsContent } from "@/lib/llm/skills"
 import { brainstorm as brainstormSettings } from "@/lib/llm/settings"
 
@@ -212,6 +213,28 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
   // Get blocks for context assembly (client-side)
   const blocks = useQuery(api.blocks.list, { sessionId })
 
+  // Fetch session and memory for Ollama/OpenRouter injection (Claude uses server-side memory)
+  const session = useQuery(api.sessions.get, { id: sessionId })
+  const projectId = session?.projectId
+  const memoryEntries = useQuery(
+    api.memoryEntries.listByProject,
+    projectId ? { projectId } : "skip"
+  )
+
+  const renderedMemory: string | undefined = (() => {
+    if (!memoryEntries?.length || !session) return undefined
+    const pinnedIds = new Set(session.pinnedMemories ?? [])
+    const asEntries: MemoryEntry[] = memoryEntries.map((e: NonNullable<typeof memoryEntries>[number]) => ({
+      type: e.type,
+      title: e.title,
+      content: e.content,
+      tags: e.tags,
+    }))
+    const pinnedEntries = asEntries.filter((_, i) => pinnedIds.has(memoryEntries[i]._id))
+    const result = renderMemoryBlock(asEntries, session.sessionTags ?? [], pinnedEntries)
+    return result || undefined
+  })()
+
   // Reset streaming state and restore conversation when session changes
   useEffect(() => {
     const stored = loadConversation(sessionId)
@@ -385,10 +408,11 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
       const ollamaMessages: ollamaClient.OllamaMessage[] = []
 
       // Add system prompt first if present
-      if (systemPrompt) {
+      const ollamaSystemPrompt = [systemPrompt, renderedMemory].filter(Boolean).join("\n\n")
+      if (ollamaSystemPrompt) {
         ollamaMessages.push({
           role: "system",
-          content: systemPrompt,
+          content: ollamaSystemPrompt,
         })
       }
 
@@ -430,7 +454,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
         setStreamingText("")
       }
     },
-    [blocks, activeSkills]
+    [blocks, activeSkills, renderedMemory]
   )
 
   // Send message via OpenRouter (client-side streaming)
@@ -451,10 +475,11 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
       const openrouterMessages: openrouterClient.OpenRouterMessage[] = []
 
       // Add system prompt first if present (with no-tools suffix for consistency)
-      if (systemPrompt) {
+      const openrouterSystemPrompt = [systemPrompt, renderedMemory].filter(Boolean).join("\n\n")
+      if (openrouterSystemPrompt) {
         openrouterMessages.push({
           role: "system",
-          content: systemPrompt + NO_TOOLS_SUFFIX,
+          content: openrouterSystemPrompt + NO_TOOLS_SUFFIX,
         })
       }
 
@@ -515,7 +540,7 @@ export function useBrainstorm(options: UseBrainstormOptions): UseBrainstormResul
         setStreamingText("")
       }
     },
-    [blocks, activeSkills]
+    [blocks, activeSkills, renderedMemory]
   )
 
   // Send message via Claude (Convex mutations - backend)
