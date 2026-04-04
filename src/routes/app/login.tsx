@@ -10,9 +10,26 @@ import { api } from "../../../convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Anvil } from "lucide-react"
+import { Anvil, Eye, EyeOff } from "lucide-react"
 
 type AuthMode = "signIn" | "signUp"
+
+function mapAuthError(err: Error): { field: string; message: string } {
+  const msg = err.message ?? ""
+  if (msg.includes("InvalidAccountId") || msg.includes("InvalidSecret") || msg.includes("not found")) {
+    return { field: "password", message: "Incorrect email or password." }
+  }
+  if (msg.includes("AccountAlreadyExists") || msg.includes("already exists")) {
+    return { field: "email", message: "An account with this email already exists." }
+  }
+  if (msg.includes("InvalidEmail") || msg.includes("invalid email")) {
+    return { field: "email", message: "Enter a valid email address." }
+  }
+  if (msg.includes("PasswordTooShort") || msg.includes("too short")) {
+    return { field: "password", message: "Password must be at least 8 characters." }
+  }
+  return { field: "form", message: msg || "Something went wrong. Please try again." }
+}
 
 function LoginPage() {
   const { signIn } = useAuthActions()
@@ -24,6 +41,8 @@ function LoginPage() {
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   // Redirect to home when authenticated
@@ -68,7 +87,12 @@ function LoginPage() {
       await signIn("password", formData)
       // Navigation happens via useEffect when auth state updates
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Authentication failed")
+      const mapped = mapAuthError(err as Error)
+      if (mapped.field === "form") {
+        setError(mapped.message)
+      } else {
+        setFieldErrors({ [mapped.field]: mapped.message })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -154,7 +178,7 @@ function LoginPage() {
                 type="text"
                 placeholder="Your name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => { setName(e.target.value); setFieldErrors({}) }}
                 disabled={isLoading}
               />
             </div>
@@ -167,24 +191,41 @@ function LoginPage() {
               type="email"
               placeholder="you@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setFieldErrors({}) }}
               required
               disabled={isLoading}
             />
+            {fieldErrors.email && (
+              <p className="text-xs text-destructive mt-1">{fieldErrors.email}</p>
+            )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={isLoading}
-              minLength={8}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setFieldErrors({}) }}
+                required
+                disabled={isLoading}
+                minLength={8}
+              />
+              <button
+                type="button"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowPassword((v) => !v)}
+                tabIndex={-1}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {fieldErrors.password && (
+              <p className="text-xs text-destructive mt-1">{fieldErrors.password}</p>
+            )}
           </div>
 
           {error && (
@@ -204,7 +245,7 @@ function LoginPage() {
               Don't have an account?{" "}
               <button
                 type="button"
-                onClick={() => setMode("signUp")}
+                onClick={() => { setMode("signUp"); setFieldErrors({}); setError(null) }}
                 className="text-primary hover:underline font-medium"
               >
                 Sign up
@@ -215,7 +256,7 @@ function LoginPage() {
               Already have an account?{" "}
               <button
                 type="button"
-                onClick={() => setMode("signIn")}
+                onClick={() => { setMode("signIn"); setFieldErrors({}); setError(null) }}
                 className="text-primary hover:underline font-medium"
               >
                 Sign in
