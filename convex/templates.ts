@@ -245,6 +245,7 @@ export const applyToSession = mutation({
         updatedAt: now,
         metadata: blockData.metadata,
         contentHash: computeContentHash(blockData.content),
+        sourceTemplateId: args.templateId,
       })
     }
 

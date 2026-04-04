@@ -583,6 +583,7 @@ export const goToNextStep = mutation({
             createdAt: now,
             updatedAt: now,
             metadata: templateBlock.metadata,
+            sourceTemplateId: nextStep.templateId,
           })
         }
       }

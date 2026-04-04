@@ -169,6 +169,7 @@ export const findDuplicate = query({
   args: {
     contentHash: v.string(),
     excludeSessionId: v.id("sessions"),
+    sourceTemplateId: v.optional(v.id("templates")),
   },
   handler: async (ctx, args) => {
     const userId = await getOptionalUserId(ctx)
@@ -181,6 +182,8 @@ export const findDuplicate = query({
     // Security: only surface duplicates from sessions owned by the current user
     const session = await ctx.db.get(match.sessionId)
     if (!session || session.userId !== userId) return null
+    // Skip same-template siblings — identical content by design, not duplication
+    if (args.sourceTemplateId && match.sourceTemplateId === args.sourceTemplateId) return null
     return {
       blockId: match._id,
       sessionId: match.sessionId,
