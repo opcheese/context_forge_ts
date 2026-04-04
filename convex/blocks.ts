@@ -5,7 +5,7 @@ import type { Doc, Id } from "./_generated/dataModel"
 import { zoneValidator, type Zone } from "./lib/validators"
 import { countTokens, DEFAULT_TOKEN_MODEL } from "./lib/tokenizer"
 import { computeContentHash } from "./lib/contentHash"
-import { canAccessSession, requireSessionAccess } from "./lib/auth"
+import { canAccessSession, requireSessionAccess, getOptionalUserId } from "./lib/auth"
 import { resolveBlocks } from "./lib/resolve"
 
 /**
@@ -171,18 +171,20 @@ export const findDuplicate = query({
     excludeSessionId: v.id("sessions"),
   },
   handler: async (ctx, args) => {
+    const userId = await getOptionalUserId(ctx)
     if (!args.contentHash) return null
     const match = await ctx.db
       .query("blocks")
       .withIndex("by_content_hash", (q) => q.eq("contentHash", args.contentHash))
       .first()
     if (!match || match.sessionId === args.excludeSessionId) return null
-    // Get session name for display
+    // Security: only surface duplicates from sessions owned by the current user
     const session = await ctx.db.get(match.sessionId)
+    if (!session || session.userId !== userId) return null
     return {
       blockId: match._id,
       sessionId: match.sessionId,
-      sessionName: session?.name ?? "Untitled",
+      sessionName: session.name ?? "Untitled",
     }
   },
 })
