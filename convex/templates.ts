@@ -15,6 +15,7 @@ import {
   requireSessionAccess,
 } from "./lib/auth"
 import { resolveBlocks } from "./lib/resolve"
+import { computeContentHash } from "./lib/contentHash"
 
 /**
  * List all templates for the current user.
@@ -243,6 +244,7 @@ export const applyToSession = mutation({
         createdAt: now,
         updatedAt: now,
         metadata: blockData.metadata,
+        contentHash: computeContentHash(blockData.content),
       })
     }
 

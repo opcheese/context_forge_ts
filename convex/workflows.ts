@@ -13,6 +13,7 @@ import {
   canAccessProject,
   requireSessionAccess,
 } from "./lib/auth"
+import { computeContentHash } from "./lib/contentHash"
 
 const zoneArray = v.array(
   v.union(v.literal("PERMANENT"), v.literal("STABLE"), v.literal("WORKING"))
@@ -378,6 +379,7 @@ export const startProject = mutation({
             position: blockData.position,
             createdAt: now,
             updatedAt: now,
+            contentHash: computeContentHash(blockData.content),
           })
         }
       }
@@ -472,6 +474,7 @@ export const advanceStep = mutation({
             originalTokens: block.originalTokens,
             tokenModel: block.tokenModel,
             metadata: block.metadata,
+            contentHash: computeContentHash(content),
           })
         } else {
           // PERMANENT/STABLE: create reference (edits propagate across steps)
@@ -488,6 +491,7 @@ export const advanceStep = mutation({
             originalTokens: block.originalTokens,
             tokenModel: block.tokenModel,
             metadata: block.metadata,
+            contentHash: computeContentHash(""),
           })
         }
       }
@@ -523,6 +527,7 @@ export const advanceStep = mutation({
             createdAt: now,
             updatedAt: now,
             metadata: blockData.metadata,
+            contentHash: computeContentHash(blockData.content),
           })
         }
       }

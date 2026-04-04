@@ -3,6 +3,7 @@ import type { MutationCtx } from "./_generated/server"
 import type { Id } from "./_generated/dataModel"
 import { v } from "convex/values"
 import { getOptionalUserId, requireSessionAccess } from "./lib/auth"
+import { computeContentHash } from "./lib/contentHash"
 
 // ============ Helper Functions ============
 
@@ -530,6 +531,7 @@ export const goToNextStep = mutation({
             originalTokens: block.originalTokens,
             tokenModel: block.tokenModel,
             metadata: block.metadata,
+            contentHash: computeContentHash(content),
           })
         } else {
           // PERMANENT/STABLE: create reference (edits propagate across steps)
@@ -546,6 +548,7 @@ export const goToNextStep = mutation({
             originalTokens: block.originalTokens,
             tokenModel: block.tokenModel,
             metadata: block.metadata,
+            contentHash: computeContentHash(""),
           })
         }
       }

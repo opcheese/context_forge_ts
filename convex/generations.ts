@@ -12,6 +12,7 @@ import { api } from "./_generated/api"
 import { v } from "convex/values"
 import { countTokens, DEFAULT_TOKEN_MODEL } from "./lib/tokenizer"
 import { canAccessSession } from "./lib/auth"
+import { computeContentHash } from "./lib/contentHash"
 
 /**
  * Create a new generation record.
@@ -388,6 +389,7 @@ export const saveBrainstormMessage = mutation({
       tokens,
       originalTokens: tokens,
       tokenModel: DEFAULT_TOKEN_MODEL,
+      contentHash: computeContentHash(args.content),
     })
   },
 })
