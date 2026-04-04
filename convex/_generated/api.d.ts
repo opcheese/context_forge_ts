@@ -37,6 +37,7 @@ import type * as metrics from "../metrics.js";
 import type * as migrations from "../migrations.js";
 import type * as migrations_migrateIsDraftToContextMode from "../migrations/migrateIsDraftToContextMode.js";
 import type * as projects from "../projects.js";
+import type * as research from "../research.js";
 import type * as sessions from "../sessions.js";
 import type * as skillExport from "../skillExport.js";
 import type * as skills from "../skills.js";
@@ -82,6 +83,7 @@ declare const fullApi: ApiFromModules<{
   migrations: typeof migrations;
   "migrations/migrateIsDraftToContextMode": typeof migrations_migrateIsDraftToContextMode;
   projects: typeof projects;
+  research: typeof research;
   sessions: typeof sessions;
   skillExport: typeof skillExport;
   skills: typeof skills;

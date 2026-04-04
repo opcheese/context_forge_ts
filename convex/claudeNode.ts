@@ -25,12 +25,14 @@ import {
   NO_TOOLS_SUFFIX,
   NO_SELF_TALK_SUFFIX,
   VALIDATION_SUFFIX,
+  RESEARCH_SUFFIX,
+  LOCAL_RESEARCH_SUFFIX,
 } from "./lib/context"
 import { SelfTalkDetector } from "./lib/selfTalkDetector"
 import { getActiveSkillsContent } from "./lib/skills"
 import { renderMemoryBlock } from "./lib/memoryRendering"
 import { createGeneration, flushLangfuse } from "./lib/langfuse"
-import { isClaudeCodeEnabled } from "./lib/featureFlags"
+import { isClaudeCodeEnabled, isLocalResearchEnabled } from "./lib/featureFlags"
 
 // Get Claude Code executable path by trying to locate it
 export const getClaudeCodePath = (): string | undefined => {
@@ -494,6 +496,169 @@ export const streamBrainstormMessage = action({
       })
 
       // Record error in LangFuse
+      trace.error(fullError)
+      await flushLangfuse()
+    }
+  },
+})
+
+export const runResearchAction = action({
+  args: {
+    generationId: v.id("generations"),
+    sessionId: v.id("sessions"),
+    blockId: v.id("blocks"),
+    spec: v.string(),
+    source: v.optional(v.union(v.literal("web"), v.literal("local"))),
+    researchPath: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<void> => {
+    const startTime = Date.now()
+
+    const blocks = await ctx.runQuery(internal.blocks.listBySessionInternal, {
+      sessionId: args.sessionId,
+    })
+    const isLocal = args.source === "local"
+    if (isLocal && !isLocalResearchEnabled()) {
+      throw new Error("Local research is not enabled on this deployment (LOCAL_RESEARCH_ENABLED=false)")
+    }
+    let systemPrompt = assembleSystemPromptWithContext(blocks, undefined, "brainstorm")
+    systemPrompt = (systemPrompt ?? "") + (isLocal ? LOCAL_RESEARCH_SUFFIX : RESEARCH_SUFFIX)
+
+    const prompt = isLocal && args.researchPath
+      ? `Research folder: ${args.researchPath}\n\n${args.spec}`
+      : args.spec
+
+    const trace = createGeneration(
+      "claude-research",
+      { sessionId: args.sessionId, provider: "claude", model: "claude-code" },
+      { systemPrompt, prompt }
+    )
+
+    let buffer = ""
+    let fullText = ""
+    let lastFlush = Date.now()
+    const throttleMs = 100
+    let inputTokens: number | undefined
+    let outputTokens: number | undefined
+    let costUsd: number | undefined
+    let resolvedModel: string | undefined
+    const abortController = new AbortController()
+    const stderrChunks: string[] = []
+
+    const isCancelled = async (): Promise<boolean> => {
+      const gen = await ctx.runQuery(internal.generations.getInternal, {
+        generationId: args.generationId,
+      })
+      return gen?.status === "cancelled"
+    }
+
+    const flushBuffer = async () => {
+      if (buffer.length > 0) {
+        await ctx.runMutation(internal.generations.appendChunk, {
+          generationId: args.generationId,
+          chunk: buffer,
+        })
+        buffer = ""
+        lastFlush = Date.now()
+      }
+    }
+
+    try {
+      let hasReceivedStreamEvents = false
+
+      for await (const message of claudeQuery({
+        prompt,
+        options: {
+          abortController,
+          allowedTools: isLocal ? ["Read", "Glob", "Grep"] : ["WebSearch", "WebFetch"],
+          maxTurns: 10,
+          systemPrompt,
+          pathToClaudeCodeExecutable: getClaudeCodePath(),
+          includePartialMessages: true,
+          maxBudgetUsd: 1.00,
+          stderr: (data: string) => { stderrChunks.push(data) },
+        },
+      })) {
+        const msgType = (message as Record<string, unknown>).type as string
+
+        if (msgType === "stream_event") {
+          const event = (message as Record<string, unknown>).event as Record<string, unknown> | undefined
+          if (event?.type === "content_block_delta") {
+            const delta = event.delta as Record<string, unknown> | undefined
+            if (delta?.type === "text_delta" && typeof delta.text === "string") {
+              hasReceivedStreamEvents = true
+              buffer += delta.text
+              fullText += delta.text
+              if (Date.now() - lastFlush >= throttleMs) {
+                await flushBuffer()
+                if (await isCancelled()) { abortController.abort(); break }
+              }
+            }
+          }
+        }
+
+        if (msgType === "assistant" && !resolvedModel) {
+          const msgContent = ((message as Record<string, unknown>).message as Record<string, unknown> | undefined)
+          if (typeof msgContent?.model === "string") resolvedModel = msgContent.model
+        }
+
+        if (msgType === "assistant" && !hasReceivedStreamEvents) {
+          const content = (((message as Record<string, unknown>).message as Record<string, unknown> | undefined)
+            ?.content) as Array<Record<string, unknown>> | undefined
+          if (content) {
+            for (const blk of content) {
+              if (blk.type === "text" && typeof blk.text === "string") {
+                buffer += blk.text; fullText += blk.text
+                await flushBuffer()
+              }
+            }
+          }
+        }
+
+        if (msgType === "result") {
+          const msg = message as Record<string, unknown>
+          const usage = msg.usage as Record<string, unknown> | undefined
+          if (usage) {
+            inputTokens = usage.input_tokens as number | undefined
+            outputTokens = usage.output_tokens as number | undefined
+          }
+          costUsd = msg.total_cost_usd as number | undefined
+        }
+      }
+
+      await flushBuffer()
+
+      const durationMs = Date.now() - startTime
+      const gen = await ctx.runQuery(internal.generations.getInternal, { generationId: args.generationId })
+
+      if (gen?.status === "cancelled") {
+        trace.complete({ text: fullText, inputTokens, outputTokens, costUsd, durationMs, resolvedModel })
+        await flushLangfuse()
+        return
+      }
+
+      await ctx.runMutation(internal.research.fillResearchBlock, {
+        blockId: args.blockId,
+        content: fullText,
+      })
+      await ctx.runMutation(internal.generations.completeWithUsage, {
+        generationId: args.generationId,
+        inputTokens, outputTokens, costUsd, durationMs,
+      })
+      trace.complete({ text: fullText, inputTokens, outputTokens, costUsd, durationMs, resolvedModel })
+      await flushLangfuse()
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        await flushBuffer()
+        trace.complete({ text: fullText, inputTokens, outputTokens, costUsd, durationMs: Date.now() - startTime, resolvedModel })
+        await flushLangfuse()
+        return
+      }
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      const stderrOutput = stderrChunks.join("").trim()
+      await flushBuffer()
+      const fullError = stderrOutput ? `Research error: ${errorMessage}\nstderr: ${stderrOutput}` : `Research error: ${errorMessage}`
+      await ctx.runMutation(internal.generations.fail, { generationId: args.generationId, error: fullError })
       trace.error(fullError)
       await flushLangfuse()
     }

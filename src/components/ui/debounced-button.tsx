@@ -4,9 +4,9 @@
  */
 
 import { useState, useCallback, useRef } from "react"
-import { Button, type ButtonProps } from "./button"
+import { Button } from "./button"
 
-interface DebouncedButtonProps extends ButtonProps {
+type DebouncedButtonProps = React.ComponentProps<typeof Button> & {
   debounceMs?: number
 }
 
@@ -30,7 +30,7 @@ export function DebouncedButton({
       }
 
       // Call the original onClick handler
-      onClick(e)
+      onClick!(e)
 
       // Start debounce period
       setIsDebouncing(true)

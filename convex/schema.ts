@@ -148,6 +148,9 @@ export default defineSchema({
     contentHash: v.optional(v.string()),
     // Template this block was created from — suppresses "Link?" for same-template siblings
     sourceTemplateId: v.optional(v.id("templates")),
+    // Research block fields
+    researchSource: v.optional(v.union(v.literal("web"), v.literal("local"))),
+    researchPath: v.optional(v.string()),
   })
     .index("by_zone", ["zone", "position"]) // Legacy index
     .index("by_session", ["sessionId"])

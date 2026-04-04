@@ -219,6 +219,24 @@ export const getLatest = query({
   },
 })
 
+export const getLatestForSession = query({
+  args: { sessionId: v.id("sessions") },
+  handler: async (ctx, args) => {
+    // Check session access
+    const hasAccess = await canAccessSession(ctx, args.sessionId)
+    if (!hasAccess) {
+      return null
+    }
+
+    return await ctx.db
+      .query("generations")
+      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .order("desc")
+      .filter((q) => q.eq(q.field("provider"), "claude-research"))
+      .first()
+  },
+})
+
 /**
  * Start a brainstorm streaming generation.
  *
