@@ -52,35 +52,34 @@ async function cascadeDeleteSessions(
   let deletedSnapshots = 0
   let deletedGenerations = 0
 
-  // Promote references for all sessions being deleted
+  // Query per session using indexes instead of full-table scans.
+  // Full-table collect() fails with 16MB limit on large databases.
   for (const sessionId of sessionIds) {
     await promoteReferencesForSession(ctx, sessionId)
-  }
 
-  // Bulk fetch all related data (3 queries total, regardless of session count)
-  const allBlocks = await ctx.db.query("blocks").collect()
-  const allSnapshots = await ctx.db.query("snapshots").collect()
-  const allGenerations = await ctx.db.query("generations").collect()
-
-  // Filter and delete blocks
-  for (const block of allBlocks) {
-    if (sessionIds.has(block.sessionId)) {
+    const blocks = await ctx.db
+      .query("blocks")
+      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+      .collect()
+    for (const block of blocks) {
       await ctx.db.delete(block._id)
       deletedBlocks++
     }
-  }
 
-  // Filter and delete snapshots
-  for (const snapshot of allSnapshots) {
-    if (sessionIds.has(snapshot.sessionId)) {
+    const snapshots = await ctx.db
+      .query("snapshots")
+      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+      .collect()
+    for (const snapshot of snapshots) {
       await ctx.db.delete(snapshot._id)
       deletedSnapshots++
     }
-  }
 
-  // Filter and delete generations
-  for (const generation of allGenerations) {
-    if (sessionIds.has(generation.sessionId)) {
+    const generations = await ctx.db
+      .query("generations")
+      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+      .collect()
+    for (const generation of generations) {
       await ctx.db.delete(generation._id)
       deletedGenerations++
     }
