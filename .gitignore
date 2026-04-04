@@ -1,6 +1,9 @@
 # Git worktrees
 .worktrees/
 
+# Private communication docs
+docs/guides/GUIDE-anna-branch-review.md
+
 # Dependencies
 node_modules
 
