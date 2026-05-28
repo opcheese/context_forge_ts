@@ -9,7 +9,18 @@ import { execSync } from "child_process"
 // Vercel builds use base "/app/" and output to site/public/app/
 const isStandalone = process.env.VITE_STANDALONE === "true"
 
-const gitCommit = execSync("git rev-parse --short HEAD").toString().trim()
+function resolveGitCommit(): string {
+  if (process.env.VERCEL_GIT_COMMIT_SHA) {
+    return process.env.VERCEL_GIT_COMMIT_SHA.slice(0, 7)
+  }
+  try {
+    return execSync("git rev-parse --short HEAD").toString().trim()
+  } catch {
+    return "unknown"
+  }
+}
+
+const gitCommit = resolveGitCommit()
 const buildTime = new Date().toISOString()
 
 // https://vite.dev/config/
