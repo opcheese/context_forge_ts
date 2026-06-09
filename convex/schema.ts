@@ -130,6 +130,10 @@ export default defineSchema({
     testData: v.optional(v.boolean()),
     // Context mode - controls how the block participates in LLM context
     contextMode: v.optional(v.union(v.literal("default"), v.literal("draft"), v.literal("validation"))),
+    // Legacy field, superseded by contextMode. Kept temporarily so the
+    // migrateIsDraftToContextMode migration can run on instances with stale
+    // data. Remove once all deployments are migrated.
+    isDraft: v.optional(v.boolean()),
     // Token tracking
     tokens: v.optional(v.number()), // Current token count
     originalTokens: v.optional(v.number()), // Original token count (before compression)
@@ -204,6 +208,8 @@ export default defineSchema({
         tokenModel: v.optional(v.string()),
         metadata: v.optional(skillMetadataValidator),
         contextMode: v.optional(v.union(v.literal("default"), v.literal("draft"), v.literal("validation"))),
+        // Legacy field, see blocks table note. Temporary for migration.
+        isDraft: v.optional(v.boolean()),
       })
     ),
   }).index("by_session", ["sessionId"]),

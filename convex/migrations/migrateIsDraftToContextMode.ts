@@ -18,7 +18,9 @@ export const migrate = internalMutation({
       if (raw.isDraft !== undefined) {
         await ctx.db.patch(block._id, {
           contextMode: raw.isDraft ? ("draft" as const) : undefined,
-        })
+          // Remove the legacy field (patch with undefined deletes it)
+          isDraft: undefined,
+        } as Record<string, unknown>)
         migrated++
       }
     }
