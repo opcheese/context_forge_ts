@@ -45,6 +45,7 @@ import type * as skillsNode from "../skillsNode.js";
 import type * as snapshots from "../snapshots.js";
 import type * as templates from "../templates.js";
 import type * as testing from "../testing.js";
+import type * as users from "../users.js";
 import type * as workflows from "../workflows.js";
 
 import type {
@@ -91,6 +92,7 @@ declare const fullApi: ApiFromModules<{
   snapshots: typeof snapshots;
   templates: typeof templates;
   testing: typeof testing;
+  users: typeof users;
   workflows: typeof workflows;
 }>;
 

@@ -12,6 +12,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { openrouter, ollama, routerai } from "@/lib/llm"
 import { openrouter as openrouterSettings, ollama as ollamaSettings, compression as compressionSettings, routerai as routeraiSettings, type CompressionProvider } from "@/lib/llm/settings"
+import { github as githubSettings, gitlab as gitlabSettings } from "@/lib/git-export/settings"
+import { checkConnection as ghCheckConnection, checkRepo as ghCheckRepo } from "@/lib/git-export/github"
+import { checkConnection as glCheckConnection, checkRepo as glCheckRepo } from "@/lib/git-export/gitlab"
 
 type HealthState = "idle" | "checking" | "ok" | "error"
 
@@ -563,22 +566,433 @@ function CompressionProviderSettings() {
   )
 }
 
+function GitHubSettings() {
+  const [pat, setPat] = useState(() => {
+    const stored = githubSettings.getPat()
+    return stored ? "ghp_****" + stored.slice(-4) : ""
+  })
+  const [repoUrl, setRepoUrl] = useState(() => githubSettings.getDefaultRepoUrl())
+  const [folder, setFolder] = useState(() => githubSettings.getDefaultFolder())
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveResult, setSaveResult] = useState<{ ok: boolean; message: string } | null>(null)
+  const [savedPat, setSavedPat] = useState(() => {
+    const stored = githubSettings.getPat()
+    return stored ? "ghp_****" + stored.slice(-4) : ""
+  })
+  const [savedRepoUrl, setSavedRepoUrl] = useState(() => githubSettings.getDefaultRepoUrl())
+  const [savedFolder, setSavedFolder] = useState(() => githubSettings.getDefaultFolder())
+  const [health, setHealth] = useState<HealthState>(() => githubSettings.getPat() ? "checking" : "idle")
+  const [login, setLogin] = useState<string | null>(null)
+
+  const hasChanges = pat !== savedPat || repoUrl !== savedRepoUrl || folder !== savedFolder
+
+  useEffect(() => {
+    const storedPat = githubSettings.getPat()
+    if (!storedPat) return
+    const storedRepoUrl = githubSettings.getDefaultRepoUrl()
+    ;(async () => {
+      try {
+        const { login: ghLogin } = await ghCheckConnection(storedPat)
+        if (storedRepoUrl) await ghCheckRepo(storedPat, storedRepoUrl)
+        setLogin(ghLogin)
+        setHealth("ok")
+      } catch {
+        setHealth("error")
+      }
+    })()
+  }, [])
+
+  useEffect(() => { setSaveResult(null) }, [pat, repoUrl, folder])
+
+  const handleSave = async () => {
+    const currentPat = pat.startsWith("ghp_****") ? githubSettings.getPat() : pat
+    if (!currentPat) return
+    setIsSaving(true)
+    setSaveResult(null)
+    setHealth("checking")
+    try {
+      const { login: ghLogin } = await ghCheckConnection(currentPat)
+      if (repoUrl) await ghCheckRepo(currentPat, repoUrl)
+      if (pat && !pat.startsWith("ghp_****")) githubSettings.setPat(pat)
+      githubSettings.setDefaultRepoUrl(repoUrl)
+      githubSettings.setDefaultFolder(folder)
+      setSavedPat(pat)
+      setSavedRepoUrl(repoUrl)
+      setSavedFolder(folder)
+      setLogin(ghLogin)
+      setHealth("ok")
+      setSaveResult({ ok: true, message: "Saved!" })
+      setTimeout(() => setSaveResult(null), 2000)
+    } catch (e) {
+      setHealth("error")
+      setSaveResult({ ok: false, message: e instanceof Error ? e.message : String(e) })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleClear = () => {
+    githubSettings.clearPat()
+    setPat("")
+    setSavedPat("")
+    setHealth("idle")
+    setLogin(null)
+    setSaveResult(null)
+  }
+
+  return (
+    <div className="rounded-lg border border-border p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">GitHub</h3>
+          <p className="text-sm text-muted-foreground">
+            Export and sync project results with a GitHub repository
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {health === "ok" && login && (
+            <span className="text-xs text-muted-foreground">@{login}</span>
+          )}
+          <StatusDot status={health} />
+        </div>
+      </div>
+
+      <div className="grid gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="github-pat">Personal Access Token</Label>
+          <div className="flex gap-2">
+            <Input
+              id="github-pat"
+              type="text"
+              autoComplete="off"
+              placeholder="ghp_..."
+              value={pat}
+              onChange={(e) => setPat(e.target.value)}
+              className="flex-1 font-mono text-sm"
+            />
+            <Button variant="outline" size="sm" onClick={handleClear}>
+              Clear
+            </Button>
+          </div>
+          <div className="rounded-md bg-muted/50 border border-border p-3 space-y-1.5 text-xs text-muted-foreground">
+            <p className="font-medium text-foreground">How to get a token:</p>
+            <ol className="list-decimal list-inside space-y-1">
+              <li>
+                Go to{" "}
+                <span className="font-mono bg-muted px-1 rounded">
+                  github.com → Settings → Developer settings → Personal access tokens → Tokens (classic)
+                </span>
+              </li>
+              <li>Click <span className="font-medium">Generate new token (classic)</span></li>
+              <li>
+                Select the{" "}
+                <code className="bg-muted px-1 rounded font-mono">repo</code>{" "}
+                scope — required for both private and public repositories
+              </li>
+              <li>Copy the token — it is shown only once</li>
+            </ol>
+            <p className="text-amber-600 dark:text-amber-400 font-medium">
+              Use <span className="font-mono">Tokens (classic)</span>, not Fine-grained tokens
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="github-repo">Default Repository URL</Label>
+          <Input
+            id="github-repo"
+            placeholder="https://github.com/your-org/project-reviews"
+            value={repoUrl}
+            onChange={(e) => setRepoUrl(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            If set, Save will also verify repository access.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="github-folder">Default Folder in Repo</Label>
+          <Input
+            id="github-folder"
+            placeholder="docs/context-forge"
+            value={folder}
+            onChange={(e) => setFolder(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Optional. Leave empty to put files in repo root.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 pt-2">
+        <DebouncedButton onClick={handleSave} disabled={!pat || !hasChanges || isSaving} debounceMs={500}>
+          {isSaving ? "Saving..." : "Save"}
+        </DebouncedButton>
+        {saveResult && (
+          <span className={saveResult.ok ? "text-sm text-green-600 dark:text-green-400" : "text-sm text-red-600 dark:text-red-400"}>
+            {saveResult.message}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function GitLabSettings() {
+  const [pat, setPat] = useState(() => {
+    const stored = gitlabSettings.getPat()
+    return stored ? "glpat-****" + stored.slice(-4) : ""
+  })
+  const [instanceUrl, setInstanceUrl] = useState(() => gitlabSettings.getInstanceUrl())
+  const [repoUrl, setRepoUrl] = useState(() => gitlabSettings.getDefaultRepoUrl())
+  const [folder, setFolder] = useState(() => gitlabSettings.getDefaultFolder())
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveResult, setSaveResult] = useState<{ ok: boolean; message: string } | null>(null)
+  const [savedPat, setSavedPat] = useState(() => {
+    const stored = gitlabSettings.getPat()
+    return stored ? "glpat-****" + stored.slice(-4) : ""
+  })
+  const [savedInstanceUrl, setSavedInstanceUrl] = useState(() => gitlabSettings.getInstanceUrl())
+  const [savedRepoUrl, setSavedRepoUrl] = useState(() => gitlabSettings.getDefaultRepoUrl())
+  const [savedFolder, setSavedFolder] = useState(() => gitlabSettings.getDefaultFolder())
+  const [health, setHealth] = useState<HealthState>(() => gitlabSettings.getPat() ? "checking" : "idle")
+  const [login, setLogin] = useState<string | null>(null)
+
+  const hasChanges =
+    pat !== savedPat ||
+    instanceUrl !== savedInstanceUrl ||
+    repoUrl !== savedRepoUrl ||
+    folder !== savedFolder
+
+  useEffect(() => {
+    const storedPat = gitlabSettings.getPat()
+    if (!storedPat) return
+    const storedInstanceUrl = gitlabSettings.getInstanceUrl()
+    const storedRepoUrl = gitlabSettings.getDefaultRepoUrl()
+    ;(async () => {
+      try {
+        const { login: glLogin } = await glCheckConnection(storedPat, storedInstanceUrl)
+        if (storedRepoUrl) await glCheckRepo(storedPat, storedRepoUrl)
+        setLogin(glLogin)
+        setHealth("ok")
+      } catch {
+        setHealth("error")
+      }
+    })()
+  }, [])
+
+  useEffect(() => { setSaveResult(null) }, [pat, instanceUrl, repoUrl, folder])
+
+  const handleSave = async () => {
+    const currentPat = pat.startsWith("glpat-****") ? gitlabSettings.getPat() : pat
+    if (!currentPat) return
+    setIsSaving(true)
+    setSaveResult(null)
+    setHealth("checking")
+    try {
+      const { login: glLogin } = await glCheckConnection(currentPat, instanceUrl)
+      if (repoUrl) await glCheckRepo(currentPat, repoUrl)
+      if (pat && !pat.startsWith("glpat-****")) gitlabSettings.setPat(pat)
+      gitlabSettings.setInstanceUrl(instanceUrl)
+      gitlabSettings.setDefaultRepoUrl(repoUrl)
+      gitlabSettings.setDefaultFolder(folder)
+      setSavedPat(pat)
+      setSavedInstanceUrl(instanceUrl)
+      setSavedRepoUrl(repoUrl)
+      setSavedFolder(folder)
+      setLogin(glLogin)
+      setHealth("ok")
+      setSaveResult({ ok: true, message: "Saved!" })
+      setTimeout(() => setSaveResult(null), 2000)
+    } catch (e) {
+      setHealth("error")
+      setSaveResult({ ok: false, message: e instanceof Error ? e.message : String(e) })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleClear = () => {
+    gitlabSettings.clearPat()
+    setPat("")
+    setSavedPat("")
+    setHealth("idle")
+    setLogin(null)
+    setSaveResult(null)
+  }
+
+  return (
+    <div className="rounded-lg border border-border p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">GitLab</h3>
+          <p className="text-sm text-muted-foreground">
+            Export and sync project results with a GitLab repository
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {health === "ok" && login && (
+            <span className="text-xs text-muted-foreground">@{login}</span>
+          )}
+          <StatusDot status={health} />
+        </div>
+      </div>
+
+      <div className="grid gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="gitlab-pat">Personal Access Token</Label>
+          <div className="flex gap-2">
+            <Input
+              id="gitlab-pat"
+              type="text"
+              autoComplete="off"
+              placeholder="glpat-..."
+              value={pat}
+              onChange={(e) => setPat(e.target.value)}
+              className="flex-1 font-mono text-sm"
+            />
+            <Button variant="outline" size="sm" onClick={handleClear}>
+              Clear
+            </Button>
+          </div>
+          <div className="rounded-md bg-muted/50 border border-border p-3 space-y-1.5 text-xs text-muted-foreground">
+            <p className="font-medium text-foreground">How to get a token:</p>
+            <ol className="list-decimal list-inside space-y-1">
+              <li>
+                Go to{" "}
+                <span className="font-mono bg-muted px-1 rounded">
+                  gitlab.com → top-right avatar → Edit profile → Access Tokens
+                </span>
+              </li>
+              <li>Click <span className="font-medium">Add new token</span></li>
+              <li>
+                Select scope{" "}
+                <code className="bg-muted px-1 rounded font-mono">api</code>
+                {" "}— required for reading and writing files
+              </li>
+              <li>Copy the token — it is shown only once</li>
+            </ol>
+            <p className="text-amber-600 dark:text-amber-400 font-medium">
+              For self-hosted GitLab — use your instance URL below, the steps are the same
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="gitlab-instance">Instance URL</Label>
+          <Input
+            id="gitlab-instance"
+            placeholder="https://gitlab.com"
+            value={instanceUrl}
+            onChange={(e) => setInstanceUrl(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Change this for self-hosted GitLab instances.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="gitlab-repo">Default Repository URL</Label>
+          <Input
+            id="gitlab-repo"
+            placeholder="https://gitlab.com/your-org/project-reviews"
+            value={repoUrl}
+            onChange={(e) => setRepoUrl(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            If set, Save will also verify repository access.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="gitlab-folder">Default Folder in Repo</Label>
+          <Input
+            id="gitlab-folder"
+            placeholder="docs/context-forge"
+            value={folder}
+            onChange={(e) => setFolder(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Optional. Leave empty to put files in repo root.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 pt-2">
+        <DebouncedButton onClick={handleSave} disabled={!pat || !hasChanges || isSaving} debounceMs={500}>
+          {isSaving ? "Saving..." : "Save"}
+        </DebouncedButton>
+        {saveResult && (
+          <span className={saveResult.ok ? "text-sm text-green-600 dark:text-green-400" : "text-sm text-red-600 dark:text-red-400"}>
+            {saveResult.message}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function AccountSettings() {
+  const user = useQuery(api.users.me)
+
+  return (
+    <div className="rounded-lg border border-border p-6 space-y-3">
+      <div>
+        <h3 className="text-lg font-semibold">Account</h3>
+        <p className="text-sm text-muted-foreground">Your registered account information</p>
+      </div>
+      {user === undefined ? (
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      ) : user === null ? (
+        <p className="text-sm text-muted-foreground">Not signed in</p>
+      ) : (
+        <div className="space-y-1 text-sm">
+          <p><span className="text-muted-foreground">Email:</span> {user.email ?? "—"}</p>
+          {user.name && <p><span className="text-muted-foreground">Name:</span> {user.name}</p>}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const NAV_SECTIONS = [
+  { id: "account", label: "Account" },
+  { id: "llm", label: "LLM Providers" },
+  { id: "compression", label: "Compression" },
+  { id: "git", label: "Git Integration" },
+] as const
+
 function SettingsPage() {
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Settings</h1>
         <p className="text-muted-foreground mt-1">
-          Configure your LLM providers
+          Configure providers, integrations, and account
         </p>
       </div>
 
-      <div className="space-y-4">
+      <nav className="flex gap-1 flex-wrap border-b border-border pb-3">
+        {NAV_SECTIONS.map(({ id, label }) => (
+          <a
+            key={id}
+            href={`#${id}`}
+            className="px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          >
+            {label}
+          </a>
+        ))}
+      </nav>
+
+      <div id="account" className="scroll-mt-20">
+        <AccountSettings />
+      </div>
+
+      <div id="llm" className="space-y-4 scroll-mt-20">
         <h2 className="text-xl font-semibold">LLM Providers</h2>
         <p className="text-sm text-muted-foreground">
           API keys and settings are stored locally in your browser. They are never sent to our servers.
         </p>
-
         <div className="grid gap-4">
           <OpenRouterSettings />
           <RouterAISettings />
@@ -587,9 +1001,23 @@ function SettingsPage() {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Compression Settings</h2>
+      <div id="compression" className="space-y-4 scroll-mt-20">
+        <h2 className="text-xl font-semibold">Compression</h2>
         <CompressionProviderSettings />
+      </div>
+
+      <div id="git" className="space-y-4 scroll-mt-20">
+        <h2 className="text-xl font-semibold">Git Integration</h2>
+        <p className="text-sm text-muted-foreground">
+          Share project results with teammates via Git. Tokens are stored locally and never sent to our servers.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Windows only: if cloned files appear as modified without changes, add{" "}
+          <code className="font-mono bg-muted px-1 rounded">* text=auto eol=lf</code>{" "}
+          to your repo's <code className="font-mono bg-muted px-1 rounded">.gitattributes</code>.
+        </p>
+        <GitHubSettings />
+        <GitLabSettings />
       </div>
 
       <div className="rounded-lg border border-border p-6 space-y-2">

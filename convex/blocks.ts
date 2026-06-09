@@ -97,6 +97,25 @@ async function getNextPosition(
 
 // ============ Public functions ============
 
+// Fetch multiple blocks by ID (used by sync)
+export const getMany = query({
+  args: { ids: v.array(v.id("blocks")) },
+  handler: async (ctx, args) => {
+    if (args.ids.length === 0) return []
+    const blocks = await Promise.all(args.ids.map((id) => ctx.db.get(id)))
+    const found = blocks.filter((b): b is Doc<"blocks"> => b !== null)
+
+    const accessible: Doc<"blocks">[] = []
+    for (const block of found) {
+      const hasAccess = await canAccessSession(ctx, block.sessionId)
+      if (hasAccess) accessible.push(block)
+    }
+
+    const lookup = await fetchCanonicalLookup(ctx, accessible)
+    return resolveBlocks(accessible, lookup)
+  },
+})
+
 // List all blocks for a session, ordered by creation time (newest first)
 export const list = query({
   args: { sessionId: v.id("sessions") },

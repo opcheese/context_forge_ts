@@ -2,7 +2,7 @@
  * Project Dashboard - View and manage a single project.
  */
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { useSession } from "@/contexts/SessionContext"
 import { EntryQuestionsDialog } from "@/components/EntryQuestionsDialog"
 import { useToast } from "@/components/ui/toast"
+import { SyncDialog } from "@/components/projects"
 import type { Id, Doc } from "../../../convex/_generated/dataModel"
 
 // Format relative time
@@ -274,9 +275,49 @@ function ProjectDashboard() {
   const removeSession = useMutation(api.projects.removeSession)
   const advanceStep = useMutation(api.workflows.advanceStep)
   const createBlock = useMutation(api.blocks.create)
+  const upsertSyncMapping = useMutation(api.syncMappings.upsertSyncMapping)
+  const upsertSyncBlock = useMutation(api.syncMappings.upsertSyncBlock)
   const { toast } = useToast()
 
+  // One-time migration: move old localStorage SyncMeta into Convex DB
+  useEffect(() => {
+    const key = `contextforge-sync-meta-${projectId}`
+    const raw = localStorage.getItem(key)
+    if (!raw) return
+    try {
+      const meta = JSON.parse(raw) as {
+        provider: "github" | "gitlab"
+        repoUrl: string
+        branch: string
+        folder: string
+        blocks: Record<string, { path: string }>
+      }
+      ;(async () => {
+        const mappingId = await upsertSyncMapping({
+          projectId: projectId as Id<"projects">,
+          provider: meta.provider,
+          repoUrl: meta.repoUrl,
+          branch: meta.branch,
+          folder: meta.folder,
+        })
+        for (const [blockId, blockMeta] of Object.entries(meta.blocks)) {
+          await upsertSyncBlock({
+            syncMappingId: mappingId,
+            blockId: blockId as Id<"blocks">,
+            path: blockMeta.path,
+          })
+        }
+        localStorage.removeItem(key)
+      })().catch(() => {
+        localStorage.removeItem(key)
+      })
+    } catch {
+      localStorage.removeItem(key)
+    }
+  }, [projectId]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const [showEditDialog, setShowEditDialog] = useState(false)
+  const [showSyncDialog, setShowSyncDialog] = useState(false)
   const [showCreateSession, setShowCreateSession] = useState(false)
   const [isAdvancing, setIsAdvancing] = useState(false)
   const [pendingEntry, setPendingEntry] = useState<{
@@ -391,6 +432,9 @@ function ProjectDashboard() {
           <Button variant="outline" onClick={() => setShowEditDialog(true)}>
             Edit
           </Button>
+          <Button variant="outline" onClick={() => setShowSyncDialog(true)}>
+            Git Sync
+          </Button>
           <Button onClick={() => setShowCreateSession(true)}>
             + Add Session
           </Button>
@@ -499,6 +543,12 @@ function ProjectDashboard() {
           onClose={() => setShowEditDialog(false)}
         />
       )}
+
+      <SyncDialog
+        isOpen={showSyncDialog}
+        onClose={() => setShowSyncDialog(false)}
+        projectId={project._id}
+      />
 
       <CreateSessionDialog
         projectId={project._id}

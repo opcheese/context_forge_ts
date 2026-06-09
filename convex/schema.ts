@@ -289,4 +289,29 @@ export default defineSchema({
     })),
   })
     .index("by_marketplace", ["marketplaceId"]),
+
+  // Git sync mapping — device-independent, one per user per project
+  syncMappings: defineTable({
+    projectId: v.id("projects"),
+    userId: v.id("users"),
+    provider: v.union(v.literal("github"), v.literal("gitlab")),
+    repoUrl: v.string(),
+    branch: v.string(),
+    folder: v.string(),
+    lastSyncedAt: v.optional(v.number()),
+  })
+    .index("by_project", ["projectId"])
+    .index("by_user_project", ["userId", "projectId"]),
+
+  // Git sync block mapping — canonical path per exported block
+  syncBlocks: defineTable({
+    syncMappingId: v.id("syncMappings"),
+    blockId: v.id("blocks"),
+    path: v.string(),
+    syncedAt: v.optional(v.number()),
+    syncedContentHash: v.optional(v.string()),
+    rejectedRemoteContent: v.optional(v.string()),
+  })
+    .index("by_mapping", ["syncMappingId"])
+    .index("by_block", ["blockId"]),
 })
